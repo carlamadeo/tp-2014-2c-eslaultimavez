@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include "ConfigMSP.h"
 #include "Consola.h"
 #include <commons/protocolStructInBigBang.h>
@@ -20,24 +22,33 @@ t_log *MSPlogger;
 pthread_t threadConsola;
 int idproc;
 
-int main(void) {
+int main(int argc, char *argv[])
+{
+	if (argc != 2){
+		printf("Modo de empleo: ./MSP configMSP.cfg\n");
+		return EXIT_SUCCESS;
+	}
 
 	MSPlogger = log_create("logMSP.log", "MSP", 1, LOG_LEVEL_TRACE);
-	cargarConfiguracionMSP("../resources/configMSP.cfg");
-
-	idproc = getpid();
-	system("clear");
-	printf("************** Iniciado MPS (PID: %d) ***************\n",idproc);
-
-	pthread_create(&threadConsola, NULL, iniciarConsolaMSP, NULL);
 
 	log_info(MSPlogger, "Iniciando consola de la MSP...");
 
+	if(!cargarConfiguracionMSP(argv[1])){
+		printf("Archivo de configuracion invalido\n");
+		return EXIT_SUCCESS;
+	}
 
+	pthread_create(&threadConsola, NULL, iniciarConsolaMSP, NULL);
+
+	//idproc = getpid();
+	system("clear");
+	printf("************** Iniciado MSP (PID: %d) ***************\n",idproc);
+
+/*
 	t_socket_header header;
 	fd_set master;
 	fd_set read_fds;
-
+/
 	int max_desc = 0;
 	int nuevo_sock;
 	int listener;
@@ -50,22 +61,22 @@ int main(void) {
 
 	FD_ZERO(&master);
 	FD_ZERO(&read_fds);
-
+*/
 	/****************************** Creacion Listener ****************************************/
-	log_info(MSPlogger, "****************** CREACION DEL LISTENER *****************\n");
+/*	log_info(MSPlogger, "****************** CREACION DEL LISTENER *****************\n");
 	// Uso puerto seteado en el archivo de configuracion
 	crear_listener(puertoMSP, &listener);
 
 	agregar_descriptor(listener, &master, &max_desc);
 
-	log_info(MSPlogger, "MPS: Esperando conexiones...");
+	log_info(MSPlogger, "MPS: Esperando conexiones...");*/
 	/***************************** LOGICA PRINCIPAL ********************************/
-	while(!fin)
+	/*while(!fin)
 	{
 
 		FD_ZERO (&read_fds);
 		read_fds = master;
-		if((select(max_desc+1, &read_fds, NULL, NULL, NULL/*&tvDemora*/)) == -1)
+		if((select(max_desc+1, &read_fds, NULL, NULL, NULL&tvDemora)) == -1)
 				{
 					log_error(MSPlogger, "MPS: error en el select()");
 				}
@@ -77,7 +88,7 @@ int main(void) {
 					{
 						if (i == listener)
 						{
-							/* nueva conexion */
+							//nueva conexion
 							log_info(MSPlogger, "NUEVA CONEXION");
 
 							aceptar_conexion(&listener, &nuevo_sock);
@@ -115,10 +126,12 @@ int main(void) {
 
 				}
 	}
+*/
 
-
+	log_info(MSPlogger, "Finalizando la consola de la MSP...");
 
 	pthread_exit(threadConsola);
+
 	log_destroy(MSPlogger);
 	return EXIT_SUCCESS;
 

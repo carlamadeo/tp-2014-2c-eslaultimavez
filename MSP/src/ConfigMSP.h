@@ -23,5 +23,6 @@
 bool cargarConfiguracionMSP(char *config);
 bool validarConfiguracionMSP();
 void cargarMarcos(t_list *listaMarcos);
+void destruirConfiguracionMSP();
 
 #endif /* CONFIGMSP_H_ */

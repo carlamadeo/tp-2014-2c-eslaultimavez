@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <commons/protocolStructInBigBang.h>
-#include <hiloCPU.h>
-
+#include "hiloCPU.h"
+/*
 void* hiloCPU(t_hilo *hiloCPU) {
 
 	t_socket_header header;
@@ -27,17 +27,17 @@ void* hiloCPU(t_hilo *hiloCPU) {
 	/****************************** Creacion Listener ****************************************/
 	//crear_listener(PUERTO, &listener);  //ver si es necesario
 	//agregar_descriptor(listener, &master, &max_desc);
-
+/*
 	agregar_descriptor(hiloCPU->sock, &master, &max_desc);
 	
 	/***************************** LOGICA PRINCIPAL ********************************/
-	while(!fin)
+/*	while(!fin)
 	{
 
 		FD_ZERO (&read_fds);
 		read_fds = master;
 
-		if((select(max_desc+1, &read_fds, NULL, NULL, NULL/*&tvDemora*/)) == -1)
+		if((select(max_desc+1, &read_fds, NULL, NULL, NULL&tvDemora)) == -1)
 		{
 			log_error(MSPlogger, "ORQUESTADOR: error en el select()");
 		}
@@ -49,7 +49,7 @@ void* hiloCPU(t_hilo *hiloCPU) {
 			{
 				if (i == listener)
 				{
-					/* nueva conexion */
+					//nueva conexion
 					log_info(MSPlogger, "MPS HILO CPU: NUEVA CONEXION");
 
 					aceptar_conexion(&listener, &nuevo_sock);
@@ -72,7 +72,7 @@ void* hiloCPU(t_hilo *hiloCPU) {
 
 					log_debug(MSPlogger, "MPS HILO CPU: mensaje recibido '%d'", header.type);
 
-					if (header.type == 100/*FINALIZAR*/) {
+					if (header.type == 100FINALIZAR) {
 						log_debug(MSPlogger, "MPS HILO CPU: '%d' ES FINALIZAR", header.type);
 						fin = 1;//1 = TRUE
 						FD_CLR(hiloCPU->fdPipe[0], &master);
@@ -95,7 +95,7 @@ void* hiloCPU(t_hilo *hiloCPU) {
 						FD_CLR(i, &master);
 					}
 
-					if ((header.type == 95/*DATOS_CPU*/) && (se_desconecto != 1))
+					if ((header.type == 95DATOS_CPU) && (se_desconecto != 1))
 					{
 						puts("MPS HILO CPU: Recibo datos de la CPU");
 
@@ -105,5 +105,5 @@ void* hiloCPU(t_hilo *hiloCPU) {
 			}
 		}
 	}
-}
+}*/
 				

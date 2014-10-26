@@ -157,7 +157,6 @@ void destruirSegmento(int pid, uint32_t direccionBase){
 
 void borrarPaginasDeMemoriaSecundariaYPrimaria(int pid, t_segmento *segmento){
 
-	t_pagina *pagina = malloc(sizeof(t_pagina));
 	t_list *paginasEnMemoria;
 	t_list *paginasEnDisco;
 
@@ -174,6 +173,9 @@ void borrarPaginasDeMemoriaSecundariaYPrimaria(int pid, t_segmento *segmento){
 
 	list_iterate(paginasEnMemoria, borrarPaginaDeMemoria);
 	list_iterate(paginasEnDisco, borrarPaginaDeDisco);
+
+	list_destroy_and_destroy_elements(paginasEnMemoria, free);
+	list_destroy_and_destroy_elements(paginasEnDisco, free);
 
 }
 
@@ -726,6 +728,7 @@ void borrarPaginaDeDisco(int pid, int numeroSegmento, int numeroPagina){
 		log_error(MSPlogger, "Ha ocurrido un error al intentar borrar el archivo %s", absolute_path);
 	}
 	else{
+		cantidadMemoriaSecundaria += TAMANIO_PAGINA;
 		log_info(MSPlogger, "El archivo de swapping %s se ha eliminado correctamente", absolute_path);
 	}
 
@@ -745,6 +748,8 @@ void borrarPaginaDeMemoria(t_pagina *pagina){
 	list_add(marcosLibres, marco);
 
 	list_remove_by_condition(marcosOcupados, matchMarco);
+
+	cantidadMemoriaPrincipal += TAMANIO_PAGINA;
 	//TODO ver como borrar correctamente la memoria
 	memset(memoria + marco->inicio, 0, TAMANIO_PAGINA);
 }

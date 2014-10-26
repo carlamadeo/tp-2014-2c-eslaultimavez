@@ -22,8 +22,14 @@ t_list *marcos;
 t_list *marcosLibres;
 t_list *marcosOcupados; //Para FIFO
 
+
+const char configProperties[][25] = {"PUERTO", "CANTIDAD_MEMORIA", "CANTIDAD_SWAP", "SUST_PAGS"};
+
 bool cargarConfiguracionMSP(char *config) {
+
 	MSPConfig = config_create(config);
+
+	if(!validarConfiguracionMSP()) return false;
 
 	puertoMSP = config_get_int_value(MSPConfig, "PUERTO");
 	cantidadMemoriaPrincipal = config_get_double_value(MSPConfig, "CANTIDAD_MEMORIA");
@@ -45,6 +51,7 @@ bool cargarConfiguracionMSP(char *config) {
 		log_error(MSPlogger, "No se pudo alocar la memoria, finalizando...");
 		return false;
 	}
+
 	log_info(MSPlogger, "Memoria reservada correctamente");
 	log_info(MSPlogger, "Se reservo %g MegaBytes para el archivo de paginacion.", cantidadMemoriaSecundaria);
 
@@ -85,7 +92,24 @@ void cargarMarcos(t_list *listaMarcos){
 	}
 }
 
-void destruirConfiguracion(){
+
+bool validarConfiguracionMSP(){
+	bool existen = true;
+	int elements = sizeof(configProperties)/sizeof(configProperties[0]);
+	int i;
+
+	for(i = 0; i < elements; i++) {
+		if(!config_has_property(MSPConfig, &configProperties[i])) {
+			existen = false;
+			break;
+		}
+	}
+
+	return existen;
+}
+
+
+void destruirConfiguracionMSP(){
 	list_destroy_and_destroy_elements(programas, free);
 	list_destroy_and_destroy_elements(marcos, free);
 	list_destroy_and_destroy_elements(marcosLibres, free);

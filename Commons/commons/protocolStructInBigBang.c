@@ -1,8 +1,7 @@
 	#include <stdint.h>
-	#include <commons/string.h>
-	#include <commons/log.h>
-	#include <commons/collections/list.h>
-	#include <string.h>
+	#include "string.h"
+	#include "log.h"
+	#include "collections/list.h"
 	#include "protocolStructInBigBang.h"
 
 
