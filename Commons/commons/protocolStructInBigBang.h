@@ -55,7 +55,9 @@
 	#define NUEVA_CONSOLA 93;
 	#define FINALIZAR 100;
 
-
+	//Kernel recibe de MSP
+	#define BASE 120;
+	#define BASE_MSP 121;
 
 	//Respuestas:
 	//El payload de las respuestas (si no se aclara) es NULL o código de error.
