@@ -98,7 +98,7 @@ bool escribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int taman
 * No considera la pagina que pasan por la direccion base, es decir, se deberan pasar a memoria
 * la cantidad de paginas devueltas y la que me indique la direccion base
 */
-int calcularCantidadPaginasNecesarias(tamanio, desplazamiento);
+int calcularCantidadPaginasNecesarias(int tamanio, int desplazamiento);
 
 
 /**

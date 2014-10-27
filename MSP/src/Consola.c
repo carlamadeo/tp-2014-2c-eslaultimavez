@@ -11,10 +11,9 @@
 
 extern t_log *MSPlogger;
 extern t_list *programas;
-extern t_list *marcos;
 extern t_list *marcosLibres;
 
-void *iniciarConsolaMSP() {
+void *mspLanzarhiloMSPCONSOLA() {
 
 	int opcion;
 	do

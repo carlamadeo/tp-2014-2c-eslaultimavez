@@ -8,24 +8,14 @@
  ============================================================================
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include "ConfigMSP.h"
-#include "Consola.h"
-#include <commons/protocolStructInBigBang.h>
-
+#include "MSP.h"
 
 t_log *MSPlogger;
-pthread_t threadConsola;
-int idproc;
 
 int main(int argc, char *argv[])
 {
 	if (argc != 2){
-		printf("Modo de empleo: ./MSP configMSP.cfg\n");
+		printf("Modo de empleo: ./MSP mspConfig.cfg\n");
 		return EXIT_SUCCESS;
 	}
 
@@ -33,106 +23,81 @@ int main(int argc, char *argv[])
 
 	log_info(MSPlogger, "Iniciando consola de la MSP...");
 
+	sem_init(&mutex, 0, 1);
+
 	if(!cargarConfiguracionMSP(argv[1])){
 		printf("Archivo de configuracion invalido\n");
 		return EXIT_SUCCESS;
 	}
 
-	pthread_create(&threadConsola, NULL, iniciarConsolaMSP, NULL);
+	lista_procesos = list_create();
+	cola_paquetes = list_create();
 
-	//idproc = getpid();
-	//system("clear");
-	printf("************** Iniciado MSP (PID: %d) ***************\n",idproc);
-
-/*
-	t_socket_header header;
-	fd_set master;
-	fd_set read_fds;
-/
-	int max_desc = 0;
-	int nuevo_sock;
-	int listener;
-	int i, se_desconecto;
-	int fin = false;
-	int numeroCPU=1;
-	t_hilo hiloCPU[8]; //indica cantidad maxima de hilos cpu.
-
-	log_info(MSPlogger, "MSP: Iniciado.");
-
-	FD_ZERO(&master);
-	FD_ZERO(&read_fds);
-*/
-	/****************************** Creacion Listener ****************************************/
-/*	log_info(MSPlogger, "****************** CREACION DEL LISTENER *****************\n");
-	// Uso puerto seteado en el archivo de configuracion
-	crear_listener(puertoMSP, &listener);
-
-	agregar_descriptor(listener, &master, &max_desc);
-
-	log_info(MSPlogger, "MSP: Esperando conexiones...");*/
-	/***************************** LOGICA PRINCIPAL ********************************/
-	/*while(!fin)
-	{
-
-		FD_ZERO (&read_fds);
-		read_fds = master;
-		if((select(max_desc+1, &read_fds, NULL, NULL, NULL&tvDemora)) == -1)
-				{
-					log_error(MSPlogger, "MSP: error en el select()");
-				}
-
-				for(i = 0; i <= max_desc; i++)
-				{
-					//otrosDescriptor = 1;
-					if (FD_ISSET(i, &read_fds) )
-					{
-						if (i == listener)
-						{
-							//nueva conexion
-							log_info(MSPlogger, "NUEVA CONEXION");
-
-							aceptar_conexion(&listener, &nuevo_sock);
-							//agregar_descriptor(nuevo_sock, &master, &max_desc);
-							recibir_header(nuevo_sock, &header, &master, &se_desconecto);
-
-							switch (header.type)
-							{
-								case 90://INICIO_KERNEL:
-									log_info(MSPlogger, "MSP: INICIO KERNEL");
-									//kernel(nuevo_sock, &master);
-									agregar_descriptor(nuevo_sock, &master, &max_desc); //Aqui agrego a descriptor a principal
-									break;
-								case 91://NUEVO_CPU:
-									log_info(MSPlogger, "MSP: NUEVO CPU");
-									log_info(MSPlogger, "Creando hilo para CPU...");
-									hiloCPU[numeroCPU].sock=nuevo_sock;
-									pthread_create (&hiloCPU[numeroCPU].tid, NULL, (void*) hiloCPU, (void*)&hiloCPU[numeroCPU]);
-									//paso descriptor en estructura para que la agregue y la atienda el hilo.
-									numeroCPU++;
-									//nuevoCPU(nuevo_sock, &master);
-									break;
-
-								case 92://NUEVA_CONSOLA:
-									log_info(MSPlogger, "MSP: NUEVA CONSOLA");
-									nuevaConsola(nuevo_sock, header);
-
-									break;
-
-								default:
-									break;
-							}
-						}
-					}
-
-				}
+	int mspConsolatheadNum = pthread_create(&mspConsolaHilo, NULL, (void*) mspLanzarhiloMSPCONSOLA, NULL);
+	if(mspConsolatheadNum) {
+		fprintf(stderr,"Error - pthread_create() return code: %d\n",mspConsolatheadNum);
+		exit(EXIT_FAILURE);
 	}
-*/
+
+	int mspHiloNum = pthread_create(&mspHilo, NULL, (void*) mspLanzarhilo, NULL);
+	if(mspHiloNum) {
+		fprintf(stderr,"Error - pthread_create() return code: %d\n", mspHiloNum);
+		exit(EXIT_FAILURE);
+	}
+
+	pthread_join(mspConsolaHilo,NULL);
+	pthread_join(mspHilo, NULL);
 
 	log_info(MSPlogger, "Finalizando la consola de la MSP...");
-
-	pthread_exit(threadConsola);
 
 	log_destroy(MSPlogger);
 	return EXIT_SUCCESS;
 
 }
+
+int mspLanzarhilo(){
+	int i = 1;
+	int puertoMSP = 5050; //esto esta dentro del archivo de conf cambiar!!
+	t_socket *socketEscucha, *socketNuevaConexion;
+
+	log_error(MSPlogger, "Creando un hilo escucha, sin saber si es de Kernel o de CPU");
+
+	if (!(socketEscucha = socket_createServer(puertoMSP))) {
+		log_error(MSPlogger, "Error al crear socket Escucha del PLP: %s", strerror(errno));
+		return EXIT_FAILURE;
+	}
+
+	if(!socket_listen(socketEscucha)) {
+		log_error(MSPlogger, "Error al poner a escuchar descriptor: %s", strerror(errno));
+		return EXIT_FAILURE;
+	}
+
+	log_info(MSPlogger, "Ya se esta escuchando conexiones entrantes..");
+
+	while(1){
+			socketNuevaConexion = socket_acceptClient(socketEscucha);
+			t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+			socket_recvPaquete(socketNuevaConexion, paquete);
+
+			if(paquete->header.type == 5){
+				socketKernel=socketNuevaConexion;
+				kernelDireccion=direccionCliente;
+				pthread_create(&mspHiloKernel, NULL, mspLanzarHiloKernel, NULL);
+				log_info(MSPlogger,"Hilo Kernel creado correctamente");
+			}
+
+			if(paquete->header.type == 4){
+				socketCpus = socketNuevaConexion;
+				cpuDireccion = direccionCliente;
+				mspHiloCpus = realloc(mspHiloCpus, sizeof(pthread_t)*i+1);
+				pthread_create(&mspHiloCpus[i], NULL, mspLanzarHiloCPU, (void *)socketCpus);
+				log_info(MSPlogger,"Hilo CPU creado correctamente");
+				i++;
+			}
+
+			socket_freePaquete(paquete);
+		}
+	return 0;
+}
+
+

@@ -10,7 +10,6 @@
 #include "Programa.h"
 
 extern char *memoria;
-extern t_config *MSPConfig;
 extern t_log *MSPlogger;
 extern double cantidadMemoriaPrincipal, cantidadMemoriaSecundaria, cantidadMemoriaTotal;
 extern uint16_t modoSustitucionPaginasMSP;
