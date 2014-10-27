@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 	pthread_create(&threadConsola, NULL, iniciarConsolaMSP, NULL);
 
 	//idproc = getpid();
-	system("clear");
+	//system("clear");
 	printf("************** Iniciado MSP (PID: %d) ***************\n",idproc);
 
 /*
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 	int numeroCPU=1;
 	t_hilo hiloCPU[8]; //indica cantidad maxima de hilos cpu.
 
-	log_info(MSPlogger, "MPS: Iniciado.");
+	log_info(MSPlogger, "MSP: Iniciado.");
 
 	FD_ZERO(&master);
 	FD_ZERO(&read_fds);
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 
 	agregar_descriptor(listener, &master, &max_desc);
 
-	log_info(MSPlogger, "MPS: Esperando conexiones...");*/
+	log_info(MSPlogger, "MSP: Esperando conexiones...");*/
 	/***************************** LOGICA PRINCIPAL ********************************/
 	/*while(!fin)
 	{
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 		read_fds = master;
 		if((select(max_desc+1, &read_fds, NULL, NULL, NULL&tvDemora)) == -1)
 				{
-					log_error(MSPlogger, "MPS: error en el select()");
+					log_error(MSPlogger, "MSP: error en el select()");
 				}
 
 				for(i = 0; i <= max_desc; i++)
@@ -98,12 +98,12 @@ int main(int argc, char *argv[])
 							switch (header.type)
 							{
 								case 90://INICIO_KERNEL:
-									log_info(MSPlogger, "MPS: INICIO KERNEL");
+									log_info(MSPlogger, "MSP: INICIO KERNEL");
 									//kernel(nuevo_sock, &master);
 									agregar_descriptor(nuevo_sock, &master, &max_desc); //Aqui agrego a descriptor a principal
 									break;
 								case 91://NUEVO_CPU:
-									log_info(MSPlogger, "MPS: NUEVO CPU");
+									log_info(MSPlogger, "MSP: NUEVO CPU");
 									log_info(MSPlogger, "Creando hilo para CPU...");
 									hiloCPU[numeroCPU].sock=nuevo_sock;
 									pthread_create (&hiloCPU[numeroCPU].tid, NULL, (void*) hiloCPU, (void*)&hiloCPU[numeroCPU]);
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
 									break;
 
 								case 92://NUEVA_CONSOLA:
-									log_info(MSPlogger, "MPS: NUEVA CONSOLA");
+									log_info(MSPlogger, "MSP: NUEVA CONSOLA");
 									nuevaConsola(nuevo_sock, header);
 
 									break;

@@ -50,7 +50,7 @@ void* hiloCPU(t_hilo *hiloCPU) {
 				if (i == listener)
 				{
 					//nueva conexion
-					log_info(MSPlogger, "MPS HILO CPU: NUEVA CONEXION");
+					log_info(MSPlogger, "MSP HILO CPU: NUEVA CONEXION");
 
 					aceptar_conexion(&listener, &nuevo_sock);
 					//agregar_descriptor(nuevo_sock, &master, &max_desc);
@@ -66,14 +66,14 @@ void* hiloCPU(t_hilo *hiloCPU) {
 				}
 				else if (i == hiloCPU->fdPipe[0]) {
 
-					log_info(MSPlogger, "MPS HILO CPU: Recibo mensaje desde MPS principal por Pipe");
+					log_info(MSPlogger, "MSP HILO CPU: Recibo mensaje desde MSP principal por Pipe");
 					initHeader(&header);
 					read (hiloCPU->fdPipe[0], &header, sizeof(t_socket_header));
 
-					log_debug(MSPlogger, "MPS HILO CPU: mensaje recibido '%d'", header.type);
+					log_debug(MSPlogger, "MSP HILO CPU: mensaje recibido '%d'", header.type);
 
 					if (header.type == 100FINALIZAR) {
-						log_debug(MSPlogger, "MPS HILO CPU: '%d' ES FINALIZAR", header.type);
+						log_debug(MSPlogger, "MSP HILO CPU: '%d' ES FINALIZAR", header.type);
 						fin = 1;//1 = TRUE
 						FD_CLR(hiloCPU->fdPipe[0], &master);
 						break;
@@ -83,13 +83,13 @@ void* hiloCPU(t_hilo *hiloCPU) {
 				else if (i != listener && i != hiloCPU->fdPipe[0]) 
 				{
 
-					log_debug(MSPlogger, "MPS HILO CPU: recibo mensaje socket %d", i);
+					log_debug(MSPlogger, "MSP HILO CPU: recibo mensaje socket %d", i);
 					recibir_header(i, &header, &master, &se_desconecto);
-					log_debug(MSPlogger, "MPS HILO CPU: el tipo de mensaje es: %d\n", header.type);
+					log_debug(MSPlogger, "MSP HILO CPU: el tipo de mensaje es: %d\n", header.type);
 
 					if(se_desconecto)
 					{
-						log_info(MSPlogger, "MPS HILO CPU: Se desconecto el socket %d", i);
+						log_info(MSPlogger, "MSP HILO CPU: Se desconecto el socket %d", i);
 						// TODO chequear si se desconecto cpu y borrarlo de las estructuras
 						// Quito el descriptor del set
 						FD_CLR(i, &master);
@@ -97,7 +97,7 @@ void* hiloCPU(t_hilo *hiloCPU) {
 
 					if ((header.type == 95DATOS_CPU) && (se_desconecto != 1))
 					{
-						puts("MPS HILO CPU: Recibo datos de la CPU");
+						puts("MSP HILO CPU: Recibo datos de la CPU");
 
 					}
 

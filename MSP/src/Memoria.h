@@ -52,8 +52,16 @@ typedef struct{
 uint32_t crearSegmento(int pid, int tamanio);
 
 /**
+* @NAME: crearSegmentoConSusPaginas
+* @DESC: Crea el segmento con sus paginas
+*/
+uint32_t crearSegmentoConSusPaginas(int pid, int tamanio, int cantidadPaginas);
+
+/**
 * @NAME: destruirSegmento
 * @DESC: Destruye el segmento con base "direccionBase" para el pid "pid"
+* Si alguna pagina del segmento se encontraba en memoria la elimina de memoria
+* Si alguna pagina del segmento se encontraba en disco la elimina del disco
 */
 void destruirSegmento(int pid, uint32_t direccionBase);
 
@@ -62,6 +70,36 @@ void destruirSegmento(int pid, uint32_t direccionBase);
 * @DESC: Busca las paginas que se encuentren en memoria principal y secundaria y las borra
 */
 void borrarPaginasDeMemoriaSecundariaYPrimaria(int pid, t_segmento *segmento);
+
+/**
+* @NAME: borrarPaginaDeMemoria
+* @DESC: Borra la pagina ingresada por parametro de memoria
+* Libera el marco agregandolo en la lista de marcosLibres y eliminandolo de la lista de marcosOcupados
+*/
+void borrarPaginaDeMemoria(t_pagina *pagina);
+
+/**
+* @NAME: borrarPaginaDeMemoria
+* @DESC: Borra las paginas que (ingresan como parametro) de disco
+*/
+void borrarPaginaDeDisco(int pid, int numeroSegmento, int numeroPagina);
+
+/**
+* @NAME: escribirMemoria
+* @DESC: Escribe en la direccion virtual indicada lo que me pasan en buffer.
+* Hace las validaciones de violaciones de memoria correspondientes
+* Devuelve true si pudo escribir, false si no pudo
+*/
+bool escribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tamanio);
+
+/**
+* @NAME: calcularCantidadPaginasNecesarias
+* @DESC: Calcula la cantidad de paginas necesarias en memoria para leer/escribir la memoria
+* No considera la pagina que pasan por la direccion base, es decir, se deberan pasar a memoria
+* la cantidad de paginas devueltas y la que me indique la direccion base
+*/
+int calcularCantidadPaginasNecesarias(tamanio, desplazamiento);
+
 
 /**
 * @NAME: calculoDireccionBase
@@ -88,13 +126,6 @@ int calculoNumeroPagina(uint32_t direccionLogica);
 int calculoDesplazamiento(uint32_t direccionLogica);
 
 /**
-* @NAME: escribirMemoria
-* @DESC: Escribe en la direccion virtual indicada buffer.
-* Hace las validaciones de violaciones de memoria correspondientes
-*/
-bool escribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tamanio);
-
-/**
 * @NAME: leerMemoria
 * @DESC: Lee de la direccion virtual indicada y lo carga en leido.
 * Hace las validaciones de violaciones de memoria correspondientes
@@ -103,12 +134,10 @@ bool leerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido);
 
 
 int traerPaginaDeDiscoAMemoria(int pid, int numeroSegmento, int numeroPagina);
-uint32_t crearSegmentoConSusPaginas(int pid, int tamanio, int cantidadPaginas);
 void borrarSegmentosEnMemoria(int pid, t_list *paginas);
 void borrarSegmentosEnDisco(int pid, t_list *paginas);
 char *armarPathArchivo(int pid, int numeroSegmento, int numeroPagina);
-void borrarPaginaDeDisco(int pid, int numeroSegmento, int numeroPagina);
-void borrarPaginaDeMemoria(t_pagina *pagina);
+
 void seReferencioElMarco(t_marco *marco);
 void seModificoElMarco(t_marco *marco);
 t_marco *sustituirPaginaPorCLOCK_MODIFICADO();
