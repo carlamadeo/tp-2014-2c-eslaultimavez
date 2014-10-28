@@ -8,7 +8,16 @@
  ============================================================================
  */
 
+#include <stdlib.h>
+#include <pthread.h>
+#include <string.h>
+#include <errno.h>
+#include <netinet/in.h>
+#include "commons/protocolStructInBigBang.h"
+#include "commons/log.h"
+#include "ConfigMSP.h"
 #include "MSP.h"
+#include "CPU.h"
 
 t_log *MSPlogger;
 extern uint32_t puertoMSP;

@@ -18,11 +18,8 @@
 #define REFERENCIADA_NOMODIFICADA 3
 #define REFERENCIADA_MODIFICADA 4
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <commons/collections/list.h>
 #include "Programa.h"
+#include <stdint.h>
 
 typedef struct{
 	int numero;

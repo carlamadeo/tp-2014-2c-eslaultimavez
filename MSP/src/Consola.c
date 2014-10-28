@@ -7,7 +7,9 @@
 
 #include "Consola.h"
 #include "Memoria.h"
-#include "Programa.h"
+#include "commons/log.h"
+#include <stdlib.h>
+#include <stdint.h>
 
 extern t_log *MSPlogger;
 extern t_list *programas;

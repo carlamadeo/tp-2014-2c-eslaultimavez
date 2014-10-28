@@ -8,10 +8,6 @@
 #ifndef CONSOLA_H_
 #define CONSOLA_H_
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <commons/log.h>
 
 void *iniciarConsolaMSP();
 void consolaCrearSegmento();

@@ -1,4 +1,8 @@
 #include "Kernel.h"
+#include "commons/log.h"
+#include "commons/socketInBigBang.h"
+#include <stdlib.h>
+#include <unistd.h>
 
 extern t_log *MSPlogger;
 

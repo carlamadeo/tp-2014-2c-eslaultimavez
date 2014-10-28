@@ -6,6 +6,7 @@
  */
 
 #include "Programa.h"
+#include <stdlib.h>
 
 t_programa *crearPrograma(int pid){
 	t_programa *programa = malloc(sizeof(t_programa));

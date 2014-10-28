@@ -1,5 +1,9 @@
 #include "MSP.h"
 #include "CPU.h"
+#include "commons/log.h"
+#include "commons/collections/list.h"
+#include <stdlib.h>
+#include <unistd.h>
 
 extern t_log *MSPlogger;
 extern t_list *cola_paquetes;

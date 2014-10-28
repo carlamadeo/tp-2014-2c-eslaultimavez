@@ -8,8 +8,6 @@
 #ifndef PROGRAMA_H_
 #define PROGRAMA_H_
 
-#include <stdbool.h>
-#include <stdlib.h>
 #include <commons/collections/list.h>
 
 typedef struct{

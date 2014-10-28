@@ -7,7 +7,11 @@
 
 #include "Memoria.h"
 #include "ConfigMSP.h"
-#include "Programa.h"
+#include "commons/log.h"
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include "commons/collections/queue.h"
 
 extern char *memoria;
 extern t_log *MSPlogger;
@@ -485,7 +489,7 @@ t_marco *llevarPaginaAMemoria(t_pagina *pagina){
 
 	t_marco *marco = malloc(sizeof(t_marco));
 
-	log_info(MSPlogger, "Se cargara la pagina en memoria");
+	log_info(MSPlogger, "Se cargara la pagina en memoria...");
 
 	if(list_size(marcosLibres) > 0){
 		marco = (t_marco*)list_remove(marcosLibres, 0);

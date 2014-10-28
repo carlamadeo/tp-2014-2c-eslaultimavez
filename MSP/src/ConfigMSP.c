@@ -7,7 +7,12 @@
 
 #include "ConfigMSP.h"
 #include "Memoria.h"
-#include "Programa.h"
+#include "commons/log.h"
+#include "commons/config.h"
+#include <stdint.h>
+#include "commons/string.h"
+#include <stdlib.h>
+#include "commons/collections/queue.h"
 
 extern t_log *MSPlogger;
 
