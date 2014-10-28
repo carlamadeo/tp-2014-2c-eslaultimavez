@@ -16,10 +16,10 @@ int main(int argc, char** argv) {
 	char* config_file = argv[1];
 	t_kernel* self = kernel_cargar_configuracion(config_file);
 
-	self->loggerKernel = log_create(PATH_LOG, "KERNEL", 0, LOG_LEVEL_DEBUG);
-	self->loggerPlanificador = log_create(PATH_LOG, "Planificador", 0, LOG_LEVEL_DEBUG);
-	self->loggerLoader = log_create(PATH_LOG, "Loader", 0, LOG_LEVEL_DEBUG);
-	log_info((self->loggerKernel), "Kernel:Comienza a ejecutar.");
+	self->loggerKernel = log_create("logKernel.log", "KERNEL", 1, LOG_LEVEL_DEBUG);
+	self->loggerPlanificador = log_create("logKernel.log", "Planificador", 1, LOG_LEVEL_DEBUG);
+	self->loggerLoader = log_create("logKernel.log", "Loader", 1, LOG_LEVEL_DEBUG);
+	log_info((self->loggerKernel), "Kernel: Comienza a ejecutar.");
 
 	cola_new = list_create();
 	cola_ready = list_create();
@@ -71,6 +71,7 @@ int main(int argc, char** argv) {
 
 void verificar_argumentosKernel(int argc, char* argv[]){
 	if( argc < 2 ){
+		printf("Modo de empleo: ./Kernel mspKernel.cfg\n");
 		perror("Kernel no recibio las configuraciones");
 		exit (EXIT_FAILURE);
 	}

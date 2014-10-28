@@ -173,7 +173,7 @@ void kernel_crearColaDeEstados(void);
 int  kernel_escuchar_conexiones(void);
 t_kernel* kernel_cargar_configuracion(char* config_file);
 
-
+void verificar_argumentosKernel(int argc, char* argv[]);
 
 void finalizarProgramaEnPlanificacion(t_programaEnKernel* programa);
 
