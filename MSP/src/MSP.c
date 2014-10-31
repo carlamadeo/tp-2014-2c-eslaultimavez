@@ -20,7 +20,7 @@
 #include "CPU.h"
 
 t_log *MSPlogger;
-extern uint32_t puertoMSP;
+extern int puertoMSP;
 
 int main(int argc, char *argv[])
 {
@@ -73,6 +73,10 @@ int mspLanzarhilo(){
 
 	log_info(MSPlogger, "Creando un hilo escucha...");
 
+	socketEscucha = socket_createServer(puertoMSP);
+
+	socket_listen(socketEscucha);
+
 	if (!(socketEscucha = socket_createServer(puertoMSP))) {
 		log_error(MSPlogger, "Error al crear socket Escucha: %s.", strerror(errno));
 		return EXIT_FAILURE;
@@ -86,7 +90,9 @@ int mspLanzarhilo(){
 	log_info(MSPlogger, "Escuchando conexiones entrantes...");
 
 	while(1){
+
 			socketNuevaConexion = socket_acceptClient(socketEscucha);
+
 			t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 			socket_recvPaquete(socketNuevaConexion, paquete);
 

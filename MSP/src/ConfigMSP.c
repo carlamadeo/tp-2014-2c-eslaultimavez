@@ -17,7 +17,7 @@
 extern t_log *MSPlogger;
 
 t_config *MSPConfig;
-uint32_t puertoMSP;
+int puertoMSP;
 double cantidadMemoriaPrincipal, cantidadMemoriaSecundaria, cantidadMemoriaTotal;	  //Bytes
 uint16_t modoSustitucionPaginasMSP;
 

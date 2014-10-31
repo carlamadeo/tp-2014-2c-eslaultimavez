@@ -18,9 +18,8 @@ extern t_list *marcosLibres;
 void *mspLanzarhiloMSPCONSOLA() {
 
 	int opcion;
-	do
+	while(1)
 	{
-		system("clear");
 		printf("\n-----------Consola de la MSP-----------\n\n");
 		printf("¿Que operacion desea realizar?\n\n");
 		printf("1 - Crear Segmento\n");
@@ -30,14 +29,13 @@ void *mspLanzarhiloMSPCONSOLA() {
 		printf("5 - Ver Tabla de Segmentos\n");
 		printf("6 - Ver Tabla de Paginas\n");
 		printf("7 - Listar Marcos\n");
-		printf("\nIngrese su opcion (0 para finalizar): ");
+		printf("\nIngrese su opcion: ");
 
 		scanf("%d", &opcion);
 
+		printf("la opcion es %d\n", opcion);
 		switch (opcion)
 		{
-			case 0:
-				break;
 			case 1:
 				system("clear");
 				consolaCrearSegmento();
@@ -91,7 +89,7 @@ void *mspLanzarhiloMSPCONSOLA() {
 				break;
 		}
 
-	}while(opcion != 0);
+	}
 	return NULL;
 }
 
@@ -131,12 +129,18 @@ void consolaEscribirMemoria() {
 	printf("\n###################ESCRIBIR MEMORIA###################\n\n");
 	printf("Ingrese el numero PID del programa: ");
 	scanf("%d", &pid);
+	while(getchar() != '\n');
+
 	printf("Ingrese la direccion virtual donde desea escribir: ");
 	scanf("%d", &direccionVirtual);
+	while(getchar() != '\n');
+
 	printf("Ingrese el tamanio de lo que desea escribir: ");
 	scanf("%d", &tamanio);
+	while(getchar() != '\n');
+
 	printf("Ingrese lo que desea escribir: ");
-	scanf("%s", texto);
+	fgets(texto, TAMANIO_PAGINA, stdin);
 
 	escribirMemoria(pid, direccionVirtual, texto, tamanio);
 
@@ -151,13 +155,10 @@ void consolaLeerMemoria() {
 	char *leido;
 
 	printf("\n###################LEER MEMORIA###################\n\n");
-
 	printf("Ingrese el numero PID del programa: ");
 	scanf("%d", &pid);
-
 	printf("Ingrese la direccion virtual desde donde desea leer: ");
 	scanf("%d", &direccionVirtual);
-
 	printf("Ingrese el tamanio del contenido a leer: ");
 	scanf("%d", &tamanio);
 

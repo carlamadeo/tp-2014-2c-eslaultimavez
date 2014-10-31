@@ -97,6 +97,17 @@ bool escribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int taman
 */
 int calcularCantidadPaginasNecesarias(int tamanio, int desplazamiento);
 
+/**
+* @NAME: crearListaPaginasAPasarAMemoria
+* @DESC: Crea y devuelve una lista con las paginas que seran pasadas a memoria
+*/
+t_list *crearListaPaginasAPasarAMemoria(int cantidadPaginas, t_pagina *pagina, t_list *paginas);
+
+/**
+* @NAME: buscarPaginasYEscribirMemoria
+* @DESC: Escribe la memoria con buffer en los distintos marcos, recorriendo la lista de paginas
+*/
+void buscarPaginasYEscribirMemoria(int pid, uint32_t direccionVirtual, t_list *paginasAMemoria, int tamanio, char *buffer);
 
 /**
 * @NAME: calculoDireccionBase
