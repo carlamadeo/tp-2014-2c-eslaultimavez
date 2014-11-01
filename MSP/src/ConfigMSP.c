@@ -13,6 +13,7 @@
 #include "commons/string.h"
 #include <stdlib.h>
 #include "commons/collections/queue.h"
+#include <string.h>
 
 extern t_log *MSPlogger;
 
@@ -52,6 +53,8 @@ bool cargarConfiguracionMSP(char *config) {
 	//Alocar el tamanio obtenido por archivo de configuracion a la memoria
 	memoria = malloc(cantidadMemoriaPrincipal);
 
+	memset(memoria, 0, cantidadMemoriaPrincipal);
+
 	if (memoria == 0) {
 		log_error(MSPlogger, "No se pudo alocar la memoria, finalizando...");
 		return false;
@@ -74,7 +77,6 @@ bool cargarConfiguracionMSP(char *config) {
 
 	t_programa *prog = malloc(sizeof(t_programa)); //TODO Solo para pruebas, eliminar!!
 	prog = crearPrograma(1); //TODO Solo para pruebas, eliminar!!
-	list_add(programas, prog); //TODO Solo para pruebas, eliminar!!
 
 	return true;
 }

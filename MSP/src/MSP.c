@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 	lista_procesos = list_create();
 	cola_paquetes = list_create();
 
-	int mspConsolatheadNum = pthread_create(&mspConsolaHilo, NULL, mspLanzarhiloMSPCONSOLA, NULL);
+	int mspConsolatheadNum = pthread_create(&mspConsolaHilo, NULL, &mspLanzarhiloMSPCONSOLA, NULL);
 	if(mspConsolatheadNum) {
 		fprintf(stderr,"Error - pthread_create() return code: %d\n", mspConsolatheadNum);
 		exit(EXIT_FAILURE);

@@ -183,7 +183,12 @@ void imprimirTablaDeSegmentos() {
 		log_info(MSPlogger, "TABLA DE SEGMENTOS:");
 		void mostrarSegmento(t_segmento *unSegmento){
 			direccionBase = calculoDireccionBase(unSegmento->numero);
-			log_info(MSPlogger,"Segmento#: %d | Tamanio: %d | Direccion Base: %0.8p | Pertenece a Programa: %d", unSegmento->numero, unSegmento->tamanio, direccionBase, pid);
+
+			if(direccionBase == NULL)
+				log_info(MSPlogger,"Segmento#: %d | Tamanio: %d | Direccion Base: 0x00000000 | Pertenece a Programa: %d", unSegmento->numero, unSegmento->tamanio, pid);
+			else
+				log_info(MSPlogger,"Segmento#: %d | Tamanio: %d | Direccion Base: %0.8p | Pertenece a Programa: %d", unSegmento->numero, unSegmento->tamanio, direccionBase, pid);
+
 			cantSegmentos+=1;
 		}
 
@@ -258,7 +263,7 @@ void imprimirMarcos() {
 	int pid, numeroSegmento;
 	int cantidadMarcosOcupados = 0;
 
-	printf("\n######################TABLA DE MARCOS######################\n");
+	printf("\n#############################################TABLA DE MARCOS#############################################\n");
 
 	void mostrarMarcosLibres(t_marco *unMarco){
 		log_info(MSPlogger, "Marco#: %d | PID: - | Numero de Segmento: - | Numero de Pagina: -", unMarco->numero);
@@ -281,11 +286,11 @@ void imprimirMarcos() {
 		list_iterate(unPrograma->tablaSegmentos, iterarSegmento);
 	}
 
-	printf("\n----------------------Marcos Libres----------------------\n\n");
+	printf("\n----------------------------------------------Marcos Libres----------------------------------------------\n\n");
 	if(list_size(marcosLibres) > 0){
 		list_iterate(marcosLibres, mostrarMarcosLibres);
 	}
-	printf("\n---------------------Marcos Ocupados---------------------\n\n");
+	printf("\n---------------------------------------------Marcos Ocupados---------------------------------------------\n\n");
 	if(list_size(programas) > 0){
 		list_iterate(programas, iterarPrograma);
 	}

@@ -110,6 +110,29 @@ t_list *crearListaPaginasAPasarAMemoria(int cantidadPaginas, t_pagina *pagina, t
 void buscarPaginasYEscribirMemoria(int pid, uint32_t direccionVirtual, t_list *paginasAMemoria, int tamanio, char *buffer);
 
 /**
+* @NAME: leerMemoria
+* @DESC: Lee de la direccion virtual indicada y lo carga en leido.
+* Hace las validaciones de violaciones de memoria correspondientes
+*/
+bool leerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido);
+
+/**
+* @NAME: buscarPaginasYLeerMemoria
+* @DESC: Lee la memoria de los distintos marcos, recorriendo la lista de paginas y lo guarda en leido
+*/
+void buscarPaginasYLeerMemoria(int pid, uint32_t direccionVirtual, t_list *paginasAMemoria, int tamanio, char *leido);
+
+/**
+* @NAME: traerPaginaDeDiscoAMemoria
+* @DESC: Lleva la pagina que se encuentra en disco a memoria. Borra la pagina del disco,
+* actualiza el numero de marco en la pagina y devuelve el numero de marco donde la cargo.
+*/
+int traerPaginaDeDiscoAMemoria(int pid, int numeroSegmento, int numeroPagina);
+
+
+
+
+/**
 * @NAME: calculoDireccionBase
 * @DESC: Calcula la direccion base de un segmento a partir del numero de segmento
 */
@@ -133,15 +156,7 @@ int calculoNumeroPagina(uint32_t direccionLogica);
 */
 int calculoDesplazamiento(uint32_t direccionLogica);
 
-/**
-* @NAME: leerMemoria
-* @DESC: Lee de la direccion virtual indicada y lo carga en leido.
-* Hace las validaciones de violaciones de memoria correspondientes
-*/
-bool leerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido);
-
-
-int traerPaginaDeDiscoAMemoria(int pid, int numeroSegmento, int numeroPagina);
+void borrarMarcoDeMemoria(t_marco *marco);
 void borrarSegmentosEnMemoria(int pid, t_list *paginas);
 void borrarSegmentosEnDisco(int pid, t_list *paginas);
 char *armarPathArchivo(int pid, int numeroSegmento, int numeroPagina);
