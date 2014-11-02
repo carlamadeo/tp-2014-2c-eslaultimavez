@@ -53,7 +53,7 @@
 
 		typedef struct {
 			u_int32_t numero;
-		} t_envio_num;
+		} t_envio_numMSP;
 
 		typedef struct {
 			int longitud;

@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 
 	log_info(MSPlogger, "Iniciando consola de la MSP...");
 
-	sem_init(&mutex, 0, 1);
+	//sem_init(&mutex, 0, 1);
 
 	if(!cargarConfiguracionMSP(argv[1])){
 		printf("Archivo de configuracion invalido\n");
@@ -43,11 +43,11 @@ int main(int argc, char *argv[])
 	lista_procesos = list_create();
 	cola_paquetes = list_create();
 
-	int mspConsolatheadNum = pthread_create(&mspConsolaHilo, NULL, &mspLanzarhiloMSPCONSOLA, NULL);
-	if(mspConsolatheadNum) {
-		fprintf(stderr,"Error - pthread_create() return code: %d\n", mspConsolatheadNum);
-		exit(EXIT_FAILURE);
-	}
+//	int mspConsolatheadNum = pthread_create(&mspConsolaHilo, NULL, &mspLanzarhiloMSPCONSOLA, NULL);
+//	if(mspConsolatheadNum) {
+//		fprintf(stderr,"Error - pthread_create() return code: %d\n", mspConsolatheadNum);
+//		exit(EXIT_FAILURE);
+//	}
 
 	int mspHiloNum = pthread_create(&mspHilo, NULL, (void*) mspLanzarhilo, NULL);
 	if(mspHiloNum) {
@@ -55,12 +55,11 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	pthread_join(mspConsolaHilo,NULL);
+//	pthread_join(mspConsolaHilo,NULL);
 	pthread_join(mspHilo, NULL);
 
 
 	log_info(MSPlogger, "Finalizando la consola de la MSP...");
-
 	log_destroy(MSPlogger);
 	return EXIT_SUCCESS;
 
@@ -73,19 +72,21 @@ int mspLanzarhilo(){
 
 	log_info(MSPlogger, "Creando un hilo escucha...");
 
-	socketEscucha = socket_createServer(puertoMSP);
+	//socketEscucha = socket_createServer(puertoMSP);
 
-	socket_listen(socketEscucha);
+	//socket_listen(socketEscucha);
 
 	if (!(socketEscucha = socket_createServer(puertoMSP))) {
 		log_error(MSPlogger, "Error al crear socket Escucha: %s.", strerror(errno));
 		return EXIT_FAILURE;
 	}
 
+
 	if(!socket_listen(socketEscucha)) {
 		log_error(MSPlogger, "Error al poner a escuchar descriptor: %s.", strerror(errno));
 		return EXIT_FAILURE;
 	}
+
 
 	log_info(MSPlogger, "Escuchando conexiones entrantes...");
 
@@ -99,7 +100,7 @@ int mspLanzarhilo(){
 			if(paquete->header.type == HANDSHAKE_KERNEL){
 				socketKernel = socketNuevaConexion;
 				kernelDireccion = direccionCliente;
-				pthread_create(&mspHiloKernel, NULL, mspLanzarHiloKernel, NULL);
+				mspLanzarHiloKernel(socketNuevaConexion);
 				log_info(MSPlogger,"Hilo Kernel creado correctamente.");
 			}
 

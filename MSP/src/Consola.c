@@ -103,7 +103,7 @@ void consolaCrearSegmento() {
 	scanf("%d", &pid);
 	printf("Ingrese el tamanio del segmento a crear: ");
 	scanf("%d", &tamanio);
-	crearSegmento(pid, tamanio);
+	mspCrearSegmento(pid, tamanio);
 	getchar();
 }
 

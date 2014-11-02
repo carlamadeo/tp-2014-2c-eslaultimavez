@@ -8,13 +8,13 @@ void hacer_conexion_con_msp(t_kernel* self) {
 		log_error(self->loggerKernel, "Kernel: Error al crear socket con la MSP!");
 	}
 
-	if (!socket_connect( self->socketMSP, self->ipMsp, self->puertoMsp)) {
+	if (socket_connect( self->socketMSP, self->ipMsp, self->puertoMsp)==0) {
 		log_error(self->loggerKernel, "Kernel: Error al hacer el Boot con la MSP!");
-		perror("Kernel: Kernel: Error al hacer el Boot con la MSP!");
-
+	}else{
+		log_info(self->loggerKernel, "Kernel: Conectado con la MSP (IP:%s/Puerto:%d)!", self->ipMsp, self->puertoMsp);
 	}
 
-	log_info(self->loggerKernel, "Kernel: Conectado con la MSP (IP:%s/Puerto:%d)!", self->ipMsp, self->puertoMsp);
+
 
 	realizarHandshakeConMSP(self);
 
@@ -25,7 +25,9 @@ void realizarHandshakeConMSP(t_kernel* self) {
 
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
-	if (socket_sendPaquete(self->socketMSP->socket, CREAR_SEGMENTO, 0, NULL) > 0) {
+	//log_info(self->loggerKernel, "MATEE...");
+
+	if (socket_sendPaquete(self->socketMSP->socket, HANDSHAKE_KERNEL, 0, NULL) > 0) {
 		log_info(self->loggerKernel, "KERNEL se presenta a la MSP!");
 	}
 
@@ -39,7 +41,7 @@ void realizarHandshakeConMSP(t_kernel* self) {
 
 	char* code;
 	int a= 34;
-	int pid= 4000;
+	int pid= 1;
 	int tid= 53;
 	crearTCB(self, code,a, pid, tid);
 }
@@ -47,82 +49,67 @@ void realizarHandshakeConMSP(t_kernel* self) {
 
 t_programaEnKernel* crearTCB(t_kernel* self, char* codigoPrograma, int tamanioEnBytes, int pid, int tid){
 
-	int stack;
+	uint32_t stack;
 	t_programaEnKernel* programaEnElKernel = malloc( sizeof(t_programaEnKernel) );
 	log_info(self->loggerKernel, "Kernel: Crear un TCB.");
 
 	//t_medatada_program* metadata = metadata_desde_literal(codigoPrograma);
 
-	programaEnElKernel->PCB.pid=pid;
-	programaEnElKernel->PCB.tid= tid;
+	programaEnElKernel->TCB.pid=pid;
+	programaEnElKernel->TCB.tid= tid;
 
 	//ver porque rompre
 	//programaEnElKernel->PCB.puntero_instruccion = metadata->instruccion_inicio;
 
 
-	programaEnElKernel->PCB.base_segmento_codigo= pedirBaseAMSP(self,pid, codigoPrograma, tamanioEnBytes);
+	programaEnElKernel->TCB.base_segmento_codigo= kernelCrearSegmento(self,pid, tamanioEnBytes); //beso
 
-	if(programaEnElKernel->PCB.base_segmento_codigo == -1){
+
+	if(programaEnElKernel->TCB.base_segmento_codigo == -1){
 		finalizarProgramaEnPlanificacion(programaEnElKernel);
 		return NULL;
 	}
 
 
-	programaEnElKernel->PCB.base_stack = pedirBaseAMSP(self,pid, "", stack);
-	if(programaEnElKernel->PCB.base_stack == -1){
+	programaEnElKernel->TCB.base_stack = kernelCrearSegmento(self,pid, self->tamanioStack);
+	if(programaEnElKernel->TCB.base_stack == -1){
 		finalizarProgramaEnPlanificacion(programaEnElKernel);
 		return NULL;
 	}
 
-	programaEnElKernel->PCB.cursor_stack = programaEnElKernel->PCB.base_stack;
+	programaEnElKernel->TCB.cursor_stack = programaEnElKernel->TCB.base_stack;
 
 	//faltan todos los logs
-	log_info(self->loggerKernel, "PID %d TID: %d\n",programaEnElKernel->PCB.pid, programaEnElKernel->PCB.tid);
+	log_info(self->loggerKernel, "PID %d TID: %d\n",programaEnElKernel->TCB.pid, programaEnElKernel->TCB.tid);
 
 	return programaEnElKernel;
 }
 
 
-int pedirBaseAMSP(t_kernel* self,int pid, char* buffer, int tamanio){
+int kernelCrearSegmento(t_kernel* self,int pid, int tamanio){
+
 	int direccionLogica;
 	t_envio_num_EnKernel* datos = malloc(sizeof(t_envio_num_EnKernel));
 	datos->num = tamanio;
 	datos->pid = pid;
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
-	if (socket_sendPaquete(self->socketMSP->socket, BASE_MSP, sizeof(t_envio_num_EnKernel), datos) > 0) {
-		log_info(self->loggerKernel, "-Mando Tamaño del Segmento %d para el proceso %d!",datos->num,datos->pid);
+	if (socket_sendPaquete(self->socketMSP->socket, CREAR_SEGMENTO, sizeof(t_envio_num_EnKernel), datos) > 0) {
+		log_info(self->loggerKernel, "Kernel: Mando Tamaño del Segmento %d para el proceso %d!",datos->num,datos->pid);
+		printf("TOY aca");
 		if(socket_recvPaquete(self->socketMSP->socket, paquete) >= 0){
-			if(paquete->header.type == BASE){
+			if(paquete->header.type == CREAR_SEGMENTO){
 				datos = (t_envio_num_EnKernel*) paquete->data;
 				direccionLogica = datos->num;
-				log_info(self->loggerKernel, "RECIBIDOS DATOS: PID=%d / Indice Segmento=%d", datos->pid, direccionLogica);
-			}
-			if(paquete->header.type == ERROR_EXCEPCION){
-				return -1;
+				//log_info(self->loggerKernel, "RECIBIDOS DATOS: PID=%d / Indice Segmento=%d", datos->pid, direccionLogica);
+				log_info(self->loggerKernel, "RECIBIDOS DATOS");
 			}
 		}else{
+			log_info(self->loggerKernel, "KERNEL: ERROR DATOS NO RECIBIDOS");
 			return -1;
 		}
 	}
-	if(buffer!=""){
-		t_envio_bytes_EnKernel* bufferMsg = malloc(sizeof(t_envio_bytes_EnKernel));
-		bufferMsg->base = datos->num;
-		bufferMsg->offset = 0;
-		bufferMsg->pid = pid;
-		bufferMsg->tamanio = tamanio;
-		if(socket_sendPaquete(self->socketMSP->socket, BASE_MSP, sizeof(t_envio_bytes_EnKernel), bufferMsg) > 0){
-			if(socket_sendPaquete(self->socketMSP->socket, BASE, tamanio, buffer) > 0){
-				if(socket_recvPaquete(self->socketMSP->socket, paquete) >= 0){
-					if(paquete->header.type == ERROR_EXCEPCION){
-						log_info(self->loggerKernel, "Kernel: Error");
-					}
-				}
-			}else{
-				return -1;
-			}
-		}
-	}
+
 	free(paquete);
 	free(datos);
 	return direccionLogica;

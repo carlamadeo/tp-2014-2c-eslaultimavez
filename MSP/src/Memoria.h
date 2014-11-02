@@ -46,7 +46,7 @@ typedef struct{
 * Devuelve la direccion base del segmento creado.
 * Si no se puede crear el segmento devuelve -1
 */
-uint32_t crearSegmento(int pid, int tamanio);
+uint32_t mspCrearSegmento(int pid, int tamanio);
 
 /**
 * @NAME: crearSegmentoConSusPaginas

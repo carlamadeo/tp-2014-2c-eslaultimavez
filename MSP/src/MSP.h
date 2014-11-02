@@ -1,11 +1,14 @@
 #ifndef MSP_H_
 #define MSP_H_
 
-#include "Kernel.h"
+#include "mspKernel.h"
 #include "commons/collections/list.h"
 #include "commons/socketInBigBang.h"
 #include <arpa/inet.h>
 
+
+
+t_socket *socketKernel;
 sem_t mutex;
 t_list* lista_procesos;
 t_list* cola_paquetes;

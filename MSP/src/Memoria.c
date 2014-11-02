@@ -24,7 +24,7 @@ t_list *programas, *marcos, *marcosLibres, *marcosOcupados;
 *								--Comienzo Creacion Segmento--									 	 *
 \****************************************************************************************************/
 
-uint32_t crearSegmento(int pid, int tamanio){
+uint32_t mspCrearSegmento(int pid, int tamanio){
 
 	uint32_t direccionBase;
 	int cantidadPaginas = tamanio / TAMANIO_PAGINA;
