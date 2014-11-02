@@ -62,13 +62,13 @@ typedef struct {
 } t_handshake_cpu_kernel;
 
 typedef struct {
-		t_TCB PCB;
+		t_TCB TCB;
         int tamanioEnBytes;
         t_socket* socket;
 } t_programaEnKernel;
 
 typedef struct {
-		t_TCB PCB;
+		t_TCB TCB;
         int peso;
         t_socket* socket;
         int motivo;

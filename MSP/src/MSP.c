@@ -33,7 +33,7 @@ int main(int argc, char *argv[]){
 
 	log_info(MSPlogger, "Iniciando consola de la MSP...");
 
-	sem_init(&mutex, 0, 1);
+	//sem_init(&mutex, 0, 1);
 
 	if(!cargarConfiguracionMSP(argv[1])){
 		printf("Archivo de configuracion invalido\n");
@@ -55,10 +55,10 @@ int main(int argc, char *argv[]){
 		exit(EXIT_FAILURE);
 	}
 
-
+	pthread_join(mspConsolaHilo,NULL);
 	pthread_join(mspHilo, NULL);
 	log_info(MSPlogger, "Finalizando la consola de la MSP...");
-	pthread_cancel(mspConsolaHilo);
+
 
 
 
@@ -76,6 +76,7 @@ int mspLanzarhilo(){
 
 	log_info(MSPlogger, "Creando un hilo escucha...");
 
+
 	if (!(socketEscucha = socket_createServer(puertoMSP))) {
 		log_error(MSPlogger, "Error al crear socket Escucha: %s.", strerror(errno));
 		return EXIT_FAILURE;
@@ -90,29 +91,29 @@ int mspLanzarhilo(){
 
 	while(1){
 
-		socketNuevaConexion = socket_acceptClient(socketEscucha);
+			socketNuevaConexion = socket_acceptClient(socketEscucha);
 
-		t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-		socket_recvPaquete(socketNuevaConexion, paquete);
+			t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+			socket_recvPaquete(socketNuevaConexion, paquete);
 
-		if(paquete->header.type == HANDSHAKE_KERNEL){
-			socketKernel = socketNuevaConexion;
-			kernelDireccion = direccionCliente;
-			pthread_create(&mspHiloKernel, NULL, mspLanzarHiloKernel, NULL);
-			log_info(MSPlogger,"Hilo Kernel creado correctamente.");
+			if(paquete->header.type == HANDSHAKE_KERNEL){
+				socketKernel = socketNuevaConexion;
+				kernelDireccion = direccionCliente;
+				pthread_create(&mspHiloKernel, NULL, mspLanzarHiloKernel, NULL);
+				log_info(MSPlogger,"Hilo Kernel creado correctamente.");
+			}
+
+			if(paquete->header.type == HANDSHAKE_CPU){
+				socketCpus = socketNuevaConexion;
+				cpuDireccion = direccionCliente;
+				mspHiloCpus = realloc(mspHiloCpus, sizeof(pthread_t) * i + 1);
+				pthread_create(&mspHiloCpus[i], NULL, mspLanzarHiloCPU, (void *)socketCpus);
+				log_info(MSPlogger,"Hilo CPU creado correctamente.");
+				i++;
+			}
+
+			socket_freePaquete(paquete);
 		}
-
-		if(paquete->header.type == HANDSHAKE_CPU){
-			socketCpus = socketNuevaConexion;
-			cpuDireccion = direccionCliente;
-			mspHiloCpus = realloc(mspHiloCpus, sizeof(pthread_t) * i + 1);
-			pthread_create(&mspHiloCpus[i], NULL, mspLanzarHiloCPU, (void *)socketCpus);
-			log_info(MSPlogger,"Hilo CPU creado correctamente.");
-			i++;
-		}
-
-		socket_freePaquete(paquete);
-	}
 	return 0;
 }
 

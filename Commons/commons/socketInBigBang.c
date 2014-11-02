@@ -37,6 +37,8 @@ t_socket* socket_createServer(int port)
 		return NULL;
 	}
 
+
+	//printf("socket_createServer: %d\n", socketServer->descriptor);
 	return socketServer;
 }
 
@@ -90,7 +92,7 @@ int socket_connect(t_socket_client *cliente, char *ipServer, int portServer) {
 
 	cliente->socketServer = socket_getServerFromAddress(socketAddress);
 
-	return 1;
+	return cliente->socket->descriptor;
 }
 
 /*
