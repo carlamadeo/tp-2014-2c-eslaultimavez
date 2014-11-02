@@ -1,5 +1,5 @@
 #include "Memoria.h"
-#include "mspKernel.h"
+#include "Kernel.h"
 #include "commons/log.h"
 #include "commons/socketInBigBang.h"
 #include "commons/protocolStructInBigBang.h"

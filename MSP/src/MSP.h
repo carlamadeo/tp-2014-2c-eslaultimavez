@@ -1,7 +1,7 @@
 #ifndef MSP_H_
 #define MSP_H_
 
-#include "mspKernel.h"
+#include "Kernel.h"
 #include "commons/collections/list.h"
 #include "commons/socketInBigBang.h"
 #include <arpa/inet.h>

@@ -10,6 +10,7 @@
 #include "commons/log.h"
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 extern t_log *MSPlogger;
 extern t_list *programas;
@@ -58,28 +59,28 @@ void *mspLanzarhiloMSPCONSOLA() {
 
 			case 4:
 				system("clear");
-				//consolaLeerMemoria();
+				consolaLeerMemoria();
 				printf("\nPresione ENTER para volver al menu ");
 				getchar();
 				break;
 
 			case 5:
 				system("clear");
-				//imprimirTablaDeSegmentos();
+				imprimirTablaDeSegmentos();
 				printf("\nPresione ENTER para volver al menu ");
 				getchar();
 				break;
 
 			case 6:
 				system("clear");
-				//consolaImprimirTablaDePaginas();
+				consolaImprimirTablaDePaginas();
 				printf("\nPresione ENTER para volver al menu ");
 				getchar();
 				break;
 
 			case 7:
 				system("clear");
-				//imprimirMarcos();
+				imprimirMarcos();
 				printf("\nPresione ENTER para volver al menu ");
 				getchar();
 				break;
@@ -145,7 +146,7 @@ void consolaEscribirMemoria() {
 	free(texto);
 	getchar();
 }
-/*
+
 void consolaLeerMemoria() {
 	int pid;
 	uint32_t direccionVirtual = 0;
@@ -162,7 +163,7 @@ void consolaLeerMemoria() {
 
 	leido = malloc(sizeof(char)*TAMANIO_PAGINA + 1);
 
-	leerMemoria(pid, direccionVirtual, tamanio, leido);
+	mspLeerMemoria(pid, direccionVirtual, tamanio, leido);
 
 	free(leido);
 	getchar();
@@ -298,6 +299,6 @@ void imprimirMarcos() {
 	}
 
 	getchar();
-}*/
+}
 
 
