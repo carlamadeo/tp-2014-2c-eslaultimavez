@@ -33,7 +33,6 @@ void *mspLanzarhiloMSPCONSOLA() {
 
 		scanf("%d", &opcion);
 
-		printf("la opcion es %d\n", opcion);
 		switch (opcion)
 		{
 			case 1:
@@ -129,11 +128,9 @@ void consolaEscribirMemoria() {
 	printf("\n###################ESCRIBIR MEMORIA###################\n\n");
 	printf("Ingrese el numero PID del programa: ");
 	scanf("%d", &pid);
-	while(getchar() != '\n');
 
 	printf("Ingrese la direccion virtual donde desea escribir: ");
 	scanf("%d", &direccionVirtual);
-	while(getchar() != '\n');
 
 	printf("Ingrese el tamanio de lo que desea escribir: ");
 	scanf("%d", &tamanio);
@@ -162,7 +159,7 @@ void consolaLeerMemoria() {
 	printf("Ingrese el tamanio del contenido a leer: ");
 	scanf("%d", &tamanio);
 
-	leido = malloc(sizeof(char)*tamanio + 1);
+	leido = malloc(sizeof(char)*TAMANIO_PAGINA + 1);
 
 	leerMemoria(pid, direccionVirtual, tamanio, leido);
 

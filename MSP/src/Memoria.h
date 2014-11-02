@@ -52,7 +52,7 @@ uint32_t crearSegmento(int pid, int tamanio);
 * @NAME: crearSegmentoConSusPaginas
 * @DESC: Crea el segmento con sus paginas
 */
-uint32_t crearSegmentoConSusPaginas(int pid, int tamanio, int cantidadPaginas);
+uint32_t crearSegmentoConSusPaginas(int pid, int cantidadPaginas);
 
 /**
 * @NAME: destruirSegmento
