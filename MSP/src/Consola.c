@@ -58,28 +58,28 @@ void *mspLanzarhiloMSPCONSOLA() {
 
 			case 4:
 				system("clear");
-				consolaLeerMemoria();
+				//consolaLeerMemoria();
 				printf("\nPresione ENTER para volver al menu ");
 				getchar();
 				break;
 
 			case 5:
 				system("clear");
-				imprimirTablaDeSegmentos();
+				//imprimirTablaDeSegmentos();
 				printf("\nPresione ENTER para volver al menu ");
 				getchar();
 				break;
 
 			case 6:
 				system("clear");
-				consolaImprimirTablaDePaginas();
+				//consolaImprimirTablaDePaginas();
 				printf("\nPresione ENTER para volver al menu ");
 				getchar();
 				break;
 
 			case 7:
 				system("clear");
-				imprimirMarcos();
+				//imprimirMarcos();
 				printf("\nPresione ENTER para volver al menu ");
 				getchar();
 				break;
@@ -102,7 +102,7 @@ void consolaCrearSegmento() {
 	scanf("%d", &pid);
 	printf("Ingrese el tamanio del segmento a crear: ");
 	scanf("%d", &tamanio);
-	crearSegmento(pid, tamanio);
+	mspCrearSegmento(pid, tamanio);
 	getchar();
 }
 
@@ -115,7 +115,7 @@ void consolaDestruirSegmento() {
 	scanf("%d", &pid);
 	printf("Ingrese la direccion base del segmento a destruir: ");
 	scanf("%d", &direccionBase);
-	destruirSegmento(pid, direccionBase);
+	mspDestruirSegmento(pid, direccionBase);
 	getchar();
 }
 
@@ -124,6 +124,7 @@ void consolaEscribirMemoria() {
 	uint32_t direccionVirtual = 0;
 	int tamanio;
 	char *texto = malloc(sizeof(char)*TAMANIO_PAGINA + 1);
+	memset(texto, 0, sizeof(char)*TAMANIO_PAGINA + 1);
 
 	printf("\n###################ESCRIBIR MEMORIA###################\n\n");
 	printf("Ingrese el numero PID del programa: ");
@@ -139,12 +140,12 @@ void consolaEscribirMemoria() {
 	printf("Ingrese lo que desea escribir: ");
 	fgets(texto, TAMANIO_PAGINA, stdin);
 
-	escribirMemoria(pid, direccionVirtual, texto, tamanio);
+	mspEscribirMemoria(pid, direccionVirtual, texto, tamanio);
 
 	free(texto);
 	getchar();
 }
-
+/*
 void consolaLeerMemoria() {
 	int pid;
 	uint32_t direccionVirtual = 0;
@@ -297,6 +298,6 @@ void imprimirMarcos() {
 	}
 
 	getchar();
-}
+}*/
 
 

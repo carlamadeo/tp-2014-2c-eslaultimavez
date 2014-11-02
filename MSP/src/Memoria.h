@@ -46,7 +46,8 @@ typedef struct{
 * Devuelve la direccion base del segmento creado.
 * Si no se puede crear el segmento devuelve -1
 */
-uint32_t crearSegmento(int pid, int tamanio);
+uint32_t mspCrearSegmento(int pid, int tamanio);
+
 
 /**
 * @NAME: crearSegmentoConSusPaginas
@@ -60,7 +61,13 @@ uint32_t crearSegmentoConSusPaginas(int pid, int cantidadPaginas);
 * Si alguna pagina del segmento se encontraba en memoria la elimina de memoria
 * Si alguna pagina del segmento se encontraba en disco la elimina del disco
 */
-void destruirSegmento(int pid, uint32_t direccionBase);
+void mspDestruirSegmento(int pid, uint32_t direccionBase);
+
+/**
+* @NAME: eliminarSegmentoDeListaDelPrograma
+* @DESC: Destruye el segmento determinado por numeroSegmento de la tabla de segmentos del programa
+*/
+void eliminarSegmentoDeListaDelPrograma(t_programa *programa, int numeroSegmento);
 
 /**
 * @NAME: borrarPaginasDeMemoriaSecundariaYPrimaria
@@ -87,7 +94,7 @@ void borrarPaginaDeDisco(int pid, int numeroSegmento, int numeroPagina);
 * Hace las validaciones de violaciones de memoria correspondientes
 * Devuelve true si pudo escribir, false si no pudo
 */
-bool escribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tamanio);
+bool mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tamanio);
 
 /**
 * @NAME: calcularCantidadPaginasNecesarias
@@ -114,7 +121,7 @@ void buscarPaginasYEscribirMemoria(int pid, uint32_t direccionVirtual, t_list *p
 * @DESC: Lee de la direccion virtual indicada y lo carga en leido.
 * Hace las validaciones de violaciones de memoria correspondientes
 */
-bool leerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido);
+bool mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido);
 
 /**
 * @NAME: buscarPaginasYLeerMemoria
@@ -156,6 +163,12 @@ int calculoNumeroPagina(uint32_t direccionLogica);
 */
 int calculoDesplazamiento(uint32_t direccionLogica);
 
+/**
+* @NAME: encontrarPrograma
+* @DESC: Busca el programa dentro de la lista de programas por el pid y devuelve el programa encontrado
+*/
+t_programa *encontrarPrograma(int pid);
+
 void borrarMarcoDeMemoria(t_marco *marco);
 void borrarSegmentosEnMemoria(int pid, t_list *paginas);
 void borrarSegmentosEnDisco(int pid, t_list *paginas);
@@ -167,9 +180,9 @@ t_marco *sustituirPaginaPorCLOCK_MODIFICADO();
 t_marco *sustituirPaginaPorFIFO();
 void corresponderMarcoAPagina(t_marco *marco, int *pid, int *numeroSegmento, int *numeroPagina);
 void llevarPaginaADisco(t_marco *marco, int pid, int numeroSegmento, int numeroPagina);
-t_programa *encontrarProgramaPorPid(int pid);
-t_segmento *encontrarSegmentoEnProgramaPorNumeroDeSegmento(t_programa *programa, int numeroSegmento);
-t_pagina *encontrarPaginaEnSegmentoPorNumeroDePagina(t_segmento *segmento, int numeroPagina);
+
+t_segmento *encontrarSegmento(t_programa *programa, int numeroSegmento);
+t_pagina *encontrarPagina(t_segmento *segmento, int numeroPagina);
 bool segmentoYPaginaPorDireccionVirtual(int pid, t_programa *programa, t_segmento *segmento, t_pagina *pagina, uint32_t direccionVirtual);
 bool paginaEstaEnMemoria(t_pagina *pagina);
 t_marco *encontrarMarcoPorPagina(t_pagina *pagina);

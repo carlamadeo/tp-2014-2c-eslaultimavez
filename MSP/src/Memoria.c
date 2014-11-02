@@ -3,7 +3,7 @@
  *
  *  Created on: 14/09/2014
  *      Author: utnso
- */
+*/
 
 #include "Memoria.h"
 #include "ConfigMSP.h"
@@ -20,11 +20,11 @@ uint16_t modoSustitucionPaginasMSP;
 t_list *programas, *marcos, *marcosLibres, *marcosOcupados;
 
 
-/****************************************************************************************************\
+/***************************************************************************************************\
 *								--Comienzo Creacion Segmento--									 	 *
-\****************************************************************************************************/
+\***************************************************************************************************/
 
-uint32_t crearSegmento(int pid, int tamanio){
+uint32_t mspCrearSegmento(int pid, int tamanio){
 
 	uint32_t direccionBase;
 	int cantidadPaginas = tamanio / TAMANIO_PAGINA;
@@ -61,18 +61,11 @@ uint32_t crearSegmento(int pid, int tamanio){
 
 uint32_t crearSegmentoConSusPaginas(int pid, int cantidadPaginas){
 
-	t_programa *programa = malloc(sizeof(t_programa));
 	t_segmento *segmento = malloc(sizeof(t_segmento));
-	t_segmento *segmentoAnterior = malloc(sizeof(t_segmento));
 	uint32_t direccionBase;
 	int i = 0;
 
-	bool matchPrograma(t_programa *unPrograma){
-		return unPrograma->pid == pid;
-	}
-
-	if (!list_is_empty(programas)){
-		programa = list_find(programas, matchPrograma);
+	t_programa *programa = encontrarPrograma(pid);
 
 		if(programa != NULL){
 
@@ -82,7 +75,7 @@ uint32_t crearSegmentoConSusPaginas(int pid, int cantidadPaginas){
 
 			else{
 				//Si el programa ya tiene segmentos, busco el anterior y en numero de segmento le pongo el numero del anterior + 1
-				segmentoAnterior = list_get(programa->tablaSegmentos, list_size(programa->tablaSegmentos) - 1);
+				t_segmento *segmentoAnterior = list_get(programa->tablaSegmentos, list_size(programa->tablaSegmentos) - 1);
 				segmento->numero = segmentoAnterior->numero + 1;
 			}
 
@@ -115,26 +108,19 @@ uint32_t crearSegmentoConSusPaginas(int pid, int cantidadPaginas){
 			log_info(MSPlogger, "Finalizando...");
 			return -1;
 		}
-
 	}
 
-	else return -1;
-}
 
-/****************************************************************************************************\
+/***************************************************************************************************\
 *								--Comienzo Destruccion Segmento--									 *
-\****************************************************************************************************/
+\***************************************************************************************************/
 
-void destruirSegmento(int pid, uint32_t direccionBase){
-
-	t_programa *programa = NULL;
-	t_segmento *segmento = NULL;
+void mspDestruirSegmento(int pid, uint32_t direccionBase){
 
 	int numeroSegmento = calculoNumeroSegmento(direccionBase);
 	int numeroPagina = calculoNumeroPagina(direccionBase);
 	int desplazamiento = calculoDesplazamiento(direccionBase);
 
-	//Direccion base es igual a NULL cuando
 	if (direccionBase == 0)
 		log_info(MSPlogger, "Comienzo de destruccion del Segmento con Direccion Base 0x00000000 para el PID %d... ", pid);
 	else
@@ -147,26 +133,22 @@ void destruirSegmento(int pid, uint32_t direccionBase){
 
 	else{
 
-		bool matchPrograma(t_programa *unPrograma){
-			return unPrograma->pid == pid;
-		}
-
-		programa = list_find(programas, matchPrograma);
+		t_programa *programa = encontrarPrograma(pid);
 
 		if(programa != NULL){
-			bool matchSegmento(t_segmento *unSegmento){
-				return unSegmento->numero == numeroSegmento;
-			}
 
-			segmento = list_find(programa->tablaSegmentos, matchSegmento);
+			t_segmento * segmento = encontrarSegmento(programa, numeroSegmento);
 
 			if(segmento != NULL){
 
 				borrarPaginasDeMemoriaSecundariaYPrimaria(pid, segmento);
-				list_remove_and_destroy_by_condition(programa->tablaSegmentos, matchSegmento, free);
+
+				eliminarSegmentoDeListaDelPrograma(programa, numeroSegmento);
+
 				//TODO Esto se corresponde con el TODO de crearSegmentoConSusPaginas, ver si van!
 				//cantidadMemoriaTotal += segmento->tamanio;
-				if (direccionBase == NULL)
+
+				if (direccionBase == 0)
 					log_info(MSPlogger, "Segmento destruido correctamente. PID: %d, Direccion Base: 0x00000000, Numero de Segmento: %d", pid, numeroSegmento);
 				else
 					log_info(MSPlogger, "Segmento destruido correctamente. PID: %d, Direccion Base: %0.8p, Numero de Segmento: %d", pid, direccionBase, numeroSegmento);
@@ -175,13 +157,25 @@ void destruirSegmento(int pid, uint32_t direccionBase){
 			else
 				log_error(MSPlogger, "No se encontro el segmento con base %0.8p para el programa con PID %d. No se hace nada. ", direccionBase, pid);
 		}
-
 		else
 			log_error(MSPlogger, "No se encontro el programa con PID %d. No se hace nada. ", pid);
 	}
 
 }
 
+void eliminarSegmentoDeListaDelPrograma(t_programa *programa, int numeroSegmento){
+
+	bool encontrarSegmento(t_segmento *unSegmento){
+		return unSegmento->numero == numeroSegmento;
+	}
+
+	t_segmento *segmento = list_find(programa->tablaSegmentos, encontrarSegmento);
+
+	list_destroy_and_destroy_elements(segmento->tablaPaginas, free);
+
+	list_remove_and_destroy_by_condition(programa->tablaSegmentos, encontrarSegmento, free);
+
+}
 
 void borrarPaginasDeMemoriaSecundariaYPrimaria(int pid, t_segmento *segmento){
 
@@ -249,29 +243,21 @@ void borrarPaginaDeDisco(int pid, int numeroSegmento, int numeroPagina){
 
 }
 
-/****************************************************************************************************\
+/***************************************************************************************************\
 *								--Comienzo Escribir Memoria-- 										 *
-\****************************************************************************************************/
+\***************************************************************************************************/
 
-bool escribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tamanio){
+bool mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tamanio){
 
-	uint32_t numeroSegmento, numeroPagina, desplazamiento;
-	int cantidadPaginas;
 	char *mostrarBuffer = malloc(sizeof(char)*TAMANIO_PAGINA + 1);
-	t_segmento *segmento = NULL;
-	t_programa *programa = NULL;
-	t_pagina *pagina = NULL;
+	int cantidadPaginas;
+
+	uint32_t numeroSegmento = calculoNumeroSegmento(direccionVirtual);
+	uint32_t numeroPagina = calculoNumeroPagina(direccionVirtual);
+	uint32_t desplazamiento = calculoDesplazamiento(direccionVirtual);
+
 	t_list *paginasAMemoria;
-
-	numeroSegmento = calculoNumeroSegmento(direccionVirtual);
-	numeroPagina = calculoNumeroPagina(direccionVirtual);
-	desplazamiento = calculoDesplazamiento(direccionVirtual);
-
-	bool matchPrograma(t_programa *unProgama){
-		return unProgama->pid == pid;
-	}
-
-	programa = list_find(programas, matchPrograma);
+	t_programa *programa = encontrarPrograma(pid);
 
 	//Compruebo que sea un PID valido
 	if(programa == NULL){
@@ -280,11 +266,8 @@ bool escribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int taman
 	}
 
 	else{
-		bool matchSegmento(t_segmento *unSegmento){
-			return unSegmento->numero == numeroSegmento;
-		}
 
-		segmento = list_find(programa->tablaSegmentos, matchSegmento);
+		t_segmento *segmento = encontrarSegmento(programa, numeroSegmento);
 
 		//Compruebo que el segmento corresponda a ese PID
 		if(segmento == NULL){
@@ -292,18 +275,14 @@ bool escribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int taman
 			return false;
 		}
 
-		else{
-			//Compruebo que no me soliciten escribir mas del tamanio que posee el segmento
+		//Compruebo que no me soliciten escribir mas del tamanio que posee el segmento
+		else {
 			if(tamanio > segmento->tamanio){
 				log_error(MSPlogger, "Se ha excedido el tamanio del segmento %d. Segmentation Fault", segmento->numero);
 				return false;
 			}
 
-			bool matchPagina(t_pagina *unaPagina){
-				return unaPagina->numero == numeroPagina;
-			}
-
-			pagina = list_find(segmento->tablaPaginas, matchPagina);
+			t_pagina *pagina = encontrarPagina(segmento, numeroPagina);
 
 			//Compruebo que la pagina pertenezca al segmento
 			if(pagina == NULL){
@@ -311,12 +290,11 @@ bool escribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int taman
 				return false;
 			}
 
+			//Escribo Memoria
 			else{
 
 				//Calculo la cantidad de paginas que necesito tener en memoria, ademas de la pagina encontrada por la direccionBase
 				cantidadPaginas = calcularCantidadPaginasNecesarias(tamanio, desplazamiento);
-
-				paginasAMemoria = list_create();
 
 				//Creo una lista con todas las paginas que debo pasar a memoria
 				paginasAMemoria = crearListaPaginasAPasarAMemoria(cantidadPaginas, pagina, segmento->tablaPaginas);
@@ -324,8 +302,8 @@ bool escribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int taman
 				buscarPaginasYEscribirMemoria(pid, direccionVirtual, paginasAMemoria, tamanio, buffer);
 
 				//Esto es para imprimir por pantalla lo que se escribio en memoria
-				memset(mostrarBuffer, 0, TAMANIO_PAGINA);printf("2\n");
-				memcpy(mostrarBuffer, buffer, tamanio);printf("3\n");
+				memset(mostrarBuffer, 0, TAMANIO_PAGINA);
+				memmove(mostrarBuffer, buffer, tamanio);
 
 				log_info(MSPlogger, "Se ha escrito correctamente en memoria: %s", mostrarBuffer);
 
@@ -337,6 +315,7 @@ bool escribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int taman
 		}
 	}
 }
+
 
 
 int calcularCantidadPaginasNecesarias(int tamanio, int desplazamiento){
@@ -359,12 +338,10 @@ int calcularCantidadPaginasNecesarias(int tamanio, int desplazamiento){
 
 t_list *crearListaPaginasAPasarAMemoria(int cantidadPaginas, t_pagina *pagina, t_list *paginas){
 
-	t_list *paginasAMemoria;
-	t_pagina *paginaSiguiente = malloc(sizeof(t_pagina));
 	int i;
 	int numeroPagina = pagina->numero;
 
-	paginasAMemoria = list_create();
+	t_list *paginasAMemoria = list_create();
 
 	list_add(paginasAMemoria, pagina);
 	for(i = 1; i <= cantidadPaginas; i++){
@@ -373,7 +350,7 @@ t_list *crearListaPaginasAPasarAMemoria(int cantidadPaginas, t_pagina *pagina, t
 			return unaPagina->numero == numeroPagina + i;
 		}
 
-		paginaSiguiente = list_find(paginas, matchPagina);
+		t_pagina *paginaSiguiente = list_find(paginas, matchPagina);
 
 		list_add(paginasAMemoria, paginaSiguiente);
 	}
@@ -384,7 +361,7 @@ t_list *crearListaPaginasAPasarAMemoria(int cantidadPaginas, t_pagina *pagina, t
 
 void buscarPaginasYEscribirMemoria(int pid, uint32_t direccionVirtual, t_list *paginasAMemoria, int tamanio, char *buffer){
 
-	t_marco *marco = malloc(sizeof(t_marco));
+	t_marco *marco;
 	uint32_t numeroSegmento = calculoNumeroSegmento(direccionVirtual);
 	uint32_t desplazamiento = calculoDesplazamiento(direccionVirtual);
 	int numeroMarco;
@@ -446,14 +423,17 @@ void buscarPaginasYEscribirMemoria(int pid, uint32_t direccionVirtual, t_list *p
 		contador++;
 	}
 
+	printf("Holewa %d\n", list_size(paginasAMemoria));
 	list_iterate(paginasAMemoria, iterarPaginasParaEscribir);
 }
 
-/****************************************************************************************************\
-* 								--Comienzo Leer Memoria-- 											 *
-\****************************************************************************************************/
 
-bool leerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido){
+/***************************************************************************************************\
+* 								--Comienzo Leer Memoria-- 											 *
+\***************************************************************************************************/
+
+
+bool mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido){
 
 	uint32_t numeroSegmento, numeroPagina, desplazamiento;
 	t_segmento *segmento = malloc(sizeof(t_segmento));
@@ -710,20 +690,20 @@ bool segmentoYPaginaPorDireccionVirtual(int pid, t_programa *programa, t_segment
 	int numeroSegmento = calculoNumeroSegmento(direccionVirtual);
 	int	numeroPagina = calculoNumeroPagina(direccionVirtual);
 
-	programa = encontrarProgramaPorPid(pid);
+	programa = encontrarPrograma(pid);
 
 	if(programa == NULL){
 		log_error(MSPlogger, "El programa con PID %d no existe", pid);
 		return false;
 	}
 	else{
-		segmento = encontrarSegmentoEnProgramaPorNumeroDeSegmento(programa, numeroSegmento);
+		segmento = encontrarSegmento(programa, numeroSegmento);
 		if(segmento == NULL){
 			log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
 			return false;
 		}
 		else{
-			pagina = encontrarPaginaEnSegmentoPorNumeroDePagina(segmento, numeroPagina);
+			pagina = encontrarPagina(segmento, numeroPagina);
 			if(pagina == NULL){
 				log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
 				return false;
@@ -993,18 +973,20 @@ int calculoDesplazamiento(uint32_t direccionLogica){
 	return (direccionLogica & 0xFF);
 }
 
-t_programa *encontrarProgramaPorPid(int pid){
+t_programa *encontrarPrograma(int pid){
 
 	bool matchPrograma(t_programa *unPrograma){
-		return unPrograma->pid == pid;
-	}
+			return unPrograma->pid == pid;
+		}
 
-	return list_find(programas, matchPrograma);
-
+		if (!list_is_empty(programas))
+			return list_find(programas, matchPrograma);
+		else
+			return NULL;
 }
 
 
-t_segmento * encontrarSegmentoEnProgramaPorNumeroDeSegmento(t_programa *programa, int numeroSegmento){
+t_segmento * encontrarSegmento(t_programa *programa, int numeroSegmento){
 
 	bool matchSegmento(t_segmento *unSegmento){
 		return unSegmento->numero == numeroSegmento;
@@ -1015,14 +997,14 @@ t_segmento * encontrarSegmentoEnProgramaPorNumeroDeSegmento(t_programa *programa
 }
 
 
-t_pagina *encontrarPaginaEnSegmentoPorNumeroDePagina(t_segmento *segmento, int numeroPagina){
+
+t_pagina *encontrarPagina(t_segmento *segmento, int numeroPagina){
 
 	bool matchPagina(t_pagina *unaPagina){
 		return unaPagina->numero == numeroPagina;
 	}
 
 	return list_find(segmento->tablaPaginas, matchPagina);
-
 }
 
 t_marco *encontrarMarcoPorPagina(t_pagina *pagina){
