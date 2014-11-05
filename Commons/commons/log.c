@@ -121,11 +121,11 @@ static void _log_write_in_level(t_log* logger, t_log_level level, const char* me
 		time = temporal_get_string_time();
 		thread_id = process_get_thread_id();
 
-		buffer = string_from_format("[%s] %s %s/(%d:%d): %s\n",
-                                log_level_as_string(level),
-                                time,
+		buffer = string_from_format("[%s] %s %s/(%d:%d): %s\n", 
+                                log_level_as_string(level), 
+                                time, 
                                 logger->program_name,
-				logger->pid,
+				logger->pid, 
                                 thread_id,
                                 message);
 
@@ -134,7 +134,7 @@ static void _log_write_in_level(t_log* logger, t_log_level level, const char* me
 		}
 
 		if (logger->is_active_console) {
-			txt_write_in_stdout(buffer);
+			txt_write_in_stdout(buffer, log_level_as_string(level) );
 		}
 
 		free(time);

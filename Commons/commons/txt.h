@@ -35,7 +35,7 @@ void txt_write_in_file(FILE* file, char* string);
 * @NAME: txt_write_in_stdout
 * @DESC: Imprime un mensaje en la salida estandar
 */
-void txt_write_in_stdout(char* string);
+void txt_write_in_stdout(char* string, char * level);
 
 /**
 * @NAME: txt_close_file
