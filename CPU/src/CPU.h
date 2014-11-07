@@ -20,6 +20,41 @@
 #include "codigoESO.h"
 //#include <commons/threadInBigBang.h>
 
+//Codigos ESO
+
+#define LOAD 1
+#define GETM 2
+#define SETM 3
+#define MOVR 4
+#define ADDR 5
+#define SUBR 6
+#define MULR 7
+#define MODR 8
+#define DIVR 9
+#define INCR 10
+#define DECR 11
+#define COMP 12
+#define CGEQ 13
+#define CLEQ 14
+#define GOTO 15
+#define JMPZ 16
+#define JPNZ 17
+#define INTE 18
+#define SHIF 19
+#define NOPP 20
+#define PUSH 21
+#define TAKE 22
+#define XXXX 23
+#define MALC 24
+#define FREE 25
+#define INNN 26
+#define INNC 27
+#define OUTN 28
+#define OUTC 29
+#define CREA 30
+#define JOIN 31
+#define BLOK 32
+#define WAKE 33
 
 /*
  * Estucturas para usar en CPU!
@@ -37,12 +72,14 @@
 			int32_t registro_de_programacion[4];
 		} t_TCB;
 
+		typedef struct{
+			t_TCB tcb;
+			t_list_TCB *tcb_proximo;
+		} t_list_TCB;
+
 		typedef struct {
-			t_TCB TCB;
-			int puertoConsola;
+			int pid;
 			int Quamtum;
-			char ipConsola[20];
-			t_socket* socket;
 		} t_consolaESO;
 
 
@@ -53,7 +90,7 @@
 
 		typedef struct {
 			u_int32_t numero;
-		} t_envio_numMSP;
+		} t_envio_num;
 
 		typedef struct {
 			int longitud;
@@ -122,6 +159,19 @@
 			int pid;
 			int tid;
 		} t_grabar_bytes;
+
+  /*definidos para serializar/deserializar */
+
+		typedef struct{
+			int tamanio;
+			char *data;
+		}t_paquete_MSP;
+
+		typedef struct{
+			int pid;
+			uint32_t direccion_virtual;
+		} t_instruccion;
+
 /*
  * Fin de las estucturas para comunicar CPU con MSP
  */
@@ -144,6 +194,10 @@
 
 
 t_TCB* tcb;
+t_list_TCB* primero;
+t_list_TCB* ultimo;
+t_list_TCB* TCBs;
+
 char * config_file;
 
 #define PATH_LOG "logs/trace.log" //Donde esta el archivo LOG
@@ -160,13 +214,12 @@ t_info_conexion info_conexion_MSP;
 t_info_conexion info_conexion_KERNEL;
 
 
-
 /*
  * Aqui se declaran las funciones
  */
 void cpuCargar_configuracionCPU();
-void cpuEjecutar_una_linea(char linea);
-void cpuProcesar_tcb(t_socket* socketDelKernel);
-int cpuDeterminarRegProg(char Registro);
-
+void cpuEjecutar_una_linea(int linea);
+void cpuProcesar_tcb(int pid);
+void cpuCambioDeContextoError();
+void cambioContexto(t_TCB* tcb);
 #endif /* CPU_H_ */

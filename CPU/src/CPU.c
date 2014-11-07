@@ -12,11 +12,9 @@
 #include "cpu_to_msp.h"
 #include "cpu_to_kernel.h"
 #include "codigoESO.h"
-#include "string.h"
-/*
- * En el main esta la logica principal, basicamente llamar a las funciones que hacen las tareas.
- * Tiene un par de errores para que las modifique, son errores de logica, así que metan mano y EXITOS chicos!
- */
+
+
+
 int main(void) {
 	logger = log_create(PATH_LOG, "CPU", 0, LOG_LEVEL_DEBUG); //Creo el archivo Log
 
@@ -24,7 +22,7 @@ int main(void) {
 	cpuCargar_configuracionCPU();
 
 	t_socket_conexion* socket_MSP 	  = cpuConectarConMPS();
-	t_socket_conexion* socket_kernel = cpuConectarConKernel();
+	t_socket_conexion* socket_kernel = conectarCPUConKernel();
 
 	t_socket_client* socketKernel = socket_kernel->socket_client;
 	t_socket_client* socketMSP 	  = socket_MSP->socket_client;
@@ -35,44 +33,49 @@ int main(void) {
 	if( socketMSP != NULL ){
 		log_debug(logger, "Conectado con MPS");
 		cpuRealizarHandshakeConMSP();
+	}else{
+		log_debug(logger, "Fallo conexion con MSP");
 	}
 
 	if( socketKernel != NULL ){
 		log_debug(logger, "Conectado con KERNEL");
 		cpuRealizarHandshakeConKernel();
-		//pregunte si hay un TCB para procesar, si hay: short existe_tcb_en_CPU =1;
+	}else{
+		log_debug(logger, "fallo conexion con KERNEL");
 	}
 
-	short existe_tcb_en_CPU =1; //tiene que decidir donde se pone este valor  cero y cuando se tiene que poner en uno de vuelta.
+	while(1){
+	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
+	if(socket_recvPaquete(socketDelKernel, paquete) >= 0){
+		if( paquete->header.type == CPU_NUEVO_TCB ){
+			t_list_TCB* nuevo=malloc(sizeof(t_list_TCB));
+			nuevo->tcb = (t_TCB)(paquete->data);
+			int pid=nuevo->tcb->pid;
+			if(primero==NULL){
+				primero=nuevo;
+				ultimo=nuevo;
+			}else{
+				ultimo->tcb_proximo=nuevo;
+				ultimo=nuevo;
 
-	while(existe_tcb_en_CPU){
-		//Recibo un TCB
-		t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+				}
+				cpuProcesar_tcb(pid);
 
-		if(socket_recvPaquete(socketDelKernel, paquete) >= 0){
-			if( paquete->header.type == 67 ){ //CPU_NUEVO_TCB
-				tcb = (t_TCB *) (paquete->data);
-				log_info(logger, "El program vuelve con PC = %d", tcb->puntero_instruccion);
-				log_info(logger, "TCB recibido con pid %d. Comienzo a ejecutar", tcb->pid);
-				cpuProcesar_tcb(socketDelKernel);
-				free(tcb);
-			} else {
-				log_error(logger, "Se recibio un codigo inesperado de KERNEL en main de cpu: %d", paquete->header.type);
-			}
 		} else {
-			log_info(logger, "Kernel ha cerrado su conexion");
-			printf("Kernel ha cerrado su conexion\n");
-			exit(-1);
+			log_error(logger, "Se recibio un codigo inesperado de KERNEL en main de cpu: %d", paquete->header.type);
 		}
-
-		free(paquete);
-
-		//Sleep para que no se tilde
-		usleep(100);
-		existe_tcb_en_CPU =0; //para cortar con el while
-
+	} else {
+		log_info(logger, "Kernel ha cerrado su conexion");
+		printf("Kernel ha cerrado su conexion\n");
+		exit(-1);
 	}
+
+	free(paquete);
+	usleep(100);
+	}
+
+
 
 	/* De aca en adelante, se tiene que eliminar porque se desconecto la CPU */
 
@@ -81,8 +84,6 @@ int main(void) {
 
 	close(socketDelKernel->descriptor);
 	close(socketDelMSP->descriptor);
-
-	return 0;
 }
 
 
@@ -90,129 +91,240 @@ int main(void) {
 
 
 
+void cpuProcesar_tcb(int pid){
 
-/*
- * Cuando ya sepan que es lo que hace la CPU con los TCB que recibe recien ahí empiecen a ver
- * que es lo que tiene que procesar, con sus respectivas validaciones, y con quien se tiene que comunicar.
- *
- */
-void cpuProcesar_tcb(t_socket* socketDelKernel){
-	log_info(logger, "Comienzo a procesar el TCB %d", tcb->pid);
-	/*diferenciar entre TCB kernel o user*/
-	/*calculo la direccion real*/
-	uint32_t direccion_real;
-	/*pregunto si no me paso del segmento, caso afirmativo es segmentation fault*/
-	if(direccion_real<tcb->tamanio_segmento_codigo){
-	//suponiendo que 0 corresponde a que estoy enviando una direccion y estoy pidiendo los primeros 4 bytes
-	if (socket_sendPaquete(*socketDelMSP, 0, sizeof(int32_t), direccion_real)<=0){
-		log_info(logger, "Error en envio de direccion a la MSP %d", tcb->pid);
+	/*con el pid buscar en la lista el TCB asociado*/
 
-	t_socket_paquete *paquete_MSP = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-	if(socket_recvPaquete(socketDelKernel, paquete_MSP) >= 0){
-				if( paquete_MSP->header.type == 4 ){ //suponiendo que 4 es que estoy recibiendo los primeros 4 bytes de instruccion
-
-					char linea[4];
-					//char* linea = malloc(sizeof(char)*4);
-					//linea = (char)paquete_MSP->data;
-					log_info(logger, "recibo primeros 4 bytes de instruccion %d", tcb->puntero_instruccion);
-					/*ejecuto la linea, aca solo tengo los primeros 4 bytes, en el case dependiendo de que
-					 * instruccion se trate pido el resto de los paramtros*/
-					cpuEjecutar_una_linea(linea);
-				} else {
-					log_error(logger, "Se recibio un codigo inesperado de MSP: %d", paquete_MSP->header.type);
-				}
-	}else{
-		log_info(logger, "MSP ha cerrado su conexion");
-		printf("MSP ha cerrado su conexion\n");
-		exit(-1);
+	t_TCB tcb_local;
+	t_list_TCB auxiliar=primero;
+	while(auxiliar->tcb_proximo!=NULL){
+		if(auxiliar->tcb->pid==pid){
+			/*encontre el tcb en la lista*/
+			tcb_local=auxiliar->tcb;
+			break;
 		}
+
+		auxiliar=auxiliar->tcb_proximo;
+
+	}
+
+	if(tcb_local==NULL){
+		log_error(logger, "error de CPU");
+		exit(-1);
+	}
+
+	log_info(logger, "Comienzo a procesar el TCB %d", tcb->pid);
+
+	/*pregunto por KM del tcb a ejecutar*/
+	int seguir=1;
+	while(seguir){
+
+		/*hago el pedido de la instruccion */
+		char *data=malloc(sizeof(int)+sizeof(uint32_t)); /*pid+puntero_instruccion*/
+		t_paquete_MSP *pedir_instruccion = malloc(sizeof(t_paquete_MSP));
+		int soffset=0, stmp_size=0;
+
+		memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
+		soffset=stmp_size;
+		memcpy(data + soffset, &(tcb->puntero_instruccion), stmp_size=(sizeof(uint32_t)));
+		soffset+=stmp_size;
+
+		pedir_instruccion->tamanio = soffset;
+		pedir_instruccion->data = data;
+
+		/*pido los primeros 4 bytes especificados por PID+Puntero_Instruccion*/
+
+		if (socket_sendPaquete((t_socket*)socketDelMSP, 61, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
+			log_info(logger, "Error en envio de direccion a la MSP %d", tcb->pid);
+			//cpuCambioDeConextoError();
+		}
+
+		/*hago el recv de la peticion anterior*/
+
+		t_socket_paquete *paquete_MSP = malloc(sizeof(t_socket_paquete));
+		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+					if( paquete_MSP->header.type == 61 ){
+						log_info(logger, "recibo primeros 4 bytes de instruccion %d", tcb->puntero_instruccion);
+						/*reservo memoria en una variable linea para guardar los 4 caracteres de ESO*/
+						char *nombre_instruccion = malloc(sizeof(char)*4);
+						/*guardo en la variable linea los 4 caracteres que forman el nombre de la instruccion ESO*/
+						int doffset=0, dtemp_size=0;
+						memcpy(nombre_instruccion, paquete_MSP->data, dtemp_size=sizeof(char));
+						doffset=dtemp_size;
+						memcpy(nombre_instruccion + doffset, paquete_MSP->data + doffset, dtemp_size=sizeof(char));
+						doffset+=dtemp_size;
+						memcpy(nombre_instruccion + doffset, paquete_MSP->data + doffset, dtemp_size=sizeof(char));
+						doffset+=dtemp_size;
+						memcpy(nombre_instruccion + doffset, paquete_MSP->data + doffset, dtemp_size=sizeof(char));
+
+						char instrucciones_eso[]={'L','O','A','D','G','E','T','M','S','E','T','M','M','O','V','R','A','D','D','R','S','U','B','R','M','U','L','R','M','O','D','R','D','I','V','R','I','N','C','R','D','E','C','R','C','O','M','P','C','G','E','Q','C','L','E','Q','G','O','T','O','J','M','P','Z','J','P','N','Z','I','N','T','E','S','H','I','F','N','O','P','P','P','U','S','H','T','A','K','E','X','X','X','X','M','A','L','C','F','R','E','E','I','N','N','N','I','N','N','C','O','U','T','N','O','U','T','C','C','R','E','A','J','O','I','N','B','L','O','K','W','A','K','E','\0'};
+					    int letra=1, linea=0, i,largo=0;
+
+						while (instrucciones_eso[largo]!='\0'){
+						   //v=instruciones_eso[largo];
+						   i = strncmp( &(instrucciones_eso[largo]), nombre_instruccion,1 );
+						   if (i==0){
+							  largo++;
+							  i = strncmp( &(instrucciones_eso[largo]), nombre_instruccion+1, 1 );
+						      if(i==0){
+						    	 largo++;
+						    	 i = strncmp( &(instrucciones_eso[largo]), nombre_instruccion+2, 1 );
+						    	 if(i==0){
+						    		 largo++;
+						    		 i = strncmp( &(instrucciones_eso[largo]), nombre_instruccion+3, 1 );
+						    		 if(i==0){
+						    			 linea=letra;
+						    			 cpuEjecutar_una_linea(linea);
+						    			 break;
+						    				 }else{
+						    					 largo++;
+						    				 	 }
+
+						    	 }else{
+						    		 largo=largo+2;
+						    			}
+
+						      }else{
+						    	  largo=largo+3;
+						    	     }
+						   }else{
+							   largo=largo+4;
+							 	 }
+						  	 letra++;
+						   	} //fin de while
+
+						} else {
+						log_error(logger, "Se recibio un codigo inesperado de MSP: %d", paquete_MSP->header.type);
+
+						}
+		}else{
+				log_info(logger, "MSP ha cerrado su conexion");
+				printf("MSP ha cerrado su conexion\n");
+				exit(-1);
+			}
 
 	    free(paquete_MSP);
 		//Sleep para que no se tilde
 		usleep(100);
 
-		} else {
-			log_info(logger, "segmentation fault provocada por PID: %d", tcb->pid);}
-		}
-	}
 
-
-int cpuDeterminarRegProg(char registro){
-		switch (registro){
-		case 'A': return 0;
-		case 'B': return 1;
-		case 'C': return 2;
-		case 'D': return 3;
-		case 'E': return 4;
+		char *pid_enviar=malloc(sizeof(int));
+		*pid_enviar=tcb->pid;
+		if (socket_sendPaquete((t_socket*)socketDelKernel, CPU_TERMINE_UNA_LINEA, sizeof(int), pid_enviar)<=0){
+				log_info(logger, "fallo pedido de datos de Consola %d", tcb->pid);
 		}
 
-}
- void cpuEjecutar_una_linea(char linea){
 
-	switch(linea){
-		case "LOAD":
-			/*tengo que pedir a la MSP el resto de la instruccion*/
-			char registro_aux=string_substring(linea, 6, 6); //substring que contiene el registro
-			int registro=cpuDeterminarRegProg(registro_aux);
-			char numero_char=string_substring_from(linea,8); // numero a guardar en registro
-			int32_t numero=(int32_t)(numero_char-48);
-			LOAD(registro,numero);
-			break;
-		case "GETM":
-		case "SETM":
-		case "MOVR":
-		case "ADDR":/*tengo que pedir a la MSP el resto de la instruccion*/
-					char primer_registro_aux = string_substring(linea, 6, 6); //substring que contiene el 1registro
-					int primer_registro=cpuDeterminarRegProg(registro_aux);
-					char segundo_registro_aux=string_substring(linea, 9, 9); //substring que contiene el 2registro
-					int segundo_registro=cpuDeterminarRegProg(registro_aux);
-					ADDR(primer_registro,segundo_registro);
+		t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+
+			if(socket_recvPaquete(socketDelKernel, paquete) >= 0){
+				switch(paquete->header.type){
+				case CPU_SEGUI_EJECUTANDO:
+					seguir=1;
 					break;
-		case "SUBR":
-		case "MULR":
-		case "MODR":
-		case "DIVR":
-		case "INCR":
-		case "DECR":
-		case "COMP":
-		case "CGEQ":
-		case "CLEQ":
-		case "GOTO":
-		case "JMPZ":
-		case "JPNZ":
-		case "INTE":
-		case "FLCL":
-		case "SHIF":
-		case "NOPP":
-		case "PUSH":
-		case "TAKE":
-		case "XXXX":
-		case "MALC":
-		case "FREE":
-		case "INNN":
-		case "INNC":
-		case "OUTN":
-		case "OUTC":
-		case "CREA":
-		case "JOIN":
-		case "BLOK":
-		case "WAKE":
-	}
+				case KERNEL_FIN_TCB_QUANTUM:
+					cambioContexto(tcb);
+					seguir=0;
+					break;
+				case 87 /*desconexion_consola*/:
+					break;
+				}
+			}else{
+				log_info(logger, "KERNEL ha cerrado su conexion");
+				printf("KERNEL ha cerrado su conexion\n");
+				exit(-1);
+				}
+
+			}
+
+}
+
+void cambioContexto(t_TCB* tcb){
+	char *data=malloc(sizeof(t_TCB)); /*TCB*/
+	int stmp_size=0;
+	memcpy(data, tcb, stmp_size=(sizeof(t_TCB)));
+
+	/*antes de hacer el send, deberia actualizarce el STACK?*/
+	if (socket_sendPaquete((t_socket*)socketDelKernel, QUANTUM_TERMINADO,stmp_size, data)<=0){
+				log_info(logger, "falló cambio de conexto %d", tcb->pid);
+
+	}else{
+		log_info(logger, "falló cambio de conexto %d", tcb->pid);
+		}
 }
 
 
 
-/*
- * Cuando llegan aca tiene que hacer un super CASE e invocar la 34 funciones
- */
+
+ void cpuEjecutar_una_linea(int linea){
+
+		switch(linea){
+		case LOAD:
+			char *data=malloc(sizeof(int)+sizeof(uint32_t)); /*pid+puntero_instruccion*/
+			t_paquete_MSP *pedir_instruccion = malloc(sizeof(t_paquete_MSP));
+			int soffset=0, stmp_size=0;
+
+			memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
+			soffset=stmp_size;
+			memcpy(data + soffset, &(tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+			soffset+=stmp_size;
+
+			pedir_instruccion->tamanio = soffset;
+			pedir_instruccion->data = data;
+
+			if (socket_sendPaquete((t_socket*)socketDelMSP, 61, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
+						log_info(logger, "Error en envio de direccion a la MSP %d", tcb->pid);
+						//cpuCambioDeConextoError();
+					}
+
+			t_socket_paquete *paquete_MSP = malloc(sizeof(t_socket_paquete));
+			if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+						if( paquete_MSP->header.type == 61 ){
+							log_info(logger, "recibo primeros 4 bytes de instruccion %d", tcb->puntero_instruccion);
+
+						}
+
+
+						break;
+		case GETM: break;
+		case SETM: break;
+		case MOVR: break;
+		case ADDR: break;
+		case SUBR: break;
+		case MULR: break;
+		case MODR: break;
+		case DIVR: break;
+		case INCR: break;
+		case DECR: break;
+		case COMP: break;
+		case CGEQ: break;
+		case CLEQ: break;
+		case GOTO: break;
+		case JMPZ: break;
+		case JPNZ: break;
+		case INTE: break;
+		case SHIF: break;
+		case NOPP: break;
+		case PUSH: break;
+		case TAKE: break;
+		case XXXX: break;
+		case MALC: break;
+		case FREE: break;
+		case INNN: break;
+		case INNC: break;
+		case OUTN: break;
+		case OUTC: break;
+		case CREA: break;
+		case JOIN: break;
+		case BLOK: break;
+		default: break;
+
+		}
+ }
 
 
 
 
-
-/*
- * Esta es una funcion corta que solo
- */
 void cpuCargar_configuracionCPU(){
 	t_config * config = config_create(PATH_CONFIG);//apunta al archivo configuracion
 	if (!config_has_property(config, "IP_MSP")) {//Averigua si hay "IP" en archivo logs
