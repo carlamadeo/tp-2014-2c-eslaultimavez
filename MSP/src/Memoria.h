@@ -18,7 +18,7 @@
 #define REFERENCIADA_NOMODIFICADA 3
 #define REFERENCIADA_MODIFICADA 4
 
-#include "Programa.h"
+#include "mspPrograma.h"
 #include <stdint.h>
 
 typedef struct{

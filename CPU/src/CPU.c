@@ -50,10 +50,10 @@ int main(void) {
 	if(socket_recvPaquete(socketDelKernel, paquete) >= 0){
 		if( paquete->header.type == TCB_NUEVO ){
 			struct lista_TCBs* nuevo;
-			t_TCB *tcb_temp;
-			tcb_temp=(t_TCB *)paquete->data;
+			t_TCB_CPU *tcb_temp;
+			tcb_temp=(t_TCB_CPU *)paquete->data;
 			nuevo->tcb=tcb_temp;
-			int pid =nuevo->tcb->pid;
+			int pid =nuevo->tcb.pid;
 			if(primero==NULL){
 				primero=nuevo;
 				ultimo=nuevo;
@@ -91,7 +91,7 @@ int main(void) {
 
 
 
-void cpuProcesar_tcb(int pid, t_TCB* nuevo){
+void cpuProcesar_tcb(int pid, t_TCB_CPU* nuevo){
 
 	/*con el pid buscar en la lista el TCB asociado*/
 	/*struct lista_TCBs* auxiliar;
@@ -232,10 +232,10 @@ void cpuProcesar_tcb(int pid, t_TCB* nuevo){
 
 }
 
-void cambioContexto(t_TCB* tcb){
-	char *data=malloc(sizeof(t_TCB)); /*TCB*/
+void cambioContexto(t_TCB_CPU* tcb){
+	char *data=malloc(sizeof(t_TCB_CPU)); /*TCB*/
 	int stmp_size=0;
-	memcpy(data, tcb, stmp_size=(sizeof(t_TCB)));
+	memcpy(data, tcb, stmp_size=(sizeof(t_TCB_CPU)));
 
 	/*antes de hacer el send, deberia actualizarce el STACK?*/
 	if (socket_sendPaquete((t_socket*)socketDelKernel, KERNEL_FIN_TCB_QUANTUM,stmp_size, data)<=0){
@@ -261,7 +261,7 @@ int determinar_registro(char registro){
 }
 
 
- void ejecutar_instruccion(int linea, t_TCB* tcb_actual){
+ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 
 		char *data=malloc(sizeof(int)+sizeof(uint32_t)+sizeof(char)); /*pid+puntero_instruccion*/
 		t_paquete_MSP *pedir_instruccion = malloc(sizeof(t_paquete_MSP));

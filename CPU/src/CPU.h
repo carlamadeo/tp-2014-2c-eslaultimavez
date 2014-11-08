@@ -20,6 +20,18 @@
 #include "codigoESO.h"
 //#include <commons/threadInBigBang.h>
 
+typedef struct {
+			int pid;
+			int tid;
+			short km;
+			uint32_t base_segmento_codigo;
+			int tamanio_segmento_codigo;
+			uint32_t puntero_instruccion;
+			uint32_t base_stack;
+			uint32_t cursor_stack;
+			int32_t registro_de_programacion[4];
+		} t_TCB_CPU;
+
 //Codigos ESO
 
 #define LOAD 1
@@ -60,20 +72,10 @@
  * Estucturas para usar en CPU!
  * Estas son las primeras que tiene que cambiar y decidir si van o no van en el tp
  */
-		typedef struct {
-			int pid;
-			int tid;
-			short km;
-			uint32_t base_segmento_codigo;
-			int tamanio_segmento_codigo;
-			uint32_t puntero_instruccion;
-			uint32_t base_stack;
-			uint32_t cursor_stack;
-			int32_t registro_de_programacion[4];
-		} t_TCB;
+
 
 		struct lista_TCBs{
-			t_TCB tcb;
+			t_TCB_CPU tcb;
 			struct lista_TCBs *proximo;
 		};
 
@@ -180,7 +182,7 @@
 
 
 
-t_TCB* tcb;
+t_TCB_CPU* tcb;
 struct lista_TCBs* primero;
 struct lista_TCBs* ultimo;
 
@@ -205,8 +207,8 @@ t_info_conexion info_conexion_KERNEL;
  * Aqui se declaran las funciones
  */
 void cpuCargar_configuracionCPU();
-void ejecutar_instruccion(int linea, t_TCB* tcb);
-void cpuProcesar_tcb(int pid, t_TCB* tcb);
-void cambioContexto(t_TCB* tcb);
+void ejecutar_instruccion(int linea, t_TCB_CPU* tcb);
+void cpuProcesar_tcb(int pid, t_TCB_CPU* tcb);
+void cambioContexto(t_TCB_CPU* tcb);
 int determinar_registro(char registro);
 #endif /* CPU_H_ */

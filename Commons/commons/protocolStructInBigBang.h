@@ -18,6 +18,8 @@
 	#define HANDSHAKE_KERNEL 6
 
 
+	//Kernel
+	#define FINALIZAR_PROGRAMA_EXITO 200
 
 	//MSP
 	#define CREAR_SEGMENTO 10
@@ -48,14 +50,6 @@
 	//ERROR DE CPU
 	#define ERROR_POR_DESCONEXION_DE_CPU 110
 	#define ERROR_POR_DESCONEXION_DE_CONSOLA 111
-
-
-	//Estructura para lo que quieran. Poner las structs necesarias.
-	typedef struct { //HANDSHAKE_PROGRAMACONSOLA
-		char* programaConsola;
-		int puertoProgramaConsola;
-	} t_info_programa_handshake;
-
 
 
 #endif /* PROTOCOLSTRUCT_H_ */

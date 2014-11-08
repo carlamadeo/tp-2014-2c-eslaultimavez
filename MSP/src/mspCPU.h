@@ -1,5 +1,5 @@
-#ifndef CPU_H_
-#define CPU_H_
+#ifndef MSP_CPU_H_
+#define MSP_CPU_H_
 
 
 #include <commons/socketInBigBang.h>

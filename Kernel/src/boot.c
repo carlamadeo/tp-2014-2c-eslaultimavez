@@ -43,11 +43,11 @@ void realizarHandshakeConMSP(t_kernel* self) {
 	int a= 34;
 	int pid= 1;
 	int tid= 53;
-	crearTCB(self, code,a, pid, tid);
+	crearTCBKERNEL(self, code,a, pid, tid);
 }
 
 
-t_programaEnKernel* crearTCB(t_kernel* self, char* codigoPrograma, int tamanioEnBytes, int pid, int tid){
+void crearTCBKERNEL(t_kernel* self, char* codigoPrograma, int tamanioEnBytes, int pid, int tid){
 
 	uint32_t stack;
 	t_programaEnKernel* programaEnElKernel = malloc( sizeof(t_programaEnKernel) );
@@ -67,14 +67,14 @@ t_programaEnKernel* crearTCB(t_kernel* self, char* codigoPrograma, int tamanioEn
 
 	if(programaEnElKernel->TCB.base_segmento_codigo == -1){
 		finalizarProgramaEnPlanificacion(programaEnElKernel);
-		return NULL;
+		//return NULL;
 	}
 
 
 	programaEnElKernel->TCB.base_stack = kernelCrearSegmento(self,pid, self->tamanioStack);
 	if(programaEnElKernel->TCB.base_stack == -1){
 		finalizarProgramaEnPlanificacion(programaEnElKernel);
-		return NULL;
+		//return NULL;
 	}
 
 	programaEnElKernel->TCB.cursor_stack = programaEnElKernel->TCB.base_stack;
@@ -82,7 +82,7 @@ t_programaEnKernel* crearTCB(t_kernel* self, char* codigoPrograma, int tamanioEn
 	//faltan todos los logs
 	log_info(self->loggerKernel, "PID %d TID: %d\n",programaEnElKernel->TCB.pid, programaEnElKernel->TCB.tid);
 
-	return programaEnElKernel;
+	//return programaEnElKernel;
 }
 
 
@@ -96,7 +96,7 @@ int kernelCrearSegmento(t_kernel* self,int pid, int tamanio){
 
 	if (socket_sendPaquete(self->socketMSP->socket, CREAR_SEGMENTO, sizeof(t_envio_num_EnKernel), datos) > 0) {
 		log_info(self->loggerKernel, "Kernel: Mando Tamaño del Segmento %d para el proceso %d!",datos->num,datos->pid);
-		printf("TOY aca");
+
 		if(socket_recvPaquete(self->socketMSP->socket, paquete) >= 0){
 			if(paquete->header.type == CREAR_SEGMENTO){
 				datos = (t_envio_num_EnKernel*) paquete->data;

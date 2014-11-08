@@ -1,5 +1,5 @@
 #include "Memoria.h"
-#include "Kernel.h"
+#include "mspKernel.h"
 #include "commons/log.h"
 #include "commons/socketInBigBang.h"
 #include "commons/protocolStructInBigBang.h"
@@ -11,7 +11,7 @@ extern t_log *MSPlogger;
 void *mspLanzarHiloKernel(t_socket  *socketKernel){
 	t_socket_paquete *paquete;
 
-
+	printf("SEND: %d\n", socketKernel->descriptor);
 	if (socket_sendPaquete(socketKernel, HANDSHAKE_MSP, 0, NULL) > 0)
 		log_info(MSPlogger, "MSP:Handshake con Kernel!");
 
@@ -33,18 +33,18 @@ void *mspLanzarHiloKernel(t_socket  *socketKernel){
 					t_envio_numMSP* datos = (t_envio_numMSP*) (paquete->data);
 					log_info(MSPlogger,"Abriendo el paquete de kernel, el paquete contiene PID: %d y tamaño : %d",datos->pid, datos->baseDelSegmento);
 
-					sem_wait(&mutex);
+					//sem_wait(&mutex);
 						uint32_t direccionBase = mspCrearSegmento(datos->pid,datos->baseDelSegmento);
 						t_envio_numMSP *datos2 =malloc(sizeof(t_envio_numMSP ));
 						datos2->pid=12;
 						datos2->baseDelSegmento=direccionBase;// aca es muy loco pero estoy cambiando un tamaño por un puntero:::: ideas de gonza canto!
 						if (socket_sendPaquete(socketKernel, CREAR_SEGMENTO, sizeof(t_envio_numMSP), datos) > 0) {
-								log_info(MSPlogger, "Se envia a kernel el inicio : %d del segmento creado para el programa :%d", datos2->baseDelSegmento,datos2->pid);
-
+							//log_info(MSPlogger, "Se envia a kernel el inicio : %d del segmento creado para el programa :%d", datos2->baseDelSegmento,datos2->pid);
+							log_info(MSPlogger, "Se envia a kernel mensaje CREAR_SEGMENTO ");
 						}
-								free(datos);
-					sem_post(&mutex);
-					printf("MSP:Mensaje Crear Segmento Enviado");
+							free(datos);
+					//sem_post(&mutex);
+					printf("MSP:Mensaje Crear Segmento Enviado\n");
 					break;
 				case DESTRUIR_SEGMENTO:
 					log_info(MSPlogger, "Kernel esta pidiendo destruir un segmento");
@@ -64,7 +64,7 @@ void *mspLanzarHiloKernel(t_socket  *socketKernel){
 			exit(-1);
 		}
 
-		socket_freePaquete(paquete);
+		//socket_freePaquete(paquete);
 	}//fin del while(1)
 	return NULL;
 }

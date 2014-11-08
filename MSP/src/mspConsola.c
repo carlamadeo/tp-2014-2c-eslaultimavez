@@ -5,7 +5,7 @@
  *      Author: utnso
  */
 
-#include "Consola.h"
+#include "mspConsola.h"
 #include "Memoria.h"
 #include "commons/log.h"
 #include <stdlib.h>

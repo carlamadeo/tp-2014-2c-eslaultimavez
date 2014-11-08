@@ -5,7 +5,7 @@
  *      Author: utnso
  */
 
-#include "Programa.h"
+#include "mspPrograma.h"
 #include <stdlib.h>
 
 extern t_list *programas;

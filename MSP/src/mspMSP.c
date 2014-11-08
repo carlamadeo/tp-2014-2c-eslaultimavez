@@ -17,7 +17,7 @@
 #include "commons/log.h"
 #include "ConfigMSP.h"
 #include "MSP.h"
-#include "CPU.h"
+#include "mspCPU.h"
 
 t_log *MSPlogger;
 extern int puertoMSP;
@@ -43,11 +43,11 @@ int main(int argc, char *argv[]){
 	lista_procesos = list_create();
 	cola_paquetes = list_create();
 
-	int mspConsolathreadNum = pthread_create(&mspConsolaHilo, NULL, &mspLanzarhiloMSPCONSOLA, NULL);
-	if(mspConsolathreadNum) {
-		log_error(MSPlogger, "Error - pthread_create() return code: %d\n", mspConsolathreadNum);
-		exit(EXIT_FAILURE);
-	}
+//	int mspConsolathreadNum = pthread_create(&mspConsolaHilo, NULL, &mspLanzarhiloMSPCONSOLA, NULL);
+//	if(mspConsolathreadNum) {
+//		log_error(MSPlogger, "Error - pthread_create() return code: %d\n", mspConsolathreadNum);
+//		exit(EXIT_FAILURE);
+//	}
 
 	int mspHiloNum = pthread_create(&mspHilo, NULL, (void*) mspLanzarhilo, NULL);
 	if(mspHiloNum) {
@@ -55,7 +55,7 @@ int main(int argc, char *argv[]){
 		exit(EXIT_FAILURE);
 	}
 
-	pthread_join(mspConsolaHilo,NULL);
+	//pthread_join(mspConsolaHilo,NULL);
 	pthread_join(mspHilo, NULL);
 	log_info(MSPlogger, "Finalizando la consola de la MSP...");
 
@@ -99,7 +99,7 @@ int mspLanzarhilo(){
 			if(paquete->header.type == HANDSHAKE_KERNEL){
 				socketKernel = socketNuevaConexion;
 				kernelDireccion = direccionCliente;
-				pthread_create(&mspHiloKernel, NULL, mspLanzarHiloKernel, NULL);
+				mspLanzarHiloKernel(socketKernel);
 				log_info(MSPlogger,"Hilo Kernel creado correctamente.");
 			}
 

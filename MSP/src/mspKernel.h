@@ -1,5 +1,5 @@
-#ifndef KERNEL_H_
-#define KERNEL_H_
+#ifndef MSP_KERNEL_H_
+#define MSP_KERNEL_H_
 
 #include <semaphore.h>
 #include "commons/socketInBigBang.h"

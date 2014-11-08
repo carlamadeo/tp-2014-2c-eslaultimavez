@@ -51,7 +51,7 @@ uint32_t mspCrearSegmento(int pid, int tamanio){
 	}
 
 	else {
-		log_info(MSPlogger, "Creando segmento...");
+		//log_info(MSPlogger, "Creando segmento...");
 		direccionBase = crearSegmentoConSusPaginas(pid, cantidadPaginas);
 	}
 

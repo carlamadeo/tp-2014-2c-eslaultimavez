@@ -40,7 +40,7 @@ typedef struct {
 	uint32_t base_stack;
 	uint32_t cursor_stack;
 	int32_t registro_de_programacion[4];
-} t_TCB;
+} t_TCB_Kernel;
 
 
 
@@ -62,13 +62,13 @@ typedef struct {
 } t_handshake_cpu_kernel;
 
 typedef struct {
-		t_TCB TCB;
+		t_TCB_Kernel TCB;
         int tamanioEnBytes;
         t_socket* socket;
 } t_programaEnKernel;
 
 typedef struct {
-		t_TCB TCB;
+		t_TCB_Kernel TCB;
         int peso;
         t_socket* socket;
         int motivo;
@@ -107,7 +107,8 @@ typedef struct {
 	t_log* loggerKernel;
 	t_log* loggerPlanificador;
 	t_log* loggerLoader;
-	int puertoKernel;
+	int puertoLoader;
+	int puertoPlanificador;
 	char* ipMsp;
 	int puertoMsp;
 	char* quamtum;
@@ -161,8 +162,6 @@ typedef char* t_variable_compartida;
 
 /*---------------------- Funciones del Kernel 6 -----------------------------------------------*/
 int kernel_imprimirListas();
-void kernel_comenzar_Planificador(void);
-void kernel_comenzar_Loader(void);
 void kernel_errorAlPrograma(t_socket* socket, int error);
 void kernel_finalizarPrograma2(t_programaEnKernel* programaEnKernel);
 void kernel_ponerCpuEnLibre(int descriptor);

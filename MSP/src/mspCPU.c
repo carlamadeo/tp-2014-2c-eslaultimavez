@@ -1,5 +1,5 @@
 #include "MSP.h"
-#include "CPU.h"
+#include "mspCPU.h"
 #include "commons/log.h"
 #include "commons/collections/list.h"
 #include <stdlib.h>
