@@ -72,15 +72,10 @@
 			int32_t registro_de_programacion[4];
 		} t_TCB;
 
-		typedef struct{
+		struct lista_TCBs{
 			t_TCB tcb;
-			t_list_TCB *tcb_proximo;
-		} t_list_TCB;
-
-		typedef struct {
-			int pid;
-			int Quamtum;
-		} t_consolaESO;
+			struct lista_TCBs *proximo;
+		};
 
 
 		typedef struct {
@@ -167,14 +162,6 @@
 			char *data;
 		}t_paquete_MSP;
 
-		typedef struct{
-			int pid;
-			uint32_t direccion_virtual;
-		} t_instruccion;
-
-/*
- * Fin de las estucturas para comunicar CPU con MSP
- */
 
 
 
@@ -194,9 +181,9 @@
 
 
 t_TCB* tcb;
-t_list_TCB* primero;
-t_list_TCB* ultimo;
-t_list_TCB* TCBs;
+struct lista_TCBs* primero;
+struct lista_TCBs* ultimo;
+
 
 char * config_file;
 
@@ -218,8 +205,8 @@ t_info_conexion info_conexion_KERNEL;
  * Aqui se declaran las funciones
  */
 void cpuCargar_configuracionCPU();
-void cpuEjecutar_una_linea(int linea);
-void cpuProcesar_tcb(int pid);
-void cpuCambioDeContextoError();
+void ejecutar_instruccion(int linea, t_TCB* tcb);
+void cpuProcesar_tcb(int pid, t_TCB* tcb);
 void cambioContexto(t_TCB* tcb);
+int determinar_registro(char registro);
 #endif /* CPU_H_ */
