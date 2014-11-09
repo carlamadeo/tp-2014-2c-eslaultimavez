@@ -141,7 +141,7 @@ bool mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido
 * @NAME: buscarPaginasYLeerMemoria
 * @DESC: Lee la memoria de los distintos marcos, recorriendo la lista de paginas y lo guarda en leido
 */
-void buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *paginasAMemoria, int tamanio, char *leido);
+bool buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *paginasAMemoria, int tamanio, char *leido);
 
 /**
 * @NAME: traerPaginaDeDiscoAMemoria
@@ -170,6 +170,10 @@ uint32_t calculoDireccionBase(int numeroSegmento);
 */
 t_programa *encontrarPrograma(int pid);
 
+t_segmento *encontrarSegmento(t_programa *programa, int numeroSegmento);
+t_pagina *encontrarPagina(t_segmento *segmento, int numeroPagina);
+t_marco *encontrarMarcoEnMarcosOcupados(int numeroMarco);
+
 void borrarMarcoDeMemoria(t_marco *marco);
 void borrarSegmentosEnMemoria(int pid, t_list *paginas);
 void borrarSegmentosEnDisco(int pid, t_list *paginas);
@@ -181,9 +185,6 @@ t_marco *sustituirPaginaPorCLOCK_MODIFICADO();
 t_marco *sustituirPaginaPorFIFO();
 void corresponderMarcoAPagina(t_marco *marco, int *pid, int *numeroSegmento, int *numeroPagina);
 void llevarPaginaADisco(t_marco *marco, int pid, int numeroSegmento, int numeroPagina);
-
-t_segmento *encontrarSegmento(t_programa *programa, int numeroSegmento);
-t_pagina *encontrarPagina(t_segmento *segmento, int numeroPagina);
 
 bool paginaEstaEnMemoria(t_pagina *pagina);
 t_marco *encontrarMarcoPorPagina(t_pagina *pagina);

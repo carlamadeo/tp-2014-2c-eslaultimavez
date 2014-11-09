@@ -12,9 +12,9 @@
 #include <stdint.h>
 #include <string.h>
 
-extern t_log *MSPlogger;
-extern t_list *programas;
-extern t_list *marcosLibres;
+t_log *MSPlogger;
+t_list *programas;
+t_list *marcosLibres;
 
 void *mspLanzarhiloMSPCONSOLA() {
 
@@ -124,8 +124,7 @@ void consolaEscribirMemoria() {
 	int pid;
 	uint32_t direccionVirtual = 0;
 	int tamanio;
-	char *texto = malloc(sizeof(char)*TAMANIO_PAGINA + 1);
-	memset(texto, 0, sizeof(char)*TAMANIO_PAGINA + 1);
+	char *texto;
 
 	printf("\n###################ESCRIBIR MEMORIA###################\n\n");
 	printf("Ingrese el numero PID del programa: ");
@@ -138,8 +137,11 @@ void consolaEscribirMemoria() {
 	scanf("%d", &tamanio);
 	while(getchar() != '\n');
 
+	texto = malloc(sizeof(char)*tamanio + 1);
+	memset(texto, 0, tamanio);
+
 	printf("Ingrese lo que desea escribir: ");
-	fgets(texto, TAMANIO_PAGINA, stdin);
+	fgets(texto, tamanio, stdin);
 
 	mspEscribirMemoria(pid, direccionVirtual, texto, tamanio);
 
@@ -183,7 +185,7 @@ void imprimirTablaDeSegmentos() {
 		void mostrarSegmento(t_segmento *unSegmento){
 			direccionBase = calculoDireccionBase(unSegmento->numero);
 
-			if(direccionBase == NULL)
+			if(direccionBase == 0)
 				log_info(MSPlogger,"Segmento#: %d | Tamanio: %d | Direccion Base: 0x00000000 | Pertenece a Programa: %d", unSegmento->numero, unSegmento->tamanio, pid);
 			else
 				log_info(MSPlogger,"Segmento#: %d | Tamanio: %d | Direccion Base: %0.8p | Pertenece a Programa: %d", unSegmento->numero, unSegmento->tamanio, direccionBase, pid);
@@ -208,8 +210,7 @@ void imprimirTablaDeSegmentos() {
 void consolaImprimirTablaDePaginas() {
 	int pid;
 	int numeroSegmento;
-	char *enMemoria;
-	t_programa *programa = malloc(sizeof(t_programa));
+	char *enMemoria = malloc(sizeof(char)*2 + 1);
 
 	printf("Ingrese el numero PID del programa: ");
 	scanf("%d", &pid);
@@ -225,7 +226,7 @@ void consolaImprimirTablaDePaginas() {
 	}
 
 	else{
-		programa = list_find(programas, matchPrograma);
+		t_programa *programa = list_find(programas, matchPrograma);
 
 		if(programa == NULL){
 			log_error(MSPlogger, "No existe el programa con PID %d", pid);
@@ -285,18 +286,18 @@ void imprimirMarcos() {
 		list_iterate(unPrograma->tablaSegmentos, iterarSegmento);
 	}
 
-	printf("\n----------------------------------------------Marcos Libres----------------------------------------------\n\n");
-	if(list_size(marcosLibres) > 0){
-		list_iterate(marcosLibres, mostrarMarcosLibres);
-	}
-	printf("\n---------------------------------------------Marcos Ocupados---------------------------------------------\n\n");
-	if(list_size(programas) > 0){
-		list_iterate(programas, iterarPrograma);
-	}
+	log_info(MSPlogger, "\n----------------------------------------------Marcos Libres----------------------------------------------\n\n");
 
-	if(cantidadMarcosOcupados == 0){
+	if(list_size(marcosLibres) > 0)
+		list_iterate(marcosLibres, mostrarMarcosLibres);
+
+	log_info(MSPlogger, "\n---------------------------------------------Marcos Ocupados---------------------------------------------\n\n");
+
+	if(list_size(programas) > 0)
+		list_iterate(programas, iterarPrograma);
+
+	if(cantidadMarcosOcupados == 0)
 		printf("No hay marcos ocupados que mostrar\n");
-	}
 
 	getchar();
 }

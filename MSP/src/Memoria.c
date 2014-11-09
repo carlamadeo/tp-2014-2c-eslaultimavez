@@ -430,19 +430,10 @@ void buscarPaginasYEscribirMemoria(int pid, t_direccion direccionReal, t_list *p
 bool mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido){
 
 	t_direccion direccionReal = calculoDireccionReal(direccionVirtual);
-	t_segmento *segmento = malloc(sizeof(t_segmento));
-	t_programa *programa = malloc(sizeof(t_programa));
-	t_pagina *pagina = malloc(sizeof(t_pagina));
-	t_marco *marco = malloc(sizeof(t_marco));
 	t_list *paginasAMemoria;
 	int cantidadPaginas;
 
-
-	bool matchPrograma(t_programa *unPrograma){
-		return unPrograma->pid == pid;
-	}
-
-	programa = list_find(programas, matchPrograma);
+	t_programa *programa = encontrarPrograma(pid);
 
 	if(programa == NULL){
 		log_error(MSPlogger, "No se ha encontrado el programa con el PID %d", pid);
@@ -450,11 +441,8 @@ bool mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido
 	}
 
 	else{
-		bool matchSegmento(t_segmento *unSegmento){
-			return unSegmento->numero == direccionReal.numeroSegmento;
-		}
 
-		segmento = list_find(programa->tablaSegmentos, matchSegmento);
+		t_segmento *segmento = encontrarSegmento(programa, direccionReal.numeroSegmento);
 
 		if(segmento == NULL){
 			log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
@@ -468,11 +456,7 @@ bool mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido
 				return false;
 			}
 
-			bool matchPagina(t_pagina *unaPagina){
-				return unaPagina->numero == direccionReal.numeroPagina;
-			}
-
-			pagina = list_find(segmento->tablaPaginas, matchPagina);
+			t_pagina *pagina = encontrarPagina(segmento, direccionReal.numeroPagina);
 
 			if(pagina == NULL){
 				log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
@@ -483,14 +467,12 @@ bool mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido
 				//Calculo la cantidad de paginas que necesito tener en memoria, ademas de la pagina encontrada por la direccionBase
 				cantidadPaginas = calcularCantidadPaginasNecesarias(tamanio, direccionReal.desplazamiento);
 
-				paginasAMemoria = list_create();
 
 				//Creo una lista con todas las paginas que debo pasar a memoria
 				paginasAMemoria = crearListaPaginasAPasarAMemoria(cantidadPaginas, pagina, segmento->tablaPaginas);
 
-				buscarPaginasYLeerMemoria(pid, direccionReal, paginasAMemoria, tamanio, leido);
-
-				log_info(MSPlogger, "Se ha leido de memoria: %s", leido);
+				if(buscarPaginasYLeerMemoria(pid, direccionReal, paginasAMemoria, tamanio, leido))
+					log_info(MSPlogger, "Se ha leido de memoria: %s", leido);
 
 				list_destroy(paginasAMemoria);
 
@@ -499,16 +481,11 @@ bool mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido
 		}
 	}
 
-	free(programa);
-	free(pagina);
-	free(segmento);
-	free(marco);
 }
 
 
-void buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *paginasAMemoria, int tamanio, char *leido){
+bool buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *paginasAMemoria, int tamanio, char *leido){
 
-	t_marco *marco = malloc(sizeof(t_marco));
 	int tamanioParaPrimerMarco = TAMANIO_PAGINA - direccionReal.desplazamiento;
 	int cantidadPaginas = list_size(paginasAMemoria);
 	int numeroMarco;
@@ -530,19 +507,19 @@ void buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *pagin
 		//Si la pagina no se encuentra ni en disco ni en memoria la paso a un marco libre
 		else if(pagina->numeroMarco == NO_EN_MEMORIA){
 			log_info(MSPlogger, "La pagina no se encuentra en memoria");
-			marco = llevarPaginaAMemoria(pagina);
+			t_marco *nuevoMarco = llevarPaginaAMemoria(pagina);
+			numeroMarco = nuevoMarco->numero;
 		}
 
 		else
 			numeroMarco = pagina->numeroMarco;
 
-		bool matchMarco(t_marco *unMarco){
-			return unMarco->numero == numeroMarco;
-		}
+		t_marco *marco = encontrarMarcoEnMarcosOcupados(numeroMarco);
 
-		marco = list_find(marcosOcupados, matchMarco);
+		if(marco == NULL || numeroMarco != -1)
+			return false;
 
-		if(marco != NULL && numeroMarco != -1){
+		else{
 
 			seReferencioElMarco(marco);
 
@@ -578,6 +555,7 @@ void buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *pagin
 	}
 
 	list_iterate(paginasAMemoria, iterarPaginasParaLeer);
+	return true;
 }
 
 
@@ -588,9 +566,6 @@ int traerPaginaDeDiscoAMemoria(int pid, int numeroSegmento, int numeroPagina){
 	char linea[256];
 	char buffer[256];
 	t_marco *marco;
-	t_programa *programa;
-	t_segmento *segmento;
-	t_pagina *pagina;
 
 	log_info(MSPlogger, "Cargando pagina a memoria...");
 
@@ -598,33 +573,18 @@ int traerPaginaDeDiscoAMemoria(int pid, int numeroSegmento, int numeroPagina){
 	FILE* file = fopen(absolute_path, "r");
 
 	void copiarPaginaAMemoriaYEliminarDeDisco(t_marco *marco){
+
 		log_info(MSPlogger, "Copiando la pagina en memoria...");
 
 		memcpy(memoria + marco->inicio, buffer, TAMANIO_PAGINA);
-
 		borrarPaginaDeDisco(pid, numeroSegmento, numeroPagina);
 
-		log_info(MSPlogger, "Se ha cargado la pagina en memoria correctamente. Direccion de inicio %0.8p", marco->inicio + &memoria);
+		log_info(MSPlogger, "Se ha cargado la Pagina %d del Segmento %d del PID %d en memoria correctamente", numeroPagina, numeroSegmento, pid);
+
 		list_add(marcosOcupados, marco);
-
-		bool matchPrograma(t_programa *unPrograma){
-			return unPrograma->pid == pid;
-		}
-
-		programa = list_find(programas, matchPrograma);
-
-		bool matchSegmento(t_segmento *unSegmento){
-			return unSegmento->numero == numeroSegmento;
-		}
-
-		segmento = list_find(programa->tablaSegmentos, matchSegmento);
-
-		bool matchPagina(t_pagina *unaPagina){
-			return unaPagina->numero == numeroPagina;
-		}
-
-		pagina = list_find(segmento->tablaPaginas, matchPagina);
-
+		t_programa *programa = encontrarPrograma(pid);
+		t_segmento *segmento = encontrarSegmento(programa, numeroSegmento);
+		t_pagina *pagina = encontrarPagina(segmento, numeroPagina);
 		pagina->numeroMarco = marco->numero;
 
 	}
@@ -683,7 +643,7 @@ bool paginaEstaEnMemoria(t_pagina *pagina){
 
 t_marco *llevarPaginaAMemoria(t_pagina *pagina){
 
-	t_marco *marco = malloc(sizeof(t_marco));
+	t_marco *marco;
 
 	log_info(MSPlogger, "Se cargara la pagina en memoria...");
 
@@ -738,36 +698,36 @@ t_marco *sustituirPaginaPorCLOCK_MODIFICADO(){
 	int pid;
 	int numeroSegmento;
 	int numeroPagina;
+	t_marco *marco;
 
 	log_info(MSPlogger, "Comienzo de sustitucion de pagina por CLOCK MODIFICADO...");
 
-
-	bool matchMarcoEn1(t_marco *unMarco){
+	bool marcoNoRefNoMod(t_marco *unMarco){
 		return unMarco->categoriaClockModificado == NOREFERENCIADA_NOMODIFICADA;
 	}
 
-	t_marco *marco = list_find(marcosOcupados, matchMarcoEn1);
+	marco = list_find(marcosOcupados, marcoNoRefNoMod);
 
 	if(marco == NULL){
-		bool matchMarcoEn2(t_marco *unMarco){
+		bool marcoNoRefMod(t_marco *unMarco){
 			return unMarco->categoriaClockModificado == NOREFERENCIADA_MODIFICADA;
 		}
 
-		t_marco *marco = list_find(marcosOcupados, matchMarcoEn2);
+		marco = list_find(marcosOcupados, marcoNoRefMod);
 
 		if(marco == NULL){
-			bool matchMarcoEn3(t_marco *unMarco){
+			bool marcoRefNoMod(t_marco *unMarco){
 				return unMarco->categoriaClockModificado == REFERENCIADA_NOMODIFICADA;
 			}
 
-			t_marco *marco = list_find(marcosOcupados, matchMarcoEn3);
+			marco = list_find(marcosOcupados, marcoRefNoMod);
 
 			if(marco == NULL){
-				bool matchMarcoEn4(t_marco *unMarco){
+				bool marcoRefMod(t_marco *unMarco){
 					return unMarco->categoriaClockModificado == REFERENCIADA_MODIFICADA;
 				}
 
-				t_marco *marco = list_find(marcosOcupados, matchMarcoEn4);
+				marco = list_find(marcosOcupados, marcoRefMod);
 			}
 		}
 	}
@@ -776,7 +736,7 @@ t_marco *sustituirPaginaPorCLOCK_MODIFICADO(){
 		return unMarco->numero == marco->numero;
 	}
 
-	//Busco la pagina del marco para poder eliminarla del disco (necesito pid, numeroSegmento, numeroPagina)
+	//Busco la pagina que corresponde al marco para poder eliminarla del disco (necesito pid, numeroSegmento, numeroPagina)
 	corresponderMarcoAPagina(marco, &pid, &numeroSegmento, &numeroPagina);
 	log_info(MSPlogger, "Se reemplazara el marco %d...", marco->numero);
 	llevarPaginaADisco(marco, pid, numeroSegmento, numeroPagina);
@@ -905,7 +865,7 @@ void llevarPaginaADisco(t_marco *marco, int pid, int numeroSegmento, int numeroP
 char *armarPathArchivo(int pid, int numeroSegmento, int numeroPagina){
 
 	char *folder = "../swapp";
-	char *extension = ".txt";
+	char *extension = ".dat";
 	char *absolute_path = malloc(strlen(folder) + sizeof(pid) + sizeof(numeroSegmento) + sizeof(numeroPagina) + strlen(extension) + 1);
 
 	sprintf(absolute_path, "%s/%d%d%d%s", folder, pid, numeroSegmento, numeroPagina, extension);
@@ -960,7 +920,6 @@ t_segmento * encontrarSegmento(t_programa *programa, int numeroSegmento){
 }
 
 
-
 t_pagina *encontrarPagina(t_segmento *segmento, int numeroPagina){
 
 	bool matchPagina(t_pagina *unaPagina){
@@ -969,6 +928,17 @@ t_pagina *encontrarPagina(t_segmento *segmento, int numeroPagina){
 
 	return list_find(segmento->tablaPaginas, matchPagina);
 }
+
+
+t_marco *encontrarMarcoEnMarcosOcupados(int numeroMarco){
+
+	bool matchMarco(t_marco *unMarco){
+		return unMarco->numero == numeroMarco;
+	}
+
+	return list_find(marcosOcupados, matchMarco);
+}
+
 
 t_marco *encontrarMarcoPorPagina(t_pagina *pagina){
 
