@@ -12,21 +12,19 @@
 #include <stdint.h>
 #include "commons/string.h"
 #include <stdlib.h>
-#include "commons/collections/queue.h"
 #include <string.h>
 
 extern t_log *MSPlogger;
 
 t_config *MSPConfig;
 int puertoMSP;
-double cantidadMemoriaPrincipal, cantidadMemoriaSecundaria, cantidadMemoriaTotal;	  //Bytes
+double cantidadMemoriaPrincipal, cantidadMemoriaSecundaria;	  //Bytes
 uint16_t modoSustitucionPaginasMSP;
 
 char *memoria;
 t_list *programas; //TODO Solo para pruebas, eliminar y ver donde se crearia
-t_list *marcos;
 t_list *marcosLibres;
-t_list *marcosOcupados; //Para FIFO
+t_list *marcosOcupados;
 
 
 const char configProperties[][25] = {"PUERTO", "CANTIDAD_MEMORIA", "CANTIDAD_SWAP", "SUST_PAGS"};
@@ -65,14 +63,10 @@ bool cargarConfiguracionMSP(char *config) {
 
 	cantidadMemoriaSecundaria *= MEGABYTES_A_BYTES; //Los paso a Bytes
 
-	cantidadMemoriaTotal = cantidadMemoriaPrincipal + cantidadMemoriaSecundaria;
-
 	programas = list_create();
-	marcos = list_create();
 	marcosLibres = list_create();
 	marcosOcupados = list_create();
 
-	cargarMarcos(marcos);
 	cargarMarcos(marcosLibres);
 
 	t_programa *prog = malloc(sizeof(t_programa)); //TODO Solo para pruebas, eliminar!!
@@ -93,7 +87,7 @@ void cargarMarcos(t_list *listaMarcos){
 
 		marco->numero = i;
 		marco->inicio = inicioMarco;
-		marco->categoriaClockModificado = 0;
+		marco->categoriaClockModificado = NOREFERENCIADA_NOMODIFICADA;
 		list_add(listaMarcos, marco);
 		inicioMarco+=TAMANIO_PAGINA;
 	}
@@ -118,9 +112,8 @@ bool validarConfiguracionMSP(){
 
 void destruirConfiguracionMSP(){
 	list_destroy_and_destroy_elements(programas, free);
-	list_destroy_and_destroy_elements(marcos, free);
 	list_destroy_and_destroy_elements(marcosLibres, free);
-	queue_destroy_and_destroy_elements(marcosOcupados, free);
+	list_destroy_and_destroy_elements(marcosOcupados, free);
 
 	free(memoria);
 	config_destroy(MSPConfig);

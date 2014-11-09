@@ -38,12 +38,18 @@ typedef struct{
 	int categoriaClockModificado;
 }t_marco;
 
+typedef struct{
+	int numeroPagina;
+	int numeroSegmento;
+	int desplazamiento;
+}t_direccion;
+
 
 
 /**
 * @NAME: crearSegmento
-* @DESC: Verifica si hay espacio en MR o MV. Si hay, agrega a tabla de segmentos con su tabla de paginas.
-* Devuelve la direccion base del segmento creado.
+* @DESC: Verifica si hay espacio en MR o MV. Si hay, agrega a tabla de segmentos con su tabla de paginas
+* Devuelve la direccion base del segmento creado
 * Si no se puede crear el segmento devuelve -1
 */
 uint32_t mspCrearSegmento(int pid, int tamanio);
@@ -53,7 +59,13 @@ uint32_t mspCrearSegmento(int pid, int tamanio);
 * @NAME: crearSegmentoConSusPaginas
 * @DESC: Crea el segmento con sus paginas
 */
-uint32_t crearSegmentoConSusPaginas(int pid, int cantidadPaginas);
+uint32_t crearSegmentoConSusPaginas(int pid, int cantidadPaginas, int tamanio);
+
+/**
+* @NAME: cantidadMemoriaTotal
+* @DESC: Devuelve la cantidad de memoria total, es decir la suma de memoria real y secundaria
+*/
+double cantidadMemoriaTotal();
 
 /**
 * @NAME: destruirSegmento
@@ -96,6 +108,8 @@ void borrarPaginaDeDisco(int pid, int numeroSegmento, int numeroPagina);
 */
 bool mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tamanio);
 
+
+bool isSegmentationFault(int tamanioSegmento, t_direccion direccionReal, int tamanioSolicitado);
 /**
 * @NAME: calcularCantidadPaginasNecesarias
 * @DESC: Calcula la cantidad de paginas necesarias en memoria para leer/escribir la memoria
@@ -114,7 +128,7 @@ t_list *crearListaPaginasAPasarAMemoria(int cantidadPaginas, t_pagina *pagina, t
 * @NAME: buscarPaginasYEscribirMemoria
 * @DESC: Escribe la memoria con buffer en los distintos marcos, recorriendo la lista de paginas
 */
-void buscarPaginasYEscribirMemoria(int pid, uint32_t direccionVirtual, t_list *paginasAMemoria, int tamanio, char *buffer);
+void buscarPaginasYEscribirMemoria(int pid, t_direccion direccionReal, t_list *paginasAMemoria, int tamanio, char *buffer);
 
 /**
 * @NAME: leerMemoria
@@ -127,7 +141,7 @@ bool mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido
 * @NAME: buscarPaginasYLeerMemoria
 * @DESC: Lee la memoria de los distintos marcos, recorriendo la lista de paginas y lo guarda en leido
 */
-void buscarPaginasYLeerMemoria(int pid, uint32_t direccionVirtual, t_list *paginasAMemoria, int tamanio, char *leido);
+void buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *paginasAMemoria, int tamanio, char *leido);
 
 /**
 * @NAME: traerPaginaDeDiscoAMemoria
@@ -136,7 +150,11 @@ void buscarPaginasYLeerMemoria(int pid, uint32_t direccionVirtual, t_list *pagin
 */
 int traerPaginaDeDiscoAMemoria(int pid, int numeroSegmento, int numeroPagina);
 
-
+/**
+* @NAME: calculoDireccionReal
+* @DESC: Calcula el numero de pagina, numero de segmento y desplazamiento a partir de una direccionLogica
+*/
+t_direccion calculoDireccionReal(uint32_t direccionLogica);
 
 
 /**
@@ -145,23 +163,6 @@ int traerPaginaDeDiscoAMemoria(int pid, int numeroSegmento, int numeroPagina);
 */
 uint32_t calculoDireccionBase(int numeroSegmento);
 
-/**
-* @NAME: calculoNumeroSegmento
-* @DESC: Calcula el numero de segmento a partir de una direccion logica
-*/
-int calculoNumeroSegmento(uint32_t direccionLogica);
-
-/**
-* @NAME: calculoNumeroPagina
-* @DESC: Calcula el numero de pagina a partir de una direccion logica
-*/
-int calculoNumeroPagina(uint32_t direccionLogica);
-
-/**
-* @NAME: calculoNumeroPagina
-* @DESC: Calcula el desplazamiento a partir de una direccion logica
-*/
-int calculoDesplazamiento(uint32_t direccionLogica);
 
 /**
 * @NAME: encontrarPrograma
@@ -183,11 +184,16 @@ void llevarPaginaADisco(t_marco *marco, int pid, int numeroSegmento, int numeroP
 
 t_segmento *encontrarSegmento(t_programa *programa, int numeroSegmento);
 t_pagina *encontrarPagina(t_segmento *segmento, int numeroPagina);
-bool segmentoYPaginaPorDireccionVirtual(int pid, t_programa *programa, t_segmento *segmento, t_pagina *pagina, uint32_t direccionVirtual);
+
 bool paginaEstaEnMemoria(t_pagina *pagina);
 t_marco *encontrarMarcoPorPagina(t_pagina *pagina);
 t_marco *encontrarMarcoPorNumeroMarco(int numeroMarco);
 t_marco *llevarPaginaAMemoria(t_pagina *pagina);
 
+
+//int calculoNumeroSegmento(uint32_t direccionLogica);
+//int calculoNumeroPagina(uint32_t direccionLogica);
+//int calculoDesplazamiento(uint32_t direccionLogica);
+//bool segmentoYPaginaPorDireccionVirtual(int pid, t_programa *programa, t_segmento *segmento, t_pagina *pagina, uint32_t direccionVirtual);
 
 #endif /* MEMORIA_H_ */
