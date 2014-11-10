@@ -84,6 +84,8 @@ int socket_connect(t_socket_client *cliente, char *ipServer, int portServer) {
 	socketAddress.sin_addr.s_addr = inet_addr(ipServer);
 	socketAddress.sin_port = htons(portServer);
 
+	//printf("programa ip y puerto: %d\n",  portServer);
+
 	// Conectar el socket con la direccion 'socketInfo'.
 	if (connect(cliente->socket->descriptor, (struct sockaddr*) &socketAddress, sizeof(socketAddress))
 			!= 0) {
@@ -92,6 +94,7 @@ int socket_connect(t_socket_client *cliente, char *ipServer, int portServer) {
 
 	cliente->socketServer = socket_getServerFromAddress(socketAddress);
 
+	//printf(" numero importante %d\n",  cliente->socket->descriptor);
 	return cliente->socket->descriptor;
 }
 

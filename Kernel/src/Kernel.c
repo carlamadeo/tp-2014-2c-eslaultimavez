@@ -61,15 +61,15 @@ int main(int argc, char** argv) {
 			exit(EXIT_FAILURE);
 		}
 
-	iretThread = pthread_create( &PlanificadorHilo, NULL, (void*) kernel_comenzar_Planificador, self);
-	if(iretThread) {
-		printf(stderr,"Error - pthread_create() return code: %d\n",iretThread);
-		exit(EXIT_FAILURE);
-	}
+//	iretThread = pthread_create( &PlanificadorHilo, NULL, (void*) kernel_comenzar_Planificador, self);
+//	if(iretThread) {
+//		printf(stderr,"Error - pthread_create() return code: %d\n",iretThread);
+//		exit(EXIT_FAILURE);
+//	}
 
 
 	pthread_join(LoaderHilo, NULL);
-	pthread_join(PlanificadorHilo, NULL);
+	//pthread_join(PlanificadorHilo, NULL);
 	return EXIT_SUCCESS;
 }
 

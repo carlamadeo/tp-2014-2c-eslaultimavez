@@ -12,20 +12,13 @@ void hacer_conexion_con_msp(t_kernel* self) {
 		log_error(self->loggerKernel, "Kernel: Error al hacer el Boot con la MSP!");
 	}else{
 		log_info(self->loggerKernel, "Kernel: Conectado con la MSP (IP:%s/Puerto:%d)!", self->ipMsp, self->puertoMsp);
+		realizarHandshakeConMSP(self);
 	}
-
-
-
-	realizarHandshakeConMSP(self);
-
-
 }
 
 void realizarHandshakeConMSP(t_kernel* self) {
 
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-
-	//log_info(self->loggerKernel, "MATEE...");
 
 	if (socket_sendPaquete(self->socketMSP->socket, HANDSHAKE_KERNEL, 0, NULL) > 0) {
 		log_info(self->loggerKernel, "KERNEL se presenta a la MSP!");
@@ -88,7 +81,7 @@ void crearTCBKERNEL(t_kernel* self, char* codigoPrograma, int tamanioEnBytes, in
 
 int kernelCrearSegmento(t_kernel* self,int pid, int tamanio){
 
-	int direccionLogica;
+	u_int32_t direccionLogica;
 	t_envio_num_EnKernel* datos = malloc(sizeof(t_envio_num_EnKernel));
 	datos->num = tamanio;
 	datos->pid = pid;
