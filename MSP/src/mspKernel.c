@@ -6,57 +6,33 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-extern t_log *MSPlogger;
+t_log *MSPlogger;
 
 void *mspLanzarHiloKernel(t_socket  *socketKernel){
 	t_socket_paquete *paquete;
 
-	printf("SEND: %d\n", socketKernel->descriptor);
 	if (socket_sendPaquete(socketKernel, HANDSHAKE_MSP, 0, NULL) > 0)
 		log_info(MSPlogger, "MSP: Handshake con Kernel!");
 
 	else
-		log_error(MSPlogger, "MSP:Error al recibir los datos del Kernel!");
+		log_error(MSPlogger, "MSP: Error al recibir los datos del Kernel.");
 
 
-	//Aqui es en donde se comunican los procesos, importante que esto se defina lo antes posible!
 	while(1){
 
 		paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+
 		if (socket_recvPaquete(socketKernel, paquete) >= 0){
 
-			//por cada paquete se tiene que agregar un case con un numero distinto
 			switch(paquete->header.type){
 
 			case CREAR_SEGMENTO:
-				log_info(MSPlogger, "Kernel esta creando un segmento...");
-				t_envio_numMSP* datos = (t_envio_numMSP*) (paquete->data);
-				log_info(MSPlogger,"Abriendo el paquete de kernel, el paquete contiene PID: %d y tamaño : %d",datos->pid, datos->baseDelSegmento);
-
-				//sem_wait(&mutex);
-				uint32_t direccionBase = mspCrearSegmento(datos->pid,datos->baseDelSegmento);
-				t_envio_numMSP *datos2 =malloc(sizeof(t_envio_numMSP ));
-				datos2->pid=12;
-				datos2->baseDelSegmento=direccionBase;// aca es muy loco pero estoy cambiando un tamaño por un puntero:::: ideas de gonza canto!
-
-				if (socket_sendPaquete(socketKernel, CREAR_SEGMENTO, sizeof(t_envio_numMSP), datos) > 0) {
-					//log_info(MSPlogger, "Se envia a kernel el inicio : %d del segmento creado para el programa :%d", datos2->baseDelSegmento,datos2->pid);
-					log_info(MSPlogger, "Se envia a kernel mensaje CREAR_SEGMENTO ");
-				}
-
-				free(datos);
-				//sem_post(&mutex);
-				printf("MSP:Mensaje Crear Segmento Enviado\n");
+				crearSegmentoKernel(socketKernel, paquete);
 				break;
-
 			case DESTRUIR_SEGMENTO:
-				log_info(MSPlogger, "Kernel esta pidiendo destruir un segmento");
-				int datos_destruir = *(int*) (paquete->data);
-				log_info(MSPlogger, "Realizando destruir segmentos del programa: %d...",datos_destruir);
-
-				sem_wait(&mutex);
-				//	mspConsolaDestruirSegmentos(datos_destruir, 1);//si es 1 es de kernel validar!!!!
-				sem_post(&mutex);
+				destruirSegmentoKernel(socketKernel, paquete);
+				break;
+			default:
 				break;
 
 			}// fin del switch
@@ -73,4 +49,48 @@ void *mspLanzarHiloKernel(t_socket  *socketKernel){
 	}//fin del while(1)
 
 	return NULL;
+}
+
+void crearSegmentoKernel(t_socket  *socketKernel, t_socket_paquete *paquete){
+
+	t_socket_paquete *paqueteAKernel;
+
+	log_info(MSPlogger, "Kernel esta solicitando la creacion de un segmento...");
+
+	t_envio_numMSP* datosKernel = (t_envio_numMSP*) (paquete->data);
+
+	log_info(MSPlogger,"Abriendo el paquete del Kernel: El paquete contiene PID: %d, Tamaño : %d", datosKernel->pid, datosKernel->tamanio);
+
+	buscarCrearPrograma(datosKernel->pid);
+
+	//Esto envía ERROR_POR_TAMANIO_EXCEDIDO o ERROR_POR_MEMORIA_LLENA o ERROR_POR_NUMERO_NEGATIVO o ERROR_POR_SEGMENTO_INVALIDO
+	//o ERROR_POR_SEGMENTATION_FAULT o la base del segmento si no hubo ningún problema
+	paqueteAKernel->data = mspCrearSegmento(datosKernel->pid, datosKernel->tamanio);
+
+	if (socket_sendPaquete(socketKernel, CREAR_SEGMENTO, sizeof(paqueteAKernel), paqueteAKernel) > 0)
+		log_info(MSPlogger, "Los datos de creacion de Segmento se han enviado al Kernel correctamente");
+
+	free(datosKernel);
+	socket_freePaquete(paqueteAKernel);
+}
+
+void destruirSegmentoKernel(t_socket  *socketKernel, t_socket_paquete *paquete){
+
+	t_socket_paquete *paqueteAKernel;
+
+	log_info(MSPlogger, "Kernel esta solicitando la destruccion de un segmento...");
+
+	t_envio_numMSP* datosKernel = (t_envio_numMSP*) (paquete->data);
+
+	log_info(MSPlogger,"Abriendo el paquete del Kernel: El paquete contiene PID: %d, Tamaño : %d", datosKernel->pid, datosKernel->tamanio);
+
+	//Esto envía SIN_ERRORES si se destruyó el segmento correctamente
+	//o ERROR_POR_SEGMENTO_DESCONOCIDO si el segmento indicado es incorrecto
+	paqueteAKernel->data = mspDestruirSegmento(datosKernel->pid, datosKernel->tamanio);
+
+	if (socket_sendPaquete(socketKernel, DESTRUIR_SEGMENTO, sizeof(paqueteAKernel), paqueteAKernel) > 0)
+		log_info(MSPlogger, "Los datos de destruccion de Segmento se han enviado al Kernel correctamente");
+
+	free(datosKernel);
+	socket_freePaquete(paqueteAKernel);
 }

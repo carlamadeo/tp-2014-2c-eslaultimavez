@@ -7,8 +7,8 @@
 
 
 typedef struct{
-	u_int32_t baseDelSegmento;
-	u_int32_t pid;
+	int pid;
+	int tamanio;
 }t_envio_numMSP;
 
 sem_t mutex;
@@ -17,5 +17,8 @@ sem_t mutex;
 // Funciones propias de la MSP_TO_KERNEL
 void* mspLanzarHiloKernel(t_socket  *socketKernel);
 
+void crearSegmentoKernel(t_socket  *socketKernel, t_socket_paquete *paquete);
+
+void destruirSegmentoKernel(socketKernel, paquete);
 
 #endif /* KERNEL_H_ */

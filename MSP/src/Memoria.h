@@ -73,7 +73,7 @@ double cantidadMemoriaTotal();
 * Si alguna pagina del segmento se encontraba en memoria la elimina de memoria
 * Si alguna pagina del segmento se encontraba en disco la elimina del disco
 */
-void mspDestruirSegmento(int pid, uint32_t direccionBase);
+int mspDestruirSegmento(int pid, uint32_t direccionBase);
 
 /**
 * @NAME: eliminarSegmentoDeListaDelPrograma
@@ -141,7 +141,7 @@ bool mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido
 * @NAME: buscarPaginasYLeerMemoria
 * @DESC: Lee la memoria de los distintos marcos, recorriendo la lista de paginas y lo guarda en leido
 */
-bool buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *paginasAMemoria, int tamanio, char *leido);
+void buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *paginasAMemoria, int tamanio, char *leido);
 
 /**
 * @NAME: traerPaginaDeDiscoAMemoria

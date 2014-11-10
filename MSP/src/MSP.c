@@ -43,12 +43,12 @@ int main(int argc, char *argv[]){
 	lista_procesos = list_create();
 	cola_paquetes = list_create();
 
-/*	int mspConsolathreadNum = pthread_create(&mspConsolaHilo, NULL, &mspLanzarhiloMSPCONSOLA, NULL);
+	int mspConsolathreadNum = pthread_create(&mspConsolaHilo, NULL, &mspLanzarhiloMSPCONSOLA, NULL);
 	if(mspConsolathreadNum) {
 		log_error(MSPlogger, "Error - pthread_create() return code: %d\n", mspConsolathreadNum);
 		exit(EXIT_FAILURE);
 	}
-*/
+
 	int mspHiloNum = pthread_create(&mspHilo, NULL, (void*) mspLanzarhilo, NULL);
 	if(mspHiloNum) {
 		log_error(MSPlogger, "Error - pthread_create() return code: %d\n", mspHiloNum);
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]){
 
 	pthread_join(mspHilo, NULL);
 	log_info(MSPlogger, "Finalizando la consola de la MSP...");
-	//pthread_cancel(mspConsolathreadNum);
+	pthread_cancel(mspConsolathreadNum);
 
 	destruirConfiguracionMSP();
 

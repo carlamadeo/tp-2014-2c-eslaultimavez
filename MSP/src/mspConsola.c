@@ -181,6 +181,7 @@ void imprimirTablaDeSegmentos() {
 	}
 
 	else{
+
 		log_info(MSPlogger, "TABLA DE SEGMENTOS:");
 		void mostrarSegmento(t_segmento *unSegmento){
 			direccionBase = calculoDireccionBase(unSegmento->numero);
@@ -200,9 +201,9 @@ void imprimirTablaDeSegmentos() {
 
 		list_iterate(programas, mostrarPrograma);
 
-		if(cantSegmentos == 0){
+		if(cantSegmentos == 0)
 			log_info(MSPlogger, "No hay Segmentos. Nada que mostrar");
-		}
+
 	}
 	getchar();
 }

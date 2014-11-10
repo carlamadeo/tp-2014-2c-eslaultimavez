@@ -8,6 +8,7 @@
 #include "Memoria.h"
 #include "ConfigMSP.h"
 #include "commons/log.h"
+#include "commons/protocolStructInBigBang.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,19 +36,19 @@ uint32_t mspCrearSegmento(int pid, int tamanio){
 	if (tamanio > TAMANIO_MAX_SEGMENTO){
 		log_error(MSPlogger, "No se ha podido crear el Segmento: El tamanio ingresado es mayor al permitido");
 		log_info(MSPlogger, "Finalizando...");
-		direccionBase = -1;
+		direccionBase = ERROR_POR_TAMANIO_EXCEDIDO;
 	}
 
 	else if(tamanio <= 0){
 		log_error(MSPlogger, "No es posible crear un segmento de tamanio menor a 1");
 		log_info(MSPlogger, "Finalizando...");
-		direccionBase = -1;
+		direccionBase = ERROR_POR_NUMERO_NEGATIVO;
 	}
 
 	//TODO fijarse si se debe chequear con tamanio o con cantidadPaginas * TAMANIO_PAGINA
 	else if ((cantidadPaginas * TAMANIO_PAGINA) > cantidadMemoriaTotal()) {
 		log_error(MSPlogger, "Error de Memoria Llena");
-		direccionBase = -1;
+		direccionBase = ERROR_POR_MEMORIA_LLENA;
 	}
 
 	else {
@@ -117,7 +118,7 @@ double cantidadMemoriaTotal(){
  *								--Comienzo Destruccion Segmento--									 *
 \***************************************************************************************************/
 
-void mspDestruirSegmento(int pid, uint32_t direccionBase){
+int mspDestruirSegmento(int pid, uint32_t direccionBase){
 
 	t_direccion direccionReal = calculoDireccionReal(direccionBase);
 
@@ -129,6 +130,7 @@ void mspDestruirSegmento(int pid, uint32_t direccionBase){
 	//Compruebo que me hayan pasado la direccion base del segmento (pagina 0, desplazamiento 0)
 	if(direccionReal.numeroPagina != 0 || direccionReal.desplazamiento != 0){
 		log_error(MSPlogger, "No se encontro el segmento con base %0.8p para el programa con PID %d. No se hace nada. ", direccionBase, pid);
+		return ERROR_POR_SEGMENTO_DESCONOCIDO;
 	}
 
 	else{
@@ -151,12 +153,16 @@ void mspDestruirSegmento(int pid, uint32_t direccionBase){
 					log_info(MSPlogger, "Segmento destruido correctamente. PID: %d, Direccion Base: %0.8p, Numero de Segmento: %d", pid, direccionBase, direccionReal.numeroSegmento);
 			}
 
-			else
+			else{
 				log_error(MSPlogger, "No se encontro el segmento con base %0.8p para el programa con PID %d. No se hace nada. ", direccionBase, pid);
+				return ERROR_POR_SEGMENTO_DESCONOCIDO;
+			}
 		}
 		else
 			log_error(MSPlogger, "No se encontro el programa con PID %d. No se hace nada. ", pid);
 	}
+
+	return SIN_ERRORES;
 
 }
 
@@ -255,63 +261,51 @@ bool mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int ta
 		return false;
 	}
 
-	else{
+	t_segmento *segmento = encontrarSegmento(programa, direccionReal.numeroSegmento);
 
-		t_segmento *segmento = encontrarSegmento(programa, direccionReal.numeroSegmento);
-
-		//Compruebo que el segmento corresponda a ese PID
-		if(segmento == NULL){
-			log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
-			return false;
-		}
-
-		else {
-			//Compruebo que no me soliciten escribir mas alla de los limites del segmento
-			if(isSegmentationFault(segmento->tamanio, direccionReal, tamanio)){
-				log_error(MSPlogger, "Se ha excedido los limites del segmento %d. Segmentation Fault", segmento->numero);
-				return false;
-			}
-
-			t_pagina *pagina = encontrarPagina(segmento, direccionReal.numeroPagina);
-
-			//Compruebo que la pagina pertenezca al segmento
-			if(pagina == NULL){
-				log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
-				return false;
-			}
-
-			//Escribo Memoria
-			else{
-
-				//Calculo la cantidad de paginas que necesito tener en memoria, ademas de la pagina encontrada por la direccionBase
-				cantidadPaginas = calcularCantidadPaginasNecesarias(tamanio, direccionReal.desplazamiento);
-
-				//Creo una lista con todas las paginas que debo pasar a memoria
-				paginasAMemoria = crearListaPaginasAPasarAMemoria(cantidadPaginas, pagina, segmento->tablaPaginas);
-
-				buscarPaginasYEscribirMemoria(pid, direccionReal, paginasAMemoria, tamanio, buffer);
-
-				//Esto es para imprimir en el log lo que se escribio en memoria
-				memset(mostrarBuffer, 0, tamanio);
-				memmove(mostrarBuffer, buffer, tamanio);
-
-				log_info(MSPlogger, "Se ha escrito correctamente en memoria: %s", mostrarBuffer);
-
-				list_destroy(paginasAMemoria);
-
-				return true;
-			}
-		}
+	//Compruebo que el segmento corresponda a ese PID
+	if(segmento == NULL){
+		log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
+		return false;
 	}
 
+	//Compruebo que no me soliciten escribir mas alla de los limites del segmento
+	if(isSegmentationFault(segmento->tamanio, direccionReal, tamanio)){
+		log_error(MSPlogger, "Se ha excedido los limites del segmento %d. Segmentation Fault", segmento->numero);
+		return false;
+	}
+
+	t_pagina *pagina = encontrarPagina(segmento, direccionReal.numeroPagina);
+
+	//Compruebo que la pagina pertenezca al segmento
+	if(pagina == NULL){
+		log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
+		return false;
+	}
+
+	//Calculo la cantidad de paginas que necesito tener en memoria, ademas de la pagina encontrada por la direccionBase
+	cantidadPaginas = calcularCantidadPaginasNecesarias(tamanio, direccionReal.desplazamiento);
+
+	//Creo una lista con todas las paginas que debo pasar a memoria
+	paginasAMemoria = crearListaPaginasAPasarAMemoria(cantidadPaginas, pagina, segmento->tablaPaginas);
+
+	buscarPaginasYEscribirMemoria(pid, direccionReal, paginasAMemoria, tamanio, buffer);
+
+	//Esto es para imprimir en el log lo que se escribio en memoria
+	memset(mostrarBuffer, 0, tamanio);
+	memmove(mostrarBuffer, buffer, tamanio);
+	log_info(MSPlogger, "Se ha escrito correctamente en memoria: %s", mostrarBuffer);
+
+	list_destroy(paginasAMemoria);
+
 	free(mostrarBuffer);
+	return true;
 }
 
 bool isSegmentationFault(int tamanioSegmento, t_direccion direccionReal, int tamanioSolicitado){
 
-	if(tamanioSolicitado > tamanioSegmento -(direccionReal.numeroPagina * TAMANIO_PAGINA + direccionReal.desplazamiento)){
+	if(tamanioSolicitado > tamanioSegmento -(direccionReal.numeroPagina * TAMANIO_PAGINA + direccionReal.desplazamiento))
 		return true;
-	}
 
 	return false;
 }
@@ -372,50 +366,53 @@ void buscarPaginasYEscribirMemoria(int pid, t_direccion direccionReal, t_list *p
 
 		if(paginaEstaEnMemoria(pagina)){
 			marco = encontrarMarcoPorPagina(pagina);
-			seModificoElMarco(marco);
 		}
 
 		else if(pagina->numeroMarco == NO_EN_MEMORIA){
-			log_info(MSPlogger, "La pagina no se encuentra en memoria");
+			log_info(MSPlogger, "La pagina %d no se encuentra en memoria", pagina->numero);
 			marco = llevarPaginaAMemoria(pagina);
 		}
 
 		else{
-			log_info(MSPlogger, "La pagina se encuentra en memoria secundaria");
+			log_info(MSPlogger, "La pagina %d se encuentra en memoria secundaria", pagina->numero);
 			numeroMarco = traerPaginaDeDiscoAMemoria(pid, direccionReal.numeroSegmento, pagina->numero);
 			marco = encontrarMarcoPorNumeroMarco(numeroMarco);
 			pagina->numeroMarco = numeroMarco;
 		}
 
-		seReferencioElMarco(marco);
+		if(marco != NULL && marco != -1){
 
-		//Si debo escribir mas de una pagina debo saber en que posicion se encuentra esa pagina, para ver cuanto escribir
-		if(cantidadPaginas != 1){
+			seReferencioElMarco(marco);
+			seModificoElMarco(marco);
 
-			//Si es la primera pagina la que debo escribir, escribo desde desplazamiento hasta el final (tamanioParaPrimeraPagina)
-			if(contador == 1){
-				memmove(memoria + marco->inicio + direccionReal.desplazamiento, buffer, tamanioParaPrimeraPagina);
-				faltaEscribir -= tamanioParaPrimeraPagina;
-				posicionDondeLeer = TAMANIO_PAGINA - direccionReal.desplazamiento;
+			//Si debo escribir mas de una pagina debo saber en que posicion se encuentra esa pagina, para ver cuanto escribir
+			if(cantidadPaginas != 1){
+
+				//Si es la primera pagina la que debo escribir, escribo desde desplazamiento hasta el final (tamanioParaPrimeraPagina)
+				if(contador == 1){
+					memmove(memoria + marco->inicio + direccionReal.desplazamiento, buffer, tamanioParaPrimeraPagina);
+					faltaEscribir -= tamanioParaPrimeraPagina;
+					posicionDondeLeer = TAMANIO_PAGINA - direccionReal.desplazamiento;
+				}
+
+				//Si lo que queda por escribir supera o es igual a TAMANIO_PAGINA escribo toda la pagina
+				else if(faltaEscribir >= TAMANIO_PAGINA){
+					memmove(memoria + marco->inicio, buffer + tamanioParaPrimeraPagina, TAMANIO_PAGINA);
+					faltaEscribir -= TAMANIO_PAGINA;
+					posicionDondeLeer += TAMANIO_PAGINA;
+				}
+
+				//Si es la ultima pagina la que debo escribir, escribo lo que falta
+				else if(contador == cantidadPaginas){
+					memmove(memoria + marco->inicio, buffer + posicionDondeLeer, tamanio - faltaEscribir);
+				}
 			}
+			//Si solo debo esribir una pagina, escribo directo
+			else
+				memmove(memoria + marco->inicio + direccionReal.desplazamiento, buffer, tamanio);
 
-			//Si lo que queda por escribir supera o es igual a TAMANIO_PAGINA escribo toda la pagina
-			else if(faltaEscribir >= TAMANIO_PAGINA){
-				memmove(memoria + marco->inicio, buffer + tamanioParaPrimeraPagina, TAMANIO_PAGINA);
-				faltaEscribir -= TAMANIO_PAGINA;
-				posicionDondeLeer += TAMANIO_PAGINA;
-			}
-
-			//Si es la ultima pagina la que debo escribir, escribo lo que falta
-			else if(contador == cantidadPaginas){
-				memmove(memoria + marco->inicio, buffer + posicionDondeLeer, tamanio - faltaEscribir);
-			}
+			contador++;
 		}
-		//Si solo debo esribir una pagina, escribo directo
-		else
-			memmove(memoria + marco->inicio + direccionReal.desplazamiento, buffer, tamanio);
-
-		contador++;
 	}
 
 	list_iterate(paginasAMemoria, iterarPaginasParaEscribir);
@@ -440,73 +437,64 @@ bool mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido
 		return false;
 	}
 
-	else{
+	t_segmento *segmento = encontrarSegmento(programa, direccionReal.numeroSegmento);
 
-		t_segmento *segmento = encontrarSegmento(programa, direccionReal.numeroSegmento);
-
-		if(segmento == NULL){
-			log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
-			return false;
-		}
-
-		else{
-			//Compruebo que no me soliciten leer mas alla de los limites del segmento
-			if(isSegmentationFault(segmento->tamanio, direccionReal, tamanio)){
-				log_error(MSPlogger, "Se ha excedido el tamanio del segmento %d. Segmentation Fault", segmento->numero);
-				return false;
-			}
-
-			t_pagina *pagina = encontrarPagina(segmento, direccionReal.numeroPagina);
-
-			if(pagina == NULL){
-				log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
-				return false;
-			}
-
-			else{
-				//Calculo la cantidad de paginas que necesito tener en memoria, ademas de la pagina encontrada por la direccionBase
-				cantidadPaginas = calcularCantidadPaginasNecesarias(tamanio, direccionReal.desplazamiento);
-
-
-				//Creo una lista con todas las paginas que debo pasar a memoria
-				paginasAMemoria = crearListaPaginasAPasarAMemoria(cantidadPaginas, pagina, segmento->tablaPaginas);
-
-				if(buscarPaginasYLeerMemoria(pid, direccionReal, paginasAMemoria, tamanio, leido))
-					log_info(MSPlogger, "Se ha leido de memoria: %s", leido);
-
-				list_destroy(paginasAMemoria);
-
-				return true;
-			}
-		}
+	if(segmento == NULL){
+		log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
+		return false;
 	}
+	//Compruebo que no me soliciten leer mas alla de los limites del segmento
+	if(isSegmentationFault(segmento->tamanio, direccionReal, tamanio)){
+		log_error(MSPlogger, "Se ha excedido el tamanio del segmento %d. Segmentation Fault", segmento->numero);
+		return false;
+	}
+
+	t_pagina *pagina = encontrarPagina(segmento, direccionReal.numeroPagina);
+
+	if(pagina == NULL){
+		log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
+		return false;
+	}
+
+	//Calculo la cantidad de paginas que necesito tener en memoria, ademas de la pagina encontrada por la direccionBase
+	cantidadPaginas = calcularCantidadPaginasNecesarias(tamanio, direccionReal.desplazamiento);
+
+	//Creo una lista con todas las paginas que debo pasar a memoria
+	paginasAMemoria = crearListaPaginasAPasarAMemoria(cantidadPaginas, pagina, segmento->tablaPaginas);
+
+	buscarPaginasYLeerMemoria(pid, direccionReal, paginasAMemoria, tamanio, leido);
+
+	log_info(MSPlogger, "Se ha leido de memoria: %s", leido);
+
+	list_destroy(paginasAMemoria);
+
+	return true;
 
 }
 
 
-bool buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *paginasAMemoria, int tamanio, char *leido){
+void buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *paginasAMemoria, int tamanio, char *leido){
 
+	int numeroMarco, posicionDondeLeer;
 	int tamanioParaPrimerMarco = TAMANIO_PAGINA - direccionReal.desplazamiento;
 	int cantidadPaginas = list_size(paginasAMemoria);
-	int numeroMarco;
 	int contador = 1;
 	int faltaLeer = tamanio;
-	int posicionDondeLeer;
 
-	memset(leido, 0, TAMANIO_PAGINA);
+	memset(leido, 0, tamanio);
 
 	void iterarPaginasParaLeer(t_pagina *pagina){
 
 		//Si la pagina se encuentra en disco, la paso a un marco libre y la borro de disco
 		if(pagina->numeroMarco == EN_DISCO){
-			log_info(MSPlogger, "La pagina se encuentra en memoria secundaria");
+			log_info(MSPlogger, "La pagina %d se encuentra en memoria secundaria", pagina->numero);
 			numeroMarco = traerPaginaDeDiscoAMemoria(pid, direccionReal.numeroSegmento, direccionReal.numeroPagina);
 			pagina->numeroMarco = numeroMarco;
 		}
 
 		//Si la pagina no se encuentra ni en disco ni en memoria la paso a un marco libre
 		else if(pagina->numeroMarco == NO_EN_MEMORIA){
-			log_info(MSPlogger, "La pagina no se encuentra en memoria");
+			log_info(MSPlogger, "La pagina %d no se encuentra en memoria", pagina->numero);
 			t_marco *nuevoMarco = llevarPaginaAMemoria(pagina);
 			numeroMarco = nuevoMarco->numero;
 		}
@@ -516,10 +504,7 @@ bool buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *pagin
 
 		t_marco *marco = encontrarMarcoEnMarcosOcupados(numeroMarco);
 
-		if(marco == NULL || numeroMarco != -1)
-			return false;
-
-		else{
+		if(marco != NULL && numeroMarco != -1){
 
 			seReferencioElMarco(marco);
 
@@ -549,13 +534,12 @@ bool buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *pagin
 			//Si solo debo leer un marco, leo directo
 			else
 				memmove(leido, memoria + marco->inicio + direccionReal.desplazamiento, tamanio);
-		}
 
-		contador++;
+			contador++;
+		}
 	}
 
 	list_iterate(paginasAMemoria, iterarPaginasParaLeer);
-	return true;
 }
 
 
@@ -563,18 +547,20 @@ bool buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *pagin
 int traerPaginaDeDiscoAMemoria(int pid, int numeroSegmento, int numeroPagina){
 
 	char *absolute_path;
-	char linea[256];
-	char buffer[256];
+	char buffer[TAMANIO_PAGINA];
 	t_marco *marco;
 
 	log_info(MSPlogger, "Cargando pagina a memoria...");
 
 	absolute_path = armarPathArchivo(pid, numeroSegmento, numeroPagina);
-	FILE* file = fopen(absolute_path, "r");
+	FILE* file = fopen(absolute_path, "rb");
+
+	if (file == NULL){
+		log_error(MSPlogger, "Ha ocurrido un error al abrir el archivo");
+		return -1;
+	}
 
 	void copiarPaginaAMemoriaYEliminarDeDisco(t_marco *marco){
-
-		log_info(MSPlogger, "Copiando la pagina en memoria...");
 
 		memcpy(memoria + marco->inicio, buffer, TAMANIO_PAGINA);
 		borrarPaginaDeDisco(pid, numeroSegmento, numeroPagina);
@@ -589,50 +575,37 @@ int traerPaginaDeDiscoAMemoria(int pid, int numeroSegmento, int numeroPagina){
 
 	}
 
-	if(file == NULL){
-		log_error(MSPlogger, "Error al leer el archivo. Finalizando...");
+	if(!fread (buffer, 1, TAMANIO_PAGINA, file)){
+		log_error(MSPlogger, "Ha ocurrido un error al leer el archivo");
 		return -1;
 	}
-	else{
 
-		while (feof(file) == 0)
-		{
-			fgets(linea, TAMANIO_PAGINA, file);
-			strcat(buffer, linea);
-		}
-
-		if(list_size(marcosLibres) > 0){
-			marco = (t_marco*)list_remove(marcosLibres, 1);
-			copiarPaginaAMemoriaYEliminarDeDisco(marco);
-			return marco->numero;
-		}
-
-		else{
-			log_info(MSPlogger, "No hay marcos libres en memoria");
-
-			if(cantidadMemoriaSecundaria == 0){
-				log_error(MSPlogger, "No es posible cargar la pagina. No hay espacio en memoria primaria ni secundaria");
-				return -1;
-			}
-
-			else{
-				if(modoSustitucionPaginasMSP == FIFO){
-					marco = sustituirPaginaPorFIFO();
-					copiarPaginaAMemoriaYEliminarDeDisco(marco);
-					return marco->numero;
-				}
-
-				else{
-					marco = sustituirPaginaPorCLOCK_MODIFICADO();
-					copiarPaginaAMemoriaYEliminarDeDisco(marco);
-					return marco->numero;
-				}
-			}
-		}
-
-		fclose(file);
+	if(list_size(marcosLibres) > 0){
+		marco = (t_marco*)list_remove(marcosLibres, 1);
+		copiarPaginaAMemoriaYEliminarDeDisco(marco);
+		return marco->numero;
 	}
 
+	log_info(MSPlogger, "No hay marcos libres en memoria");
+
+	if(cantidadMemoriaSecundaria == 0){
+		log_error(MSPlogger, "No es posible cargar la pagina. No hay espacio en memoria primaria ni secundaria");
+		return -1;
+	}
+
+	if(modoSustitucionPaginasMSP == FIFO){
+		marco = sustituirPaginaPorFIFO();
+		copiarPaginaAMemoriaYEliminarDeDisco(marco);
+		return marco->numero;
+	}
+
+	else{
+		marco = sustituirPaginaPorCLOCK_MODIFICADO();
+		copiarPaginaAMemoriaYEliminarDeDisco(marco);
+		return marco->numero;
+	}
+
+	fclose(file);
 }
 
 
@@ -645,7 +618,7 @@ t_marco *llevarPaginaAMemoria(t_pagina *pagina){
 
 	t_marco *marco;
 
-	log_info(MSPlogger, "Se cargara la pagina en memoria...");
+	log_info(MSPlogger, "Se cargara la pagina %d en memoria...", pagina->numero);
 
 	if(list_size(marcosLibres) > 0){
 		marco = (t_marco*)list_remove(marcosLibres, 0);
@@ -828,11 +801,11 @@ void llevarPaginaADisco(t_marco *marco, int pid, int numeroSegmento, int numeroP
 	//TODO ver si el archivo debe pesar 256 Bytes
 	absolute_path = armarPathArchivo(pid, numeroSegmento, numeroPagina);
 
-	FILE* file = fopen(absolute_path, "w");
+	FILE* file = fopen(absolute_path, "wb");
 
 	memcpy(leido, memoria + marco->inicio, TAMANIO_PAGINA);
 
-	fputs(leido, file);
+	fwrite (leido, 1, TAMANIO_PAGINA, file);
 	fclose(file);
 
 	log_info(MSPlogger, "Se ha copiado la Pagina %d, del Segmento %d, del PID %d a disco", numeroPagina, numeroSegmento, pid);
@@ -876,12 +849,8 @@ char *armarPathArchivo(int pid, int numeroSegmento, int numeroPagina){
 
 uint32_t calculoDireccionBase(int numeroSegmento){
 	//TODO ver por que imprime nil en vez de 0x00000000
-	if (numeroSegmento == 0){
-		return 0x00000000;
-	}
-	else{
-		return (numeroSegmento << 20) & 0xFFFFFFFF;
-	}
+	return (numeroSegmento << 20) & 0xFFFFFFFF;
+
 }
 
 
@@ -975,39 +944,3 @@ t_marco *encontrarMarcoPorNumeroMarco(int numeroMarco){
 	return marco;
 
 }
-
-
-
-/*
-bool segmentoYPaginaPorDireccionVirtual(int pid, t_programa *programa, t_segmento *segmento, t_pagina *pagina, uint32_t direccionVirtual){
-
-	int numeroSegmento = calculoNumeroSegmento(direccionVirtual);
-	int	numeroPagina = calculoNumeroPagina(direccionVirtual);
-
-	programa = encontrarPrograma(pid);
-
-	if(programa == NULL){
-		log_error(MSPlogger, "El programa con PID %d no existe", pid);
-		return false;
-	}
-	else{
-		segmento = encontrarSegmento(programa, numeroSegmento);
-		if(segmento == NULL){
-			log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
-			return false;
-		}
-		else{
-			pagina = encontrarPagina(segmento, numeroPagina);
-			if(pagina == NULL){
-				log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
-				return false;
-			}
-			else{
-				return true;
-			}
-		}
-	}
-}
- */
-
-

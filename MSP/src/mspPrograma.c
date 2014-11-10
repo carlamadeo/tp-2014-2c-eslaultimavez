@@ -8,15 +8,26 @@
 #include "mspPrograma.h"
 #include <stdlib.h>
 
-extern t_list *programas;
+t_list *programas;
 
 
-t_programa *crearPrograma(int pid){
-	t_programa *programa = malloc(sizeof(t_programa));
+t_programa *buscarCrearPrograma(int pid){
 
-	programa->pid = pid;
-	programa->tablaSegmentos = list_create();
+	bool matchPrograma(t_programa *unPrograma){
+		return unPrograma->pid == pid;
+	}
 
-	list_add(programas, programa);
-	return programa;
+	t_programa *programaEncontrado = list_find(programas, matchPrograma);
+
+	if(programaEncontrado == NULL){
+		t_programa *programa = malloc(sizeof(t_programa));
+
+		programa->pid = pid;
+		programa->tablaSegmentos = list_create();
+		list_add(programas, programa);
+		return programa;
+	}
+
+	return programaEncontrado;
+
 }

@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern t_log *MSPlogger;
+t_log *MSPlogger;
 
 t_config *MSPConfig;
 int puertoMSP;
@@ -22,7 +22,7 @@ double cantidadMemoriaPrincipal, cantidadMemoriaSecundaria;	  //Bytes
 uint16_t modoSustitucionPaginasMSP;
 
 char *memoria;
-t_list *programas; //TODO Solo para pruebas, eliminar y ver donde se crearia
+t_list *programas;
 t_list *marcosLibres;
 t_list *marcosOcupados;
 
@@ -67,10 +67,11 @@ bool cargarConfiguracionMSP(char *config) {
 	marcosLibres = list_create();
 	marcosOcupados = list_create();
 
+	/*t_programa *programa = malloc(sizeof(t_programa));
+	programa->pid = 1;
+	programa->tablaSegmentos = list_create();
+	list_add(programas, programa);*/
 	cargarMarcos(marcosLibres);
-
-	t_programa *prog = malloc(sizeof(t_programa)); //TODO Solo para pruebas, eliminar!!
-	prog = crearPrograma(1); //TODO Solo para pruebas, eliminar!!
 
 	return true;
 }

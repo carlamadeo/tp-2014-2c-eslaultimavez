@@ -15,6 +15,6 @@ typedef struct{
 	t_list *tablaSegmentos;
 }t_programa;
 
-t_programa *crearPrograma(int pid);
+t_programa *buscarCrearPrograma(int pid);
 
 #endif /* PROGRAMA_H_ */
