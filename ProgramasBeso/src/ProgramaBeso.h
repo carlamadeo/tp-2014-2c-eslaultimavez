@@ -22,6 +22,15 @@
 #define PATH_CONFIG "../config" //Esto hay que borrar luego porque se pasa por variable
 #define PATH_LOG "logs/trace.log" //Donde esta el archivo LOG
 
+
+typedef struct {
+	t_socket_client * socket_ProgramaBESO;
+	t_log* loggerProgramaBESO;
+	int puertoLoader;
+	char* ipLoader;
+	char* codigo;
+} t_programaBESO;
+
 typedef struct {
 	char* ip;
 	int port;
@@ -32,23 +41,13 @@ typedef struct {
 } t_info_pid;
 
 
-typedef struct{
-	char* codigo;
-} t_buffer_ConsolaPrograma;
-t_buffer_ConsolaPrograma buffer_programa;
+
 t_info_conexion info_conexion_Loader;
 
 
-
-
-
-t_log* logger;
-
-t_socket* socketKernel;
-int idPrograma;
-
-void consolaCargarConfiguracion(); //Carga la configuracion de la consola
-t_buffer_ConsolaPrograma consolaExtraer_programaESO(char *parametro);
+t_programaBESO*  consolaCargarConfiguracion(char* config_file);
+void verificar_argumentosProgramaBeso(int argc, char* argv[]);
+t_programaBESO* consolaExtraer_programaESO(t_programaBESO* self);
 
 
 #endif /* CONSOLAPROGRAMA_H	_ */

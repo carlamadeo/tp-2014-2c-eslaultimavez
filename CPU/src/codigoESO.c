@@ -3,7 +3,7 @@
 
 
 
-void LOAD_ESO (int registro, int32_t numero, t_TCB* tcb){
+void LOAD_ESO (int registro, int32_t numero, t_TCB_CPU* tcb){
 		if(registro!=-1){
 			tcb->registro_de_programacion[registro]=numero;
 			break;
@@ -11,7 +11,7 @@ void LOAD_ESO (int registro, int32_t numero, t_TCB* tcb){
 		log_error(logger, "Error: registro de programacion no encontrado %d", tcb->pid);
 }
 
-void GETM_ESO (int primer_registro, int segundo_registro, t_TCB* tcb){
+void GETM_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 
 	if((primer_registro!=-1)&&(segundo_registro!=-1)){
 

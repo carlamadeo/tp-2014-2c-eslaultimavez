@@ -10,10 +10,10 @@ void hacer_conexion_con_msp(t_kernel* self) {
 	if (socket_connect( self->socketMSP, self->ipMsp, self->puertoMsp)==0)
 		log_error(self->loggerKernel, "Kernel: Error al hacer el Boot con la MSP!");
 
-	else
+	else{
 		log_info(self->loggerKernel, "Kernel: Conectado con la MSP (IP:%s/Puerto:%d)!", self->ipMsp, self->puertoMsp);
-
-	realizarHandshakeConMSP(self);
+		realizarHandshakeConMSP(self);
+	}
 
 }
 
@@ -57,7 +57,7 @@ void crearTCBKERNEL(t_kernel* self, char* codigoPrograma, int tamanioEnBytes, in
 	//programaEnElKernel->PCB.puntero_instruccion = metadata->instruccion_inicio;
 
 
-	programaEnElKernel->TCB.base_segmento_codigo= kernelCrearSegmento(self, pid, tamanioEnBytes); //beso
+	programaEnElKernel->TCB.base_segmento_codigo = kernelCrearSegmento(self, pid, tamanioEnBytes); //beso
 
 
 	if(programaEnElKernel->TCB.base_segmento_codigo == -1){

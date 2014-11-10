@@ -29,15 +29,18 @@ void loaderEscuchaProgramaBeso(t_kernel* self){
 		log_error(self->loggerLoader, "Loader:Error al poner a escuchar al Loader: %s", strerror(errno));
 	}
 
-	log_info(self->loggerLoader, "Loader: Ya se esta escuchando conexiones entrantes..");
-    FD_SET(socketEscucha->descriptor, &master);
+	log_info(self->loggerLoader, "Loader: Ya se esta escuchando conexiones entrantes en el puerto: %d",self->puertoLoader);
+
+	FD_SET(socketEscucha->descriptor, &master);
     fdmax = socketEscucha->descriptor; /* seguir la pista del descriptor de fichero mayor*/
     /* bucle principal*/
-	while(1){
+    int n=0;
+	while(n<10){
         read_fds = master;
+        //printf("antes select: %d\n",  1111);
         int selectResult = select(fdmax+1, &read_fds, NULL, NULL, NULL);
-        log_debug(self->loggerLoader,"Select= %d",selectResult);
-
+        log_info(self->loggerLoader,"Loader: Select= %d",selectResult);
+        //printf("after select: %d\n",  1111);
         if (selectResult == -1){
         	log_error(self->loggerLoader, "Error en el select del Loader.");
             exit(1);
@@ -46,12 +49,15 @@ void loaderEscuchaProgramaBeso(t_kernel* self){
         } else{
 			for(i = 0; i <= fdmax; i++){ //explorar conexiones existentes en busca de datos que leer
 				if (FD_ISSET(i, &read_fds)){ //¡¡tenemos datos!!
-					log_info(self->loggerLoader,"Se encontraron datos de programa i=%d, descriptorEscucha=%d",i,socketEscucha->descriptor);
+
+					log_info(self->loggerLoader,"Se encontraron datos en el elemento de la lista i=%d, descriptorEscucha=%d",i,socketEscucha->descriptor);
+
+
 					if(i == socketEscucha->descriptor){  //gestionar nuevas conexiones
-						if(!(socketNuevaConexion = socket_acceptClient(socketEscucha))) {
-							log_error(self->loggerLoader, "Error al aceptar conexion entrante al Loader: %s", strerror(errno));
+						if((socketNuevaConexion = socket_acceptClient(socketEscucha))==0) {
+							log_error(self->loggerLoader, "Loader: Error en el accep  Loader");
 						}else  {
-							log_debug(self->loggerLoader, "Nueva conexion al Loader desde %s sobre socket %d", inet_ntoa(socketNuevaConexion->address->sin_addr),socketNuevaConexion->descriptor);
+							log_debug(self->loggerLoader, "Nueva conexion al Loader, ACCEP completo! ");
 							atenderNuevaConexionPrograma(self, socketNuevaConexion, &master, &fdmax);
 						}
 
@@ -64,6 +70,7 @@ void loaderEscuchaProgramaBeso(t_kernel* self){
 				}//fin del if FD_ISSET
 			}// fin del for de las i
 		}//Fin del else grande
+	n++;
 	}//fin de while(1)
 }
 
@@ -110,6 +117,7 @@ void atenderNuevaConexionPrograma(t_kernel* self,t_socket* socketNuevoCliente, f
 {
 	t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 
+
 	int id_procesosConsolas=0;
     if ((socket_recvPaquete(socketNuevoCliente, paquete)) < 0) {
 		log_error(self->loggerLoader, " Loader:Error o conexión cerrada por el Cliente correspondiente.");
@@ -117,14 +125,14 @@ void atenderNuevaConexionPrograma(t_kernel* self,t_socket* socketNuevoCliente, f
 		close(socketNuevoCliente->descriptor);
 	} else {
 		if(paquete->header.type == HANDSHAKE_PROGRAMA){
-			int pesoDeCodigo = *(int *) (paquete->data);
-			log_info(self->loggerLoader, " Loader: Llego HANDSHAKE_PROGRAMA y dice que tiene peso: %d",pesoDeCodigo);
+			int valorPrograma = *(int *) (paquete->data);
+			log_info(self->loggerLoader, " Loader: Llego HANDSHAKE_PROGRAMA y contiene: %d",valorPrograma);
 			id_procesosConsolas++;
 
 			if (socket_sendPaquete(socketNuevoCliente, HANDSHAKE_LOADER,0, NULL) >= 0) {
-				log_debug(self->loggerLoader, " Loader:Se envió HANDSHAKE_LOADER correctamente al Programa %s.", strerror(errno));
+				log_info(self->loggerLoader, " Loader:Se envió HANDSHAKE_LOADER correctamente");
 			} else {
-				log_error(self->loggerLoader, " Loader: Error enviar HANDSHAKE_LOADER al Programa %s.", strerror(errno));
+				log_error(self->loggerLoader, " Loader: Error enviar HANDSHAKE_LOADER");
 			}
 
 			t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
@@ -133,7 +141,7 @@ void atenderNuevaConexionPrograma(t_kernel* self,t_socket* socketNuevoCliente, f
 				FD_CLR(socketNuevoCliente->descriptor, master);
 				close(socketNuevoCliente->descriptor);
 			} else {
-				char * codigoEntrante = malloc(pesoDeCodigo);
+				char * codigoEntrante = malloc(valorPrograma);
 				log_info(self->loggerLoader, "Tamaño real del codigoEntrante: %d\n", sizeof(*codigoEntrante));
 				codigoEntrante = (char*) (paquete->data);
 
