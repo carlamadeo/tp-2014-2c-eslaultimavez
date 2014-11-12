@@ -1,12 +1,12 @@
 /*
- * CSonfigMSP.h
+ * mspConfig.h
  *
  *  Created on: 14/09/2014
  *      Author: utnso
  */
 
-#ifndef CONFIGMSP_H_
-#define CONFIGMSP_H_
+#ifndef MSPCONFIG_H_
+#define MSPCONFIG_H_
 
 #include <commons/collections/list.h>
 
@@ -20,4 +20,4 @@ bool validarConfiguracionMSP();
 void cargarMarcos(t_list *listaMarcos);
 void destruirConfiguracionMSP();
 
-#endif /* CONFIGMSP_H_ */
+#endif /* MSPCONFIG_H_ */

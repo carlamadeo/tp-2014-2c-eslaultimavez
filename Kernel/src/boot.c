@@ -7,7 +7,7 @@ void hacer_conexion_con_msp(t_kernel* self) {
 	if (self->socketMSP == NULL )
 		log_error(self->loggerKernel, "Kernel: Error al crear socket con la MSP!");
 
-	if (socket_connect( self->socketMSP, self->ipMsp, self->puertoMsp)==0)
+	if (socket_connect(self->socketMSP, self->ipMsp, self->puertoMsp) == 0)
 		log_error(self->loggerKernel, "Kernel: Error al hacer el Boot con la MSP!");
 
 	else{
@@ -83,21 +83,24 @@ void crearTCBKERNEL(t_kernel* self, char* codigoPrograma, int tamanioEnBytes, in
 
 int kernelCrearSegmento(t_kernel* self, int pid, int tamanio){
 
-	uint32_t direccionBase;
-	t_envio_num_EnKernel* datos = malloc(sizeof(t_envio_num_EnKernel));
-	datos->num = tamanio;
-	datos->pid = pid;
+	t_datos_aMSP* datosAEnviar = malloc(sizeof(t_datos_aMSP));
+	t_datos_deMSP *datosRecibidos = malloc(sizeof(t_datos_deMSP));
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
-	if (socket_sendPaquete(self->socketMSP->socket, CREAR_SEGMENTO, sizeof(t_envio_num_EnKernel), datos) > 0) {
-		log_info(self->loggerKernel, "Kernel: Solicitud de creacion de segmento de Tamaño %d para el Proceso con PID %d.",datos->num, datos->pid);
+	datosAEnviar->pid = pid;
+	datosAEnviar->tamanio = tamanio;
+
+
+	if (socket_sendPaquete(self->socketMSP->socket, CREAR_SEGMENTO, sizeof(t_datos_aMSP), datosAEnviar) > 0) {
+		log_info(self->loggerKernel, "Kernel: Solicitud de creacion de segmento de Tamaño %d para el Proceso con PID %d.", datosAEnviar->tamanio, datosAEnviar->pid);
 
 		if(socket_recvPaquete(self->socketMSP->socket, paquete) >= 0){
 
 			if(paquete->header.type == CREAR_SEGMENTO){
-				direccionBase = (uint32_t) paquete->data;
+				datosRecibidos = (t_datos_deMSP *) (paquete->data);
 				log_info(self->loggerKernel, "Kernel: Datos de creacion de segmento recibidos correctamente.");
-				if(direccionBase < 0){
+
+				if(datosRecibidos->direccionBase < 0){
 					//Manejo de errores
 					//ERROR_POR_TAMANIO_EXCEDIDO
 					//ERROR_POR_MEMORIA_LLENA
@@ -114,7 +117,7 @@ int kernelCrearSegmento(t_kernel* self, int pid, int tamanio){
 		}
 	}
 
-	free(paquete);
-	free(datos);
-	return direccionBase;
+	free(datosAEnviar);
+	free(datosRecibidos);
+	return datosRecibidos->direccionBase;
 }

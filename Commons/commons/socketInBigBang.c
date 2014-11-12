@@ -251,6 +251,6 @@ char* socket_getIP(t_socket* socket) {
 
 
 void socket_freePaquete(t_socket_paquete* paquete){
-	free(paquete->data);
+	//free(paquete->data);
 	free(paquete);
 }

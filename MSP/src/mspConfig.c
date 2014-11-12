@@ -1,11 +1,11 @@
 /*
- * ConfigMSP.c
+ * mspConfig.c
  *
  *  Created on: 14/09/2014
  *      Author: utnso
  */
 
-#include "ConfigMSP.h"
+#include "mspConfig.h"
 #include "Memoria.h"
 #include "commons/log.h"
 #include "commons/config.h"
@@ -67,10 +67,6 @@ bool cargarConfiguracionMSP(char *config) {
 	marcosLibres = list_create();
 	marcosOcupados = list_create();
 
-	/*t_programa *programa = malloc(sizeof(t_programa));
-	programa->pid = 1;
-	programa->tablaSegmentos = list_create();
-	list_add(programas, programa);*/
 	cargarMarcos(marcosLibres);
 
 	return true;

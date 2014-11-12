@@ -176,9 +176,8 @@ void imprimirTablaDeSegmentos() {
 	int pid;
 	int cantSegmentos = 0;
 
-	if(list_size(programas) == 0){
+	if(list_size(programas) == 0)
 		log_warning(MSPlogger, "No hay Programas. Nada que mostrar");
-	}
 
 	else{
 
@@ -222,16 +221,15 @@ void consolaImprimirTablaDePaginas() {
 		return unPrograma->pid == pid;
 	}
 
-	if (list_is_empty(programas)){
+	if (list_is_empty(programas))
 		log_info(MSPlogger, "No hay programas. Nada que mostrar");
-	}
+
 
 	else{
 		t_programa *programa = list_find(programas, matchPrograma);
 
-		if(programa == NULL){
+		if(programa == NULL)
 			log_error(MSPlogger, "No existe el programa con PID %d", pid);
-		}
 
 		else{
 			void mostrarPagina(t_pagina *unaPagina){
@@ -298,7 +296,7 @@ void imprimirMarcos() {
 		list_iterate(programas, iterarPrograma);
 
 	if(cantidadMarcosOcupados == 0)
-		printf("No hay marcos ocupados que mostrar\n");
+		log_info(MSPlogger,"No hay marcos ocupados que mostrar");
 
 	getchar();
 }

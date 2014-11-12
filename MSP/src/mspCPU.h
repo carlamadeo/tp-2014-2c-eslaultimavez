@@ -11,7 +11,7 @@ typedef struct{
 	uint32_t direccionVirtual;
 	int tamanio;
 	char* leido;
-}t_envio_leerMSP;
+}t_envio_leerMSPcpu;
 
 // Funciones propias de la MSP_TO_CPU
 void *mspLanzarHiloCPU(void *arg);

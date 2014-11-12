@@ -6,7 +6,7 @@
  */
 
 #include "Memoria.h"
-#include "ConfigMSP.h"
+#include "mspConfig.h"
 #include "commons/log.h"
 #include "commons/protocolStructInBigBang.h"
 #include <stdint.h>
@@ -31,7 +31,7 @@ uint32_t mspCrearSegmento(int pid, int tamanio){
 
 	if (tamanio%TAMANIO_PAGINA > 0) cantidadPaginas++;
 
-	log_info(MSPlogger, "Comienzo de creacion de nuevo Segmento para el PID %d con tamanio %d... ", pid, tamanio);
+	log_info(MSPlogger, "Comienzo de creacion de nuevo Segmento para el PID %d con tamanio %d.", pid, tamanio);
 
 	if (tamanio > TAMANIO_MAX_SEGMENTO){
 		log_error(MSPlogger, "No se ha podido crear el Segmento: El tamanio ingresado es mayor al permitido");
@@ -98,6 +98,7 @@ uint32_t crearSegmentoConSusPaginas(int pid, int cantidadPaginas, int tamanio){
 			log_info(MSPlogger, "Segmento creado correctamente. PID: %d, Tamanio: %d, Direccion base: 0x00000000", pid, tamanio);
 		else
 			log_info(MSPlogger, "Segmento creado correctamente. PID: %d, Tamanio: %d, Direccion base: %0.8p", pid, tamanio, direccionBase);
+
 
 		return direccionBase;
 	}
@@ -246,7 +247,7 @@ void borrarPaginaDeDisco(int pid, int numeroSegmento, int numeroPagina){
  *								--Comienzo Escribir Memoria-- 										 *
 \***************************************************************************************************/
 
-bool mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tamanio){
+int mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tamanio){
 
 	char *mostrarBuffer = malloc(sizeof(char)*tamanio + 1);
 	int cantidadPaginas;
@@ -258,7 +259,7 @@ bool mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int ta
 	//Compruebo que sea un PID valido
 	if(programa == NULL){
 		log_error(MSPlogger, "No se ha encontrado el programa con el PID %d", pid);
-		return false;
+		return 0;
 	}
 
 	t_segmento *segmento = encontrarSegmento(programa, direccionReal.numeroSegmento);
@@ -266,13 +267,13 @@ bool mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int ta
 	//Compruebo que el segmento corresponda a ese PID
 	if(segmento == NULL){
 		log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
-		return false;
+		return ERROR_POR_SEGMENTATION_FAULT;
 	}
 
 	//Compruebo que no me soliciten escribir mas alla de los limites del segmento
 	if(isSegmentationFault(segmento->tamanio, direccionReal, tamanio)){
 		log_error(MSPlogger, "Se ha excedido los limites del segmento %d. Segmentation Fault", segmento->numero);
-		return false;
+		return ERROR_POR_SEGMENTATION_FAULT;
 	}
 
 	t_pagina *pagina = encontrarPagina(segmento, direccionReal.numeroPagina);
@@ -280,7 +281,7 @@ bool mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int ta
 	//Compruebo que la pagina pertenezca al segmento
 	if(pagina == NULL){
 		log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
-		return false;
+		return ERROR_POR_SEGMENTATION_FAULT;
 	}
 
 	//Calculo la cantidad de paginas que necesito tener en memoria, ademas de la pagina encontrada por la direccionBase
@@ -299,7 +300,7 @@ bool mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int ta
 	list_destroy(paginasAMemoria);
 
 	free(mostrarBuffer);
-	return true;
+	return SIN_ERRORES;
 }
 
 bool isSegmentationFault(int tamanioSegmento, t_direccion direccionReal, int tamanioSolicitado){
@@ -424,7 +425,7 @@ void buscarPaginasYEscribirMemoria(int pid, t_direccion direccionReal, t_list *p
 \***************************************************************************************************/
 
 
-bool mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido){
+int mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido){
 
 	t_direccion direccionReal = calculoDireccionReal(direccionVirtual);
 	t_list *paginasAMemoria;
@@ -434,26 +435,26 @@ bool mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido
 
 	if(programa == NULL){
 		log_error(MSPlogger, "No se ha encontrado el programa con el PID %d", pid);
-		return false;
+		return 0;
 	}
 
 	t_segmento *segmento = encontrarSegmento(programa, direccionReal.numeroSegmento);
 
 	if(segmento == NULL){
 		log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
-		return false;
+		return ERROR_POR_SEGMENTATION_FAULT;
 	}
 	//Compruebo que no me soliciten leer mas alla de los limites del segmento
 	if(isSegmentationFault(segmento->tamanio, direccionReal, tamanio)){
 		log_error(MSPlogger, "Se ha excedido el tamanio del segmento %d. Segmentation Fault", segmento->numero);
-		return false;
+		return ERROR_POR_SEGMENTATION_FAULT;
 	}
 
 	t_pagina *pagina = encontrarPagina(segmento, direccionReal.numeroPagina);
 
 	if(pagina == NULL){
 		log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
-		return false;
+		return ERROR_POR_SEGMENTATION_FAULT;
 	}
 
 	//Calculo la cantidad de paginas que necesito tener en memoria, ademas de la pagina encontrada por la direccionBase
@@ -468,7 +469,7 @@ bool mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido
 
 	list_destroy(paginasAMemoria);
 
-	return true;
+	return SIN_ERRORES;
 
 }
 

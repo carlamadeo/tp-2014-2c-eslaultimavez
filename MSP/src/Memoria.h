@@ -106,7 +106,7 @@ void borrarPaginaDeDisco(int pid, int numeroSegmento, int numeroPagina);
 * Hace las validaciones de violaciones de memoria correspondientes
 * Devuelve true si pudo escribir, false si no pudo
 */
-bool mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tamanio);
+int mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tamanio);
 
 
 bool isSegmentationFault(int tamanioSegmento, t_direccion direccionReal, int tamanioSolicitado);
@@ -135,7 +135,7 @@ void buscarPaginasYEscribirMemoria(int pid, t_direccion direccionReal, t_list *p
 * @DESC: Lee de la direccion virtual indicada y lo carga en leido.
 * Hace las validaciones de violaciones de memoria correspondientes
 */
-bool mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido);
+int mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido);
 
 /**
 * @NAME: buscarPaginasYLeerMemoria

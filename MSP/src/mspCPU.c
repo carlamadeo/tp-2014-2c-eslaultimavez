@@ -48,15 +48,15 @@ void *mspLanzarHiloCPU(void *arg){
 
 				log_info(MSPlogger, "CPU esta pidiendo leer memoria...");
 
-				t_envio_leerMSP* dato = (t_envio_leerMSP*) (paquete->data);
+				t_envio_leerMSPcpu* dato = (t_envio_leerMSPcpu*) (paquete->data);
 
 				log_info(MSPlogger,"Abriendo el paquete del cpu, PID: %d  tamaño : %d",dato->pid, dato->tamanio);
 
 				mspLeerMemoria(dato->pid, dato->direccionVirtual, dato->tamanio, dato->leido);
-				t_envio_numMSP *datos2 = malloc(sizeof(t_envio_numMSP ));
-				datos2->pid = 12;
+				//t_envio_numMSP *datos2 = malloc(sizeof(t_envio_numMSP ));
+				//datos2->pid = 12;
 
-				if (socket_sendPaquete(socketKernel, LEER_MEMORIA, sizeof(t_envio_leerMSP), dato) > 0)
+				//if (socket_sendPaquete(socketKernel, LEER_MEMORIA, sizeof(t_envio_leerMSP), dato) > 0)
 					log_info(MSPlogger, "Se envia al cpu lo leido : %s", dato->leido);
 
 				free(dato);

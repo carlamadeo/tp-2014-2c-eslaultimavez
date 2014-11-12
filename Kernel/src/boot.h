@@ -1,8 +1,16 @@
 #ifndef BOOT_H_
 #define BOOT_H_
 
-
 #include "Kernel.h"
+
+typedef struct{
+	int pid;
+	int tamanio;
+}t_datos_aMSP;
+
+typedef struct{
+	uint32_t direccionBase;
+}t_datos_deMSP;
 
 
 void hacer_conexion_con_msp(t_kernel* self);

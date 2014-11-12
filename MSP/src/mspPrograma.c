@@ -6,10 +6,10 @@
  */
 
 #include "mspPrograma.h"
+#include "mspConfig.h"
 #include <stdlib.h>
 
 t_list *programas;
-
 
 t_programa *buscarCrearPrograma(int pid){
 

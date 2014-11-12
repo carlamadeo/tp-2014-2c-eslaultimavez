@@ -15,7 +15,7 @@
 #include <netinet/in.h>
 #include "commons/protocolStructInBigBang.h"
 #include "commons/log.h"
-#include "ConfigMSP.h"
+#include "mspConfig.h"
 #include "MSP.h"
 #include "mspCPU.h"
 
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]){
 
 	pthread_join(mspHilo, NULL);
 	log_info(MSPlogger, "Finalizando la consola de la MSP...");
-	pthread_cancel(mspConsolathreadNum);
+	pthread_join(mspConsolathreadNum, NULL);
 
 	destruirConfiguracionMSP();
 
