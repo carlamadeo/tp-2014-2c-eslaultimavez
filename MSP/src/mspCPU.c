@@ -9,18 +9,18 @@
 extern t_log *MSPlogger;
 extern t_list *cola_paquetes;
 
-void *mspLanzarHiloCPU(void *arg){
+void *mspLanzarHiloCPU(t_socket * socketCpu){
 	t_nodo_cola* nodo_cola;
 	t_nodo_cola* nodo_cola_encontrado;
-	t_socket  *socketCpu;
-	socketCpu = (t_socket*) arg;
+	//t_socket  *socketCpu;
+	//socketCpu = (t_socket*) socketCpus;
 	t_socket_paquete *paquete;
 
 	if (socket_sendPaquete(socketCpu, HANDSHAKE_MSP, 0, NULL) > 0)
-		log_info(MSPlogger, "Handshake con CPU!");
+		log_info(MSPlogger, "MPS: Envia a CPU HANDSHAKE_MSP");
 
 	else
-		log_error(MSPlogger, "Error al recibir los datos de la MSP!");
+		log_error(MSPlogger, "MPS: Error al recibir los datos de un CPU!");
 
 
 	while(1){
@@ -68,7 +68,7 @@ void *mspLanzarHiloCPU(void *arg){
 		}
 		else{// fin del if del recibe
 
-			log_error(MSPlogger, "CPU ha cerrado la conexion.");
+			log_error(MSPlogger, "MSP: una CPU ha cerrado la conexion.");
 			close(socketCpu->descriptor);
 
 			free(socketCpu);

@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
 
 
 	//hace el boot y le manda a la msp el archivo de SystemCall
-	//hacer_conexion_con_msp(self);
+	hacer_conexion_con_msp(self);
 	log_info((self->loggerKernel), "Kernel: Boot completado con EXITO.");
 
 

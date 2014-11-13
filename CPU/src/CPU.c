@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
 
 	/* De aca en adelante, se tiene que eliminar porque se desconecto la CPU */
 
-	log_info(logger, "Se desconecto la CPU. Elimino todo");
+	log_info(self->loggerCPU, "Se desconecto la CPU. Elimino todo");
 	exit(0);
 
 	close(socketDelKernel->descriptor);

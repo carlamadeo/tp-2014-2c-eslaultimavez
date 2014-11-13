@@ -113,21 +113,22 @@ void atienderProgramaConsola(t_kernel* self,t_programa* programa, fd_set* master
 }
 
 
+
+
+//primero el programaBeso le manda al la Loadear HANDSHAKE_PROGRAMA
+//segundo el programaBeso se bloquea esperando una nuespuesta, en este caso el loader manda
+
 void atenderNuevaConexionPrograma(t_kernel* self,t_socket* socketNuevoCliente, fd_set* master, int* fdmax)
 {
 	t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 
-
-	int id_procesosConsolas=0;
-    if ((socket_recvPaquete(socketNuevoCliente, paquete)) < 0) {
+	if ((socket_recvPaquete(socketNuevoCliente, paquete)) < 0) {
 		log_error(self->loggerLoader, " Loader:Error o conexión cerrada por el Cliente correspondiente.");
 		FD_CLR(socketNuevoCliente->descriptor, master);
 		close(socketNuevoCliente->descriptor);
 	} else {
 		if(paquete->header.type == HANDSHAKE_PROGRAMA){
-			int valorPrograma = *(int *) (paquete->data);
-			log_info(self->loggerLoader, " Loader: Llego HANDSHAKE_PROGRAMA y contiene: %d",valorPrograma);
-			id_procesosConsolas++;
+
 
 			if (socket_sendPaquete(socketNuevoCliente, HANDSHAKE_LOADER,0, NULL) >= 0) {
 				log_info(self->loggerLoader, " Loader:Se envió HANDSHAKE_LOADER correctamente");
@@ -135,24 +136,7 @@ void atenderNuevaConexionPrograma(t_kernel* self,t_socket* socketNuevoCliente, f
 				log_error(self->loggerLoader, " Loader: Error enviar HANDSHAKE_LOADER");
 			}
 
-			t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-			if (socket_recvPaquete(socketNuevoCliente, paquete) < 0) {
-				log_error(self->loggerLoader, "Error al recibir Solicitudes del Programa.");
-				FD_CLR(socketNuevoCliente->descriptor, master);
-				close(socketNuevoCliente->descriptor);
-			} else {
-				char * codigoEntrante = malloc(valorPrograma);
-				log_info(self->loggerLoader, "Tamaño real del codigoEntrante: %d\n", sizeof(*codigoEntrante));
-				codigoEntrante = (char*) (paquete->data);
-
-				if(paquete->header.type == CAMBIO_DE_CONTEXTO ){// cambiar por CAMBIAR_PROCESO_ACTIVO
-					log_info(self->loggerLoader, "Llego con exito el codigo del programa %d. Y ahora lo guardamos %s",id_procesosConsolas, codigoEntrante);
-					//agregarEnListaDeProgramas(codigoEntrante, socketNuevoCliente, id_procesos, pesoDeCodigo, &master, &fdmax);
-				} else {
-					log_error(self->loggerLoader, "Tipo de mensaje enviado por el Programa %d no identificado.",id_procesosConsolas);
-				}
-			}
-
+			socket_sendPaquete(socketNuevoCliente, FINALIZAR_PROGRAMA_EXITO,0, NULL);
 
 		}else{
 			log_error(self->loggerLoader, "Tipo de mensaje enviado por el Programa no identificado.");

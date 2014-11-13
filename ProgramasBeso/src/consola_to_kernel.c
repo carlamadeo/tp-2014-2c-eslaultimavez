@@ -31,32 +31,19 @@ void consolaRealizarHandshakeConLOADER(t_programaBESO* self) {
 
 		if(paquete_handshake->header.type == HANDSHAKE_LOADER){
 			log_info(self->loggerProgramaBESO, "Programa: Handshake completo con Loader!");
-//			t_info_pid* datos_recibidos = (t_info_pid*) (paquete_handshake->data);
-//			log_info(self->loggerProgramaBESO, "Se asigno el ID %d!",datos_recibidos->pid);
-//
-//			log_info(self->loggerProgramaBESO, "vamos a enviar el codigo.");
-//			log_info(self->loggerProgramaBESO, "%s",self->codigo);
-//			if (socket_sendPaquete(self->socket_ProgramaBESO , 5000, 50, NULL) > 0) { // ver error!
-//			log_info(self->loggerProgramaBESO, "Se envio el programa con exito.");
-//			}else{
-//				log_error(self->loggerProgramaBESO, "No se pudo enviar el codigo %s",self->codigo);
-//			}
-		}
 	}else {
 		log_error(self->loggerProgramaBESO, "Programa: Error al recibir los datos del KERNEL!");
 	}
-
+	}
 	free(paquete_handshake);
 
-	while(1){
-		t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+	t_socket_paquete *paqueteLoader = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+	socket_recvPaquete(self->socket_ProgramaBESO->socket, paqueteLoader);
 
-		if ((socket_recvPaquete(self->socket_ProgramaBESO, paquete)) >= 0) {
-			switch(paquete->header.type){
-			case FINALIZAR_PROGRAMA_EXITO:
-				log_info(self->loggerProgramaBESO, "Consola: Termino correctamente el programa.");
-				close(self->socket_ProgramaBESO->socket->descriptor);
-				break;
+	while(paqueteLoader->header.type==FINALIZAR_PROGRAMA_EXITO){
+
+
+			switch(paqueteLoader->header.type){
 
 			case ERROR_POR_SEGMENTATION_FAULT:
 				log_info(self->loggerProgramaBESO, "Consola: Error de memoria");
@@ -68,7 +55,10 @@ void consolaRealizarHandshakeConLOADER(t_programaBESO* self) {
 				break;
 
 			}//fin switch
-		free(paquete);
-	}
+		free(paqueteLoader);
+
 	}//fin while
+
+	log_info(self->loggerProgramaBESO, "Programa: Termino correctamente.");
+
 }

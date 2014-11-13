@@ -14,7 +14,7 @@ typedef struct{
 }t_envio_leerMSPcpu;
 
 // Funciones propias de la MSP_TO_CPU
-void *mspLanzarHiloCPU(void *arg);
+void *mspLanzarHiloCPU(t_socket* socketCpus);
 
 
 #endif /* CPU_H_ */

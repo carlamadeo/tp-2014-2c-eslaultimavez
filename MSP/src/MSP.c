@@ -43,11 +43,11 @@ int main(int argc, char *argv[]){
 	lista_procesos = list_create();
 	cola_paquetes = list_create();
 
-	int mspConsolathreadNum = pthread_create(&mspConsolaHilo, NULL, &mspLanzarhiloMSPCONSOLA, NULL);
-	if(mspConsolathreadNum) {
-		log_error(MSPlogger, "Error - pthread_create() return code: %d\n", mspConsolathreadNum);
-		exit(EXIT_FAILURE);
-	}
+//	int mspConsolathreadNum = pthread_create(&mspConsolaHilo, NULL, &mspLanzarhiloMSPCONSOLA, NULL);
+//	if(mspConsolathreadNum) {
+//		log_error(MSPlogger, "Error - pthread_create() return code: %d\n", mspConsolathreadNum);
+//		exit(EXIT_FAILURE);
+//	}
 
 	int mspHiloNum = pthread_create(&mspHilo, NULL, (void*) mspLanzarhilo, NULL);
 	if(mspHiloNum) {
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]){
 
 	pthread_join(mspHilo, NULL);
 	log_info(MSPlogger, "Finalizando la consola de la MSP...");
-	pthread_join(mspConsolathreadNum, NULL);
+	//pthread_join(mspConsolathreadNum, NULL);
 
 	destruirConfiguracionMSP();
 
@@ -84,27 +84,26 @@ int mspLanzarhilo(){
 		return EXIT_FAILURE;
 	}
 
-	log_info(MSPlogger, "Escuchando conexiones entrantes de la MSP en el Puerto:%d:  ",puertoMSP);
+	log_info(MSPlogger, "Escuchando conexiones entrantes de la MSP en el Puerto:%d y en el descriptor: %d ",puertoMSP, socketEscucha->descriptor );
 
 	while(1){
-
 			socketNuevaConexion = socket_acceptClient(socketEscucha);
-
 			t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 			socket_recvPaquete(socketNuevaConexion, paquete);
 
 			if(paquete->header.type == HANDSHAKE_KERNEL){
 				socketKernel = socketNuevaConexion;
 				kernelDireccion = direccionCliente;
-				mspLanzarHiloKernel(socketKernel);
+				mspLanzarHiloKernel(socketKernel);// cambiar esto tiene que ser un hilo!!!
 				log_info(MSPlogger,"Hilo Kernel creado correctamente.");
 			}
 
 			if(paquete->header.type == HANDSHAKE_CPU){
 				socketCpus = socketNuevaConexion;
 				cpuDireccion = direccionCliente;
-				mspHiloCpus = realloc(mspHiloCpus, sizeof(pthread_t) * i + 1);
-				pthread_create(&mspHiloCpus[i], NULL, mspLanzarHiloCPU, (void *)socketCpus);
+				//mspHiloCpus = realloc(mspHiloCpus, sizeof(pthread_t) * i + 1);
+				mspLanzarHiloCPU(socketCpus); //cambiar esto por un hilo!!!
+				//pthread_create(&mspHiloCpus[i], NULL, mspLanzarHiloCPU, (void *)socketCpus);
 				log_info(MSPlogger,"Hilo CPU creado correctamente.");
 				i++;
 			}
