@@ -1,8 +1,8 @@
 
 #include "cpu_to_kernel.h"
 
-t_socket_conexion* conectarCPUConKernel(void) {
-	t_socket_conexion* socket_conexion = malloc( sizeof(t_socket_conexion) );
+t_socket* conectarCPUConKernel(t_CPU* self) {
+	/*t_socket_conexion* socket_conexion = malloc( sizeof(t_socket_conexion) );
 	log_debug(logger, "Conectando con el Proceso Kernel...");
 
 	socket_conexion->socket_client = socket_createClient();
@@ -17,12 +17,12 @@ t_socket_conexion* conectarCPUConKernel(void) {
 	}
 
 	log_info(logger, "CPU Conectado con el KERNEL (IP:%s/Puerto:%d)!", info_conexion_KERNEL.ip, info_conexion_KERNEL.port);
-
-	return socket_conexion;
+*/
+	return self->socketPlanificador->socket;
 }
 
-void cpuRealizarHandshakeConKernel() {
-	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+void cpuRealizarHandshakeConKernel(t_CPU* self){
+/*	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
 	log_debug(logger, "La CPU solicita HANDSHAKE con KERNEL.");
 
@@ -44,5 +44,5 @@ void cpuRealizarHandshakeConKernel() {
 		}
 	} else {
 		log_error(logger, "Error al recibir los datos del Kernel en el HANDSHAKE!!");
-	}
+	}*/
 }

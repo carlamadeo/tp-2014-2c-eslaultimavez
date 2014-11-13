@@ -6,7 +6,7 @@
 void LOAD_ESO (int registro, int32_t numero, t_TCB_CPU* tcb){
 		if(registro!=-1){
 			tcb->registro_de_programacion[registro]=numero;
-			break;
+			//break;
 		}
 		log_error(logger, "Error: registro de programacion no encontrado %d", tcb->pid);
 }
@@ -44,7 +44,7 @@ void GETM_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 						memcpy(contenido, paquete_MSP->data, sizeof(char)*4);
 						/*resguardo el contenido en primer registro*/
 					 	tcb->registro_de_programacion[primer_registro]=*contenido;
-					 	break;
+					 	//break;
 					} else {
 						log_error(logger, "Se recibio un codigo inesperado de MSP: %d", paquete_MSP->header.type);
 						//cpuCambioDeContextoError();
@@ -59,7 +59,7 @@ void GETM_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 		free(paquete_MSP);
 		//Sleep para que no se tilde
 		usleep(100);
-		break;
+		//break;
 		}
 
 	log_error(logger, "Error: registro de programacion no encontrado %d", tcb->pid);
@@ -67,7 +67,7 @@ void GETM_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 
 
 
-void SETM_ESO (int numero, int primer_registro, int segundo_registro, t_TCB* tcb){
+void SETM_ESO (int numero, int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 
 	if(numero<=sizeof(uint32_t)){
 
@@ -93,36 +93,36 @@ void SETM_ESO (int numero, int primer_registro, int segundo_registro, t_TCB* tcb
 }
 
 
-void MOVR_ESO (int primer_registro, int segundo_registro, t_TCB* tcb){
+void MOVR_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 	tcb->registro_de_programacion[primer_registro]=tcb->registro_de_programacion[segundo_registro];
 }
 
 
-void ADDR_ESO (int primer_registro, int segundo_registro, t_TCB* tcb){
+void ADDR_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 	int32_t auxiliar=tcb->registro_de_programacion[segundo_registro];
 	tcb->registro_de_programacion[0]=tcb->registro_de_programacion[primer_registro]+auxiliar;
 
 }
 
-void SUBR_ESO (int primer_registro, int segundo_registro, t_TCB* tcb){
+void SUBR_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 	int32_t auxiliar=tcb->registro_de_programacion[segundo_registro];
 	tcb->registro_de_programacion[0]=tcb->registro_de_programacion[primer_registro]-auxiliar;
 
 }
 
-void MULR_ESO (int primer_registro, int segundo_registro, t_TCB* tcb){
+void MULR_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 	int32_t auxiliar=tcb->registro_de_programacion[segundo_registro];
 	tcb->registro_de_programacion[0]=tcb->registro_de_programacion[primer_registro]*auxiliar;
 	}
 
 
 
-void MODR_ESO (int primer_registro, int segundo_registro, t_TCB* tcb){
+void MODR_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 	int32_t auxiliar=tcb->registro_de_programacion[segundo_registro];
 	tcb->registro_de_programacion[0]=tcb->registro_de_programacion[primer_registro]%auxiliar;
 }
 
-void DIVR_ESO (int primer_registro, int segundo_registro, t_TCB* tcb){
+void DIVR_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 	int32_t auxiliar=tcb->registro_de_programacion[segundo_registro];
 	if (auxiliar==0){
 			log_info(logger, "fallo de division por cero %d", tcb->pid);
@@ -133,18 +133,18 @@ void DIVR_ESO (int primer_registro, int segundo_registro, t_TCB* tcb){
 	}
 }
 
-void INCR_ESO (int registro, t_TCB* tcb){
+void INCR_ESO (int registro, t_TCB_CPU* tcb){
 
 	tcb->registro_de_programacion[registro]++;
 
 }
 
-void DECR_ESO (int registro, t_TCB* tcb){
+void DECR_ESO (int registro, t_TCB_CPU* tcb){
 
 	tcb->registro_de_programacion[registro]--;
 }
 
-void COMP_ESO (int primer_registro, int segundo_registro, t_TCB* tcb){
+void COMP_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 	if (tcb->registro_de_programacion[primer_registro]==tcb->registro_de_programacion[segundo_registro]){
 		tcb->registro_de_programacion[0]=1;
 	}else{
@@ -153,7 +153,7 @@ void COMP_ESO (int primer_registro, int segundo_registro, t_TCB* tcb){
 
 }
 
-void CGEQ_ESO (int primer_registro, int segundo_registro, t_TCB* tcb){
+void CGEQ_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 	if (tcb->registro_de_programacion[primer_registro]>=tcb->registro_de_programacion[segundo_registro]){
 		tcb->registro_de_programacion[0]=1;
 	}else{
@@ -162,7 +162,7 @@ void CGEQ_ESO (int primer_registro, int segundo_registro, t_TCB* tcb){
 
 }
 
-void CLEQ_ESO(int primer_registro, int segundo_registro, t_TCB* tcb){
+void CLEQ_ESO(int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 	if (tcb->registro_de_programacion[primer_registro]<=tcb->registro_de_programacion[segundo_registro]){
 		tcb->registro_de_programacion[0]=1;
 	}else{
@@ -170,13 +170,13 @@ void CLEQ_ESO(int primer_registro, int segundo_registro, t_TCB* tcb){
 	}
 
 }
-void GOTO_ESO (int registro, t_TCB* tcb){
+void GOTO_ESO (int registro, t_TCB_CPU* tcb){
 	uint32_t auxiliar=tcb->base_segmento_codigo;
 	auxiliar+=(uint32_t)tcb->registro_de_programacion[registro];
 	tcb->puntero_instruccion=auxiliar;
 }
 
-void JMPZ_ESO(int numero, t_TCB* tcb){
+void JMPZ_ESO(int numero, t_TCB_CPU* tcb){
    if(tcb->registro_de_programacion[0]==0){
 	   uint32_t auxiliar=(uint32_t)numero;
 	   auxiliar+=tcb->base_segmento_codigo;
@@ -184,7 +184,7 @@ void JMPZ_ESO(int numero, t_TCB* tcb){
    }
 }
 
-void JPNZ_ESO(int numero, t_TCB* tcb){
+void JPNZ_ESO(int numero, t_TCB_CPU* tcb){
 	   if(tcb->registro_de_programacion[0]!=0){
 		   uint32_t auxiliar=(uint32_t)numero;
 		   auxiliar+=tcb->base_segmento_codigo;
@@ -192,15 +192,15 @@ void JPNZ_ESO(int numero, t_TCB* tcb){
 	   }
 }
 
-void INTE_ESO(uint32_t direccion, t_TCB* tcb){
+void INTE_ESO(uint32_t direccion, t_TCB_CPU* tcb){
 	//tengo que tomar esa direccion y pasarcela al Kernel con el TCB
 
 		tcb->puntero_instruccion+=1; //incremento el puntero de instruccion, porque hago cambio de conexto
 		char *direccion_send=malloc(sizeof(char));
 		*direccion_send=direccion;
-		char *data=malloc(sizeof(t_TCB)+sizeof(uint32_t)); /*TCB+direccion_SysCall*/
+		char *data=malloc(sizeof(t_TCB_CPU)+sizeof(uint32_t)); /*TCB+direccion_SysCall*/
 		int soffset=0, stmp_size=0;
-		memcpy(data, tcb, stmp_size=(sizeof(t_TCB)));
+		memcpy(data, tcb, stmp_size=(sizeof(t_TCB_CPU)));
 		soffset=stmp_size;
 		memcpy(data + soffset, direccion_send, stmp_size=sizeof(uint32_t));
 		soffset+=stmp_size;
@@ -220,7 +220,7 @@ void FLCL(){
 
 }*/
 
-void SHIF_ESO (int numero, int registro, t_TCB* tcb){
+void SHIF_ESO (int numero, int registro, t_TCB_CPU* tcb){
 	if(numero>0){
 		int32_t auxiliar=tcb->registro_de_programacion[registro];
 		int32_t resultado;
@@ -241,7 +241,7 @@ void NOPP_ESO (){
 }
 
 
-void PUSH_ESO (int numero, int registro, t_TCB* tcb){
+void PUSH_ESO (int numero, int registro, t_TCB_CPU* tcb){
 
 	if(numero<=sizeof(uint32_t)){
 			char *datos_a_grabar=malloc(sizeof(uint32_t));
@@ -271,7 +271,7 @@ void PUSH_ESO (int numero, int registro, t_TCB* tcb){
 	}
 }
 
-void TAKE_ESO (int numero, int registro, t_TCB* tcb){
+void TAKE_ESO (int numero, int registro, t_TCB_CPU* tcb){
 
 	if(numero<=sizeof(uint32_t)){
 
@@ -301,12 +301,12 @@ void TAKE_ESO (int numero, int registro, t_TCB* tcb){
 	}
 }
 
-void XXXX_ESO (t_TCB* tcb){
+void XXXX_ESO (t_TCB_CPU* tcb){
 
 
-	char *data=malloc(sizeof(t_TCB)); /*TCB*/
+	char *data=malloc(sizeof(t_TCB_CPU)); /*TCB*/
 	int stmp_size=0;
-	memcpy(data, tcb, stmp_size=(sizeof(t_TCB)));
+	memcpy(data, tcb, stmp_size=(sizeof(t_TCB_CPU)));
 
 
 	if (socket_sendPaquete((t_socket*)socketDelKernel, 29 ,stmp_size, data)<=0){

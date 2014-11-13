@@ -15,66 +15,51 @@
 
 
 
-int main(void) {
-	logger = log_create(PATH_LOG, "CPU", 0, LOG_LEVEL_DEBUG); //Creo el archivo Log
+int main(int argc, char** argv) {
 
-	//Cargo la configuracion
-	cpuCargar_configuracionCPU();
+	verificar_argumentosCPU(argc, argv);
+	char* config_file = argv[1];
+	t_CPU* self = cpu_cargar_configuracion(config_file);
 
-	t_socket_conexion* socket_MSP 	  = cpuConectarConMPS();
-	t_socket_conexion* socket_kernel = conectarCPUConKernel();
+	self->loggerCPU = log_create("logCPU.log", "CPU", 1, LOG_LEVEL_DEBUG);
 
-	t_socket_client* socketKernel = socket_kernel->socket_client;
-	t_socket_client* socketMSP 	  = socket_MSP->socket_client;
 
-	socketDelKernel = socketKernel->socket;
-	socketDelMSP	= socketMSP->socket;
+	self->socketMSP  = cpuConectarConMPS(self);
+	//self->socketPlanificador = conectarCPUConKernel(self);
 
-	if( socketMSP != NULL ){
-		log_debug(logger, "Conectado con MPS");
-		cpuRealizarHandshakeConMSP();
-	}else{
-		log_debug(logger, "Fallo conexion con MSP");
-	}
 
-	if( socketKernel != NULL ){
-		log_debug(logger, "Conectado con KERNEL");
-		cpuRealizarHandshakeConKernel();
-	}else{
-		log_debug(logger, "fallo conexion con KERNEL");
-	}
 
-	while(1){
-	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+/*	while(1){
+		t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
-	if(socket_recvPaquete(socketDelKernel, paquete) >= 0){
-		if( paquete->header.type == TCB_NUEVO ){
-			struct lista_TCBs* nuevo;
-			t_TCB_CPU *tcb_temp;
-			tcb_temp=(t_TCB_CPU *)paquete->data;
-			nuevo->tcb=tcb_temp;
-			int pid =nuevo->tcb.pid;
-			if(primero==NULL){
-				primero=nuevo;
-				ultimo=nuevo;
-			}else{
-				ultimo->proximo=nuevo;
-				}
-				cpuProcesar_tcb(pid, &(nuevo->tcb));
+		if(socket_recvPaquete(socketDelKernel, paquete) >= 0){
+			if( paquete->header.type == TCB_NUEVO ){
+				struct lista_TCBs* nuevo;
+				t_TCB_CPU *tcb_temp;
+				tcb_temp=(t_TCB_CPU *)paquete->data;
+				nuevo->tcb=tcb_temp;
+				int pid =nuevo->tcb.pid;
+				if(primero==NULL){
+					primero=nuevo;
+					ultimo=nuevo;
+				}else{
+					ultimo->proximo=nuevo;
+					}
+					cpuProcesar_tcb(pid, &(nuevo->tcb));
 
+			} else {
+				log_error(logger, "Se recibio un codigo inesperado de KERNEL en main de cpu: %d", paquete->header.type);
+			}
 		} else {
-			log_error(logger, "Se recibio un codigo inesperado de KERNEL en main de cpu: %d", paquete->header.type);
+			log_info(logger, "Kernel ha cerrado su conexion");
+			printf("Kernel ha cerrado su conexion\n");
+			exit(-1);
 		}
-	} else {
-		log_info(logger, "Kernel ha cerrado su conexion");
-		printf("Kernel ha cerrado su conexion\n");
-		exit(-1);
-	}
 
-	free(paquete);
-	usleep(100);
-	}
-
+		free(paquete);
+		usleep(100);
+	}//Fin del while 1
+*/
 
 
 	/* De aca en adelante, se tiene que eliminar porque se desconecto la CPU */
@@ -262,8 +247,8 @@ int determinar_registro(char registro){
 
 
  void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
-
-		char *data=malloc(sizeof(int)+sizeof(uint32_t)+sizeof(char)); /*pid+puntero_instruccion*/
+	 /*
+		char *data=malloc(sizeof(int)+sizeof(uint32_t)+sizeof(char)); //pid+puntero_instruccion
 		t_paquete_MSP *pedir_instruccion = malloc(sizeof(t_paquete_MSP));
 		int soffset=0, stmp_size=0;
 		char *tamanio_leer;
@@ -798,7 +783,7 @@ int determinar_registro(char registro){
 
 			break;
 		case XXXX:
-			XXXX_ESO();
+			XXXX_ESO(tcb_actual);
 			break;
 		case MALC: break;
 		case FREE: break;
@@ -812,47 +797,39 @@ int determinar_registro(char registro){
 		default: break;
 
 		}
+ */
  }
 
 
 
 
-void cpuCargar_configuracionCPU(){
-	t_config * config = config_create(PATH_CONFIG);//apunta al archivo configuracion
-	if (!config_has_property(config, "IP_MSP")) {//Averigua si hay "IP" en archivo logs
-		 log_error(logger, "Falta el IP donde se encuentra ejecutando el Proceso MSP.");//Carga en log el error
-		 perror("Falta el IP donde se encuentra ejecutando el Proceso MSP.");
-	 } else{
-		 info_conexion_MSP.ip = config_get_string_value(config, "IP_MSP"); 		//saca IP de config
-		 log_debug(logger, "IP_MSP = %s", info_conexion_MSP.ip);
-	 }
-	if (!config_has_property(config, "Puerto_MSP")) {
-		 log_error(logger, "Falta el Puerto TCP donde se encuentra escuchando el Proceso MSP."); //Carga en log el error
-		 perror("Falta el Puerto TCP donde se encuentra escuchando el Proceso MSP.");
-	 } else{
-		 info_conexion_MSP.port = config_get_int_value(config, "Puerto_MSP");
-		 log_debug(logger, "Puerto_MSP = %d", info_conexion_MSP.port); //Carga en log el puertogo
-	 }
-	if (!config_has_property(config, "IP_KERNEL")) {//Averigua si hay "IP" en archivo logs
-		 log_error(logger, "Falta el IP donde se encuentra ejecutando el Proceso Kernel.");//Carga en log el error
-		 perror("Falta el IP donde se encuentra ejecutando el Proceso Kernel.");
-	 } else{
-		 info_conexion_KERNEL.ip = config_get_string_value(config, "IP_KERNEL"); 		//saca IP de config
-		 log_debug(logger, "IP_KERNEL = %s", info_conexion_KERNEL.ip);
-	 }
-	if (!config_has_property(config, "Puerto_KERNEL")) {
-		 log_error(logger, "Falta el Puerto TCP donde se encuentra escuchando el Proceso Kernel."); //Carga en log el error
-		 perror("Falta el Puerto TCP donde se encuentra escuchando el Proceso Kernel.");
-	 } else{
-		 info_conexion_KERNEL.port = config_get_int_value(config, "Puerto_KERNEL");
-		 log_debug(logger, "Puerto_KERNEL = %d", info_conexion_KERNEL.port); //Carga en log el puertogo
-	 }
-}
 
 
 
+ void verificar_argumentosCPU(int argc, char* argv[]){
+ 	if( argc < 2 ){
+ 		printf("Modo de empleo: ./CPU cpu.cfg\n");
+ 		perror("CPU no recibio las configuraciones");
+ 		exit (EXIT_FAILURE);
+ 	}
+ }
 
+ t_CPU* cpu_cargar_configuracion(char* config_file){
 
+	 t_CPU* self = malloc(sizeof(t_CPU));
+	 	t_config* config = config_create(config_file);
+
+	 	//se obtiene los datos del archivo
+
+	 	self->puertoPlanificador = config_get_int_value(config, "PUERTO_KERNEL");
+	 	self->puertoMSP = config_get_int_value(config, "PUERTO_MSP");
+	 	self->ipPlanificador= string_duplicate(config_get_string_value(config, "IP_KERNEL"));
+	 	self->ipMsp = string_duplicate(config_get_string_value(config, "IP_MSP"));
+	 	self->retardo = config_get_int_value(config, "RETARDO");
+
+	 	config_destroy(config);
+	 	return self;
+ }
 
 
 

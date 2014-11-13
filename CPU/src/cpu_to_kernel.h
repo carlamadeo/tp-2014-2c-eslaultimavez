@@ -4,7 +4,9 @@
 #include "CPU.h"
 
 int retardo, quantum, stack;
-void cpuRealizarHandshakeConKernel();
-t_socket_conexion* conectarCPUConKernel();
+
+t_socket* conectarCPUConKernel(t_CPU* self);
+void cpuRealizarHandshakeConKernel(t_CPU* self);
+
 
 #endif /* CPU_TO_KERNEL_H_ */

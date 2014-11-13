@@ -84,7 +84,7 @@ int mspLanzarhilo(){
 		return EXIT_FAILURE;
 	}
 
-	log_info(MSPlogger, "Escuchando conexiones entrantes...");
+	log_info(MSPlogger, "Escuchando conexiones entrantes de la MSP en el Puerto:%d:  ",puertoMSP);
 
 	while(1){
 
