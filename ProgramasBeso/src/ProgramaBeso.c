@@ -23,48 +23,43 @@ int main( int argc, char **argv ) {
 	self->loggerProgramaBESO =log_create("logProgramaBeso.log", "ProgramaBeso", 1, LOG_LEVEL_DEBUG); //Creo el archivo Log
 
 
-//	 //t_buffer_ConsolaPrograma datos_del_programa = extraer_programa(argv[1]);
+	//consolaExtraer_programaESO(self, argv[1]);
 	consolaConectarConElLOADER(self);
 
     return EXIT_SUCCESS;
 }
 
-//t_programaBESO* consolaExtraer_programaESO (t_programaBESO* self){
-//
-//
-//	//Defino una estructura generica que me da informacion del archivo (como el tamaño)
-//	struct stat atributos_archivo;
-//
-//	//Abro el archivo. Esto es solo para probar (porque no tenemos la conexion de sockets)
-//	FILE *archivo = fopen( self.codigo, "r" );
-//
-//	//Leo el archivo y guardo sus atributos en data_programa
-//	stat(self.codigo, &atributos_archivo);
-//
-//	//Declaro la linea en donde se van a guardar temporalmente cada linea del archivo
-//	//char *line = malloc( 512 * sizeof(char) );
-//
-//	//El codigo completo
-//	char *codigo = (char*) malloc(sizeof(char) * (atributos_archivo.st_size) + 1); //Reservo + 1 por el \0
-//
-//	if( archivo == 0 ){
-//		perror("El archivo no pudo abrirse");
-//		exit(-1);
-//	} else {
-//		fread(codigo, atributos_archivo.st_size, 1, archivo);
-//
-//		self.codigo = codigo;
-//		self.codigo[atributos_archivo.st_size] = '\0';
-//
-//		if( atributos_archivo.st_size == 0 ){
-//			log_info(self->loggerProgramaBESO, "El archivo no contiene codigo. Cerrando Programa");
-//			printf("Consola:El archivo no contiene codigo. Cerrando Programa\n");
-//			exit(-1);
-//		}
-//	}
-//
-//	return self;
-//}
+void consolaExtraer_programaESO (t_programaBESO* self,char *parametro){
+
+	//Defino una estructura generica que me da informacion del archivo (como el tamaño)
+	struct stat atributos_archivo;
+
+	//Abro el archivo. Esto es solo para probar (porque no tenemos la conexion de sockets)
+	FILE *archivo = fopen(parametro, "r" );
+
+	//Leo el archivo y guardo sus atributos en data_programa
+	stat(parametro, &atributos_archivo);
+
+	//El codigo completo
+	char *codigo = (char*) malloc(sizeof(char) * (atributos_archivo.st_size) + 1); //Reservo + 1 por el \0
+
+	if( archivo == 0 ){
+		perror("El archivo no pudo abrirse");
+		exit(-1);
+	} else {
+		fread(codigo, atributos_archivo.st_size, 1, archivo);
+
+		self->codigo = codigo;
+		self->codigo[atributos_archivo.st_size] = '\0';
+
+		if( atributos_archivo.st_size == 0 ){
+			log_info(self->loggerProgramaBESO, "El archivo no contiene codigo. Cerrando Programa");
+			printf("Programa: El archivo no contiene codigo. Cerrando Programa\n");
+			exit(-1);
+		}
+	}
+
+}
 
 t_programaBESO*  consolaCargarConfiguracion(char* config_file){
 
