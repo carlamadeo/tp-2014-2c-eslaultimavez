@@ -22,6 +22,12 @@
 t_log *MSPlogger;
 int puertoMSP;
 
+//semaforos
+
+extern pthread_rwlock_init(sem_estructuras);
+extern pthread_rwlock_init(sem_memoria);
+
+
 int main(int argc, char *argv[]){
 
 	if (argc != 2){
