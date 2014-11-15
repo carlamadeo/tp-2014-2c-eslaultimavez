@@ -19,6 +19,7 @@
 
 
 	//Kernel
+	#define CODIGO_BESO 119
 	#define FINALIZAR_PROGRAMA_EXITO 120
 
 	//MSP
