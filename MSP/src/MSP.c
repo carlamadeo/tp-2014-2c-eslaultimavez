@@ -22,6 +22,12 @@
 t_log *MSPlogger;
 int puertoMSP;
 
+
+//semaforos
+pthread_rwlock_t rw_estructuras;
+pthread_rwlock_t rw_memoria;
+
+
 int main(int argc, char *argv[]){
 
 	if (argc != 2){
@@ -29,10 +35,13 @@ int main(int argc, char *argv[]){
 		return EXIT_SUCCESS;
 	}
 
+	
 	MSPlogger = log_create("logMSP.log", "MSP", 1, LOG_LEVEL_TRACE);
 
 	log_info(MSPlogger, "Iniciando consola de la MSP...");
 
+	pthread_rwlock_init(&rw_estructuras, NULL);
+ 	pthread_rwlock_init(&rw_memoria, NULL);
 	//sem_init(&mutex, 0, 1);
 
 	if(!cargarConfiguracionMSP(argv[1])){

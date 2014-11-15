@@ -52,7 +52,7 @@ void *mspLanzarHiloCPU(t_socket * socketCpu){
 
 				log_info(MSPlogger,"Abriendo el paquete del cpu, PID: %d  tamaño : %d",dato->pid, dato->tamanio);
 
-				mspLeerMemoria(dato->pid, dato->direccionVirtual, dato->tamanio, dato->leido);
+				//mspLeerMemoria(dato->pid, dato->direccionVirtual, dato->tamanio, dato->leido);
 				//t_envio_numMSP *datos2 = malloc(sizeof(t_envio_numMSP ));
 				//datos2->pid = 12;
 

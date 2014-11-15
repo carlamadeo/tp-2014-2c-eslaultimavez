@@ -33,9 +33,9 @@ void loaderEscuchaProgramaBeso(t_kernel* self){
 
 	FD_SET(socketEscucha->descriptor, &master);
     fdmax = socketEscucha->descriptor; /* seguir la pista del descriptor de fichero mayor*/
+
     /* bucle principal*/
-    int n=0;
-	while(n<10){
+   	while(1){
         read_fds = master;
         //printf("antes select: %d\n",  1111);
         int selectResult = select(fdmax+1, &read_fds, NULL, NULL, NULL);
@@ -57,7 +57,7 @@ void loaderEscuchaProgramaBeso(t_kernel* self){
 						if((socketNuevaConexion = socket_acceptClient(socketEscucha))==0) {
 							log_error(self->loggerLoader, "Loader: Error en el accep  Loader");
 						}else  {
-							log_debug(self->loggerLoader, "Nueva conexion al Loader, ACCEP completo! ");
+							log_debug(self->loggerLoader, "Loader: ACCEP completo! ");
 							atenderNuevaConexionPrograma(self, socketNuevaConexion, &master, &fdmax);
 						}
 
@@ -70,7 +70,7 @@ void loaderEscuchaProgramaBeso(t_kernel* self){
 				}//fin del if FD_ISSET
 			}// fin del for de las i
 		}//Fin del else grande
-	n++;
+
 	}//fin de while(1)
 }
 
@@ -113,10 +113,11 @@ void atienderProgramaConsola(t_kernel* self,t_programa* programa, fd_set* master
 }
 
 
-
+//Esta funcion tiene que mandar crear los TCB con ayuda de la msp y luego ponerlo en la cola de nuevo
 
 //primero el programaBeso le manda al la Loadear HANDSHAKE_PROGRAMA
 //segundo el programaBeso se bloquea esperando una nuespuesta, en este caso el loader manda
+//tercero el programa
 
 void atenderNuevaConexionPrograma(t_kernel* self,t_socket* socketNuevoCliente, fd_set* master, int* fdmax)
 {
@@ -127,20 +128,33 @@ void atenderNuevaConexionPrograma(t_kernel* self,t_socket* socketNuevoCliente, f
 		FD_CLR(socketNuevoCliente->descriptor, master);
 		close(socketNuevoCliente->descriptor);
 	} else {
-		if(paquete->header.type == HANDSHAKE_PROGRAMA){
 
+		switch(paquete->header.type){
+					case HANDSHAKE_PROGRAMA:
 
-			if (socket_sendPaquete(socketNuevoCliente, HANDSHAKE_LOADER,0, NULL) >= 0) {
-				log_info(self->loggerLoader, " Loader:Se envió HANDSHAKE_LOADER correctamente");
-			} else {
-				log_error(self->loggerLoader, " Loader: Error enviar HANDSHAKE_LOADER");
-			}
+						if (socket_sendPaquete(socketNuevoCliente, HANDSHAKE_LOADER,0, NULL) >= 0)
+							log_info(self->loggerLoader, " Loader:Se envió HANDSHAKE_LOADER correctamente");
+						else
+							log_error(self->loggerLoader, " Loader: Error enviar HANDSHAKE_LOADER");
 
-			socket_sendPaquete(socketNuevoCliente, FINALIZAR_PROGRAMA_EXITO,0, NULL);
+						log_info(self->loggerLoader, " Loader:Se envió HANDSHAKE_LOADER correctamente");
+						socket_sendPaquete(socketNuevoCliente, FINALIZAR_PROGRAMA_EXITO,0, NULL);
+					break;
+					case ERROR_POR_SEGMENTATION_FAULT:
 
-		}else{
-			log_error(self->loggerLoader, "Tipo de mensaje enviado por el Programa no identificado.");
-		}
+						if (socket_sendPaquete(socketNuevoCliente, ERROR_POR_SEGMENTATION_FAULT,0, NULL) >= 0)
+							log_info(self->loggerLoader, " Loader:Se envió ERROR_POR_SEGMENTATION_FAULT correctamente");
+						else
+							log_error(self->loggerLoader, " Loader: Error enviar HANDSHAKE_LOADER");
+
+						log_info(self->loggerLoader, " Loader:Se envió HANDSHAKE_LOADER correctamente");
+					break;
+					default:
+						log_error(self->loggerLoader, "Tipo de mensaje enviado por el Programa no identificado.");
+					break;
+
+					}
+
 	}
     free(paquete);
 }
@@ -148,68 +162,12 @@ void atenderNuevaConexionPrograma(t_kernel* self,t_socket* socketNuevoCliente, f
 
 void loaderCrearTCB(t_kernel* self, char* codigoPrograma, int tamanioEnBytes, int pid, int tid){
 
-	uint32_t stack;
-	t_programaEnKernel* programaEnElKernel = malloc( sizeof(t_programaEnKernel) );
-	log_info(self->loggerKernel, "Kernel: Crear un TCB.");
 
-	//t_medatada_program* metadata = metadata_desde_literal(codigoPrograma);
-
-	programaEnElKernel->TCB.pid=pid;
-	programaEnElKernel->TCB.tid= tid;
-
-	//ver porque rompre
-	//programaEnElKernel->PCB.puntero_instruccion = metadata->instruccion_inicio;
-
-
-	programaEnElKernel->TCB.base_segmento_codigo= kernelCrearSegmento(self,pid, tamanioEnBytes); //beso
-
-
-	if(programaEnElKernel->TCB.base_segmento_codigo == -1){
-		finalizarProgramaEnPlanificacion(programaEnElKernel);
-		//return NULL;
-	}
-
-
-	programaEnElKernel->TCB.base_stack = kernelCrearSegmento(self,pid, self->tamanioStack);
-	if(programaEnElKernel->TCB.base_stack == -1){
-		finalizarProgramaEnPlanificacion(programaEnElKernel);
-		//return NULL;
-	}
-
-	programaEnElKernel->TCB.cursor_stack = programaEnElKernel->TCB.base_stack;
-
-	//faltan todos los logs
-	log_info(self->loggerKernel, "PID %d TID: %d\n",programaEnElKernel->TCB.pid, programaEnElKernel->TCB.tid);
-
-	//return programaEnElKernel;
 }
 
 
 int loaderCrearSegmento(t_kernel* self,int pid, int tamanio){
 
-	int direccionLogica;
-	t_envio_num_EnKernel* datos = malloc(sizeof(t_envio_num_EnKernel));
-	datos->num = tamanio;
-	datos->pid = pid;
-	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
-	if (socket_sendPaquete(self->socketMSP->socket, CREAR_SEGMENTO, sizeof(t_envio_num_EnKernel), datos) > 0) {
-		log_info(self->loggerKernel, "Kernel: Mando Tamaño del Segmento %d para el proceso %d!",datos->num,datos->pid);
-
-		if(socket_recvPaquete(self->socketMSP->socket, paquete) >= 0){
-			if(paquete->header.type == CREAR_SEGMENTO){
-				datos = (t_envio_num_EnKernel*) paquete->data;
-				direccionLogica = datos->num;
-				//log_info(self->loggerKernel, "RECIBIDOS DATOS: PID=%d / Indice Segmento=%d", datos->pid, direccionLogica);
-				log_info(self->loggerKernel, "RECIBIDOS DATOS");
-			}
-		}else{
-			log_info(self->loggerKernel, "KERNEL: ERROR DATOS NO RECIBIDOS");
-			return -1;
-		}
-	}
-
-	free(paquete);
-	free(datos);
-	return direccionLogica;
+	return 1;
 }

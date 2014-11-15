@@ -47,7 +47,6 @@ t_info_conexion info_conexion_Loader;
 
 t_programaBESO*  consolaCargarConfiguracion(char* config_file);
 void verificar_argumentosProgramaBeso(int argc, char* argv[]);
-t_programaBESO* consolaExtraer_programaESO(t_programaBESO* self);
-
+void consolaExtraer_programaESO (t_programaBESO* self,char *parametro);
 
 #endif /* CONSOLAPROGRAMA_H	_ */

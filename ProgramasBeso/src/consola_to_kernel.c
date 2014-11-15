@@ -27,31 +27,36 @@ void consolaRealizarHandshakeConLOADER(t_programaBESO* self) {
 	t_socket_paquete *paquete_handshake = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 
 	if (socket_recvPaquete(self->socket_ProgramaBESO->socket , paquete_handshake) >= 0) {
-		log_info(self->loggerProgramaBESO, "Programe: Recibe paquete del LOADER.");
 
+		//log_info(self->loggerProgramaBESO, "Programa: Recibe paquete del LOADER.");
 		if(paquete_handshake->header.type == HANDSHAKE_LOADER){
 			log_info(self->loggerProgramaBESO, "Programa: Handshake completo con Loader!");
-	}else {
-		log_error(self->loggerProgramaBESO, "Programa: Error al recibir los datos del KERNEL!");
-	}
+		}else
+			log_error(self->loggerProgramaBESO, "Programa: Error al recibir los datos en el HANDSHAKE_LOADER!");
+
 	}
 	free(paquete_handshake);
 
 	t_socket_paquete *paqueteLoader = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 	socket_recvPaquete(self->socket_ProgramaBESO->socket, paqueteLoader);
 
-	while(paqueteLoader->header.type==FINALIZAR_PROGRAMA_EXITO){
-
-
-			switch(paqueteLoader->header.type){
-
-			case ERROR_POR_SEGMENTATION_FAULT:
-				log_info(self->loggerProgramaBESO, "Consola: Error de memoria");
+	//printf(" valor que llega a la consola: %d \n",paqueteLoader->header.type);
+	int fin = 1;
+	while( fin<1024 ){
+		switch(paqueteLoader->header.type){
+			case FINALIZAR_PROGRAMA_EXITO:
+				log_info(self->loggerProgramaBESO, "Programa: recibio un FINALIZAR_PROGRAMA_EXITO");
 				close(self->socket_ProgramaBESO->socket->descriptor);
+				fin=1025;
+			break;
+			case ERROR_POR_SEGMENTATION_FAULT:
+				log_info(self->loggerProgramaBESO, "Programa: recibio un ERROR_POR_SEGMENTATION_FAULT");
+				close(self->socket_ProgramaBESO->socket->descriptor);
+				fin=1024;
 				break;
-
 			default:
-				log_info(self->loggerProgramaBESO, "Consola: Llego cualquier cosa que no se esperaba.");
+				log_info(self->loggerProgramaBESO, "Programa: Llego cualquier cosa que no se esperaba.");
+				fin=1024;
 				break;
 
 			}//fin switch
@@ -59,6 +64,9 @@ void consolaRealizarHandshakeConLOADER(t_programaBESO* self) {
 
 	}//fin while
 
-	log_info(self->loggerProgramaBESO, "Programa: Termino correctamente.");
+	if (fin==1024)
+	log_info(self->loggerProgramaBESO, "Programa: Termino por un error de memoria.");
+	else
+		log_info(self->loggerProgramaBESO, "Programa: Termino correctamente.");
 
 }

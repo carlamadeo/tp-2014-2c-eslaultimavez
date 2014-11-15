@@ -1,6 +1,10 @@
 #ifndef SOCKET_H_
 #define SOCKET_H_
 
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 #define MAX_CONEXIONES 10
 #define BUFF_SIZE 1024
