@@ -53,7 +53,9 @@ uint32_t mspCrearSegmento(int pid, int tamanio){
 
 	else {
 		log_info(MSPlogger, "Creando segmento...");
+		pthread_rwlock_wrlock(&rw_estructuras);
 		direccionBase = crearSegmentoConSusPaginas(pid, cantidadPaginas, tamanio);
+		pthread_rwlock_unlock(&rw_estructuras);
 	}
 
 	return direccionBase;
@@ -223,7 +225,9 @@ void borrarPaginaDeMemoria(t_pagina *pagina){
 	cantidadMemoriaPrincipal += TAMANIO_PAGINA;
 
 	//TODO ver como borrar correctamente la memoria
+	pthread_rwlock_wrlock(&rw_memoria);
 	memset(memoria + marco->inicio, 0, TAMANIO_PAGINA);
+	pthread_rwlock_unlock(&rw_memoria);
 }
 
 
@@ -289,9 +293,9 @@ int mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tam
 
 	//Creo una lista con todas las paginas que debo pasar a memoria
 	paginasAMemoria = crearListaPaginasAPasarAMemoria(cantidadPaginas, pagina, segmento->tablaPaginas);
-
+	pthread_rwlock_wrlock(&rw_memoria);
 	buscarPaginasYEscribirMemoria(pid, direccionReal, paginasAMemoria, tamanio, buffer);
-
+	pthread_rwlock_unlock(&rw_memoria);
 	//Esto es para imprimir en el log lo que se escribio en memoria
 	memset(mostrarBuffer, 0, tamanio);
 	memmove(mostrarBuffer, buffer, tamanio);
@@ -380,12 +384,12 @@ void buscarPaginasYEscribirMemoria(int pid, t_direccion direccionReal, t_list *p
 			marco = encontrarMarcoPorNumeroMarco(numeroMarco);
 			pagina->numeroMarco = numeroMarco;
 		}
-
+		pthread_rwlock_wrlock(&rw_memoria);
 		if(marco != NULL && marco != -1){
 
 			seReferencioElMarco(marco);
 			seModificoElMarco(marco);
-
+			
 			//Si debo escribir mas de una pagina debo saber en que posicion se encuentra esa pagina, para ver cuanto escribir
 			if(cantidadPaginas != 1){
 
@@ -414,6 +418,7 @@ void buscarPaginasYEscribirMemoria(int pid, t_direccion direccionReal, t_list *p
 
 			contador++;
 		}
+		pthread_rwlock_unlock(&rw_memoria);
 	}
 
 	list_iterate(paginasAMemoria, iterarPaginasParaEscribir);
@@ -462,9 +467,11 @@ int mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido)
 
 	//Creo una lista con todas las paginas que debo pasar a memoria
 	paginasAMemoria = crearListaPaginasAPasarAMemoria(cantidadPaginas, pagina, segmento->tablaPaginas);
-
+	
+	pthread_rwlock_rdlock(&rw_memoria);
 	buscarPaginasYLeerMemoria(pid, direccionReal, paginasAMemoria, tamanio, leido);
-
+	pthread_rwlock_unlock(&rw_memoria);
+	
 	log_info(MSPlogger, "Se ha leido de memoria: %s", leido);
 
 	list_destroy(paginasAMemoria);
@@ -583,7 +590,9 @@ int traerPaginaDeDiscoAMemoria(int pid, int numeroSegmento, int numeroPagina){
 
 	if(list_size(marcosLibres) > 0){
 		marco = (t_marco*)list_remove(marcosLibres, 1);
+		pthread_rwlock_rdlock(&rw_memoria);
 		copiarPaginaAMemoriaYEliminarDeDisco(marco);
+		pthread_rwlock_unlock(&rw_memoria);
 		return marco->numero;
 	}
 
@@ -596,13 +605,17 @@ int traerPaginaDeDiscoAMemoria(int pid, int numeroSegmento, int numeroPagina){
 
 	if(modoSustitucionPaginasMSP == FIFO){
 		marco = sustituirPaginaPorFIFO();
+		pthread_rwlock_rdlock(&rw_memoria);
 		copiarPaginaAMemoriaYEliminarDeDisco(marco);
+		pthread_rwlock_rdlock(&rw_memoria);
 		return marco->numero;
 	}
 
 	else{
 		marco = sustituirPaginaPorCLOCK_MODIFICADO();
+		pthread_rwlock_rdlock(&rw_memoria);
 		copiarPaginaAMemoriaYEliminarDeDisco(marco);
+		pthread_rwlock_unlock(&rw_memoria);
 		return marco->numero;
 	}
 
