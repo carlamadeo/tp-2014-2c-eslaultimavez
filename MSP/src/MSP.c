@@ -25,7 +25,7 @@ int puertoMSP;
 
 //semaforos
 pthread_rwlock_t rw_estructuras;
-pthread_rwlock_t rw_estructuras;
+pthread_rwlock_t rw_memoria;
 
 
 int main(int argc, char *argv[]){

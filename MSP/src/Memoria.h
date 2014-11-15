@@ -8,6 +8,8 @@
 #ifndef MEMORIA_H_
 #define MEMORIA_H_
 
+#include "mspCPU.h"
+
 #define TAMANIO_PAGINA 256 //Bytes
 #define TAMANIO_MAX_SEGMENTO 1048576 //Bytes
 #define NO_EN_MEMORIA -1	//La pagina no esta ni en disco ni en memoria

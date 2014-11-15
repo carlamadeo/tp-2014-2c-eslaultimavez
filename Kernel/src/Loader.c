@@ -138,7 +138,7 @@ void atenderNuevaConexionPrograma(t_kernel* self,t_socket* socketNuevoCliente, f
 							log_error(self->loggerLoader, " Loader: Error enviar HANDSHAKE_LOADER");
 
 						log_info(self->loggerLoader, " Loader:Se envió HANDSHAKE_LOADER correctamente");
-						socket_sendPaquete(socketNuevoCliente, HANDSHAKE_LOADER,0, NULL);
+						socket_sendPaquete(socketNuevoCliente, FINALIZAR_PROGRAMA_EXITO,0, NULL);
 					break;
 					case ERROR_POR_SEGMENTATION_FAULT:
 

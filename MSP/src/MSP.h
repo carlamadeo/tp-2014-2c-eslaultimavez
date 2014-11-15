@@ -6,7 +6,9 @@
 #include "commons/socketInBigBang.h"
 #include <arpa/inet.h>
 
-
+//semaforos.... Preguntar como deben ir los semaforos
+//pthread_rwlock_t rw_estructuras;
+//pthread_rwlock_t rw_memoria;
 
 t_socket *socketKernel;
 sem_t mutex;

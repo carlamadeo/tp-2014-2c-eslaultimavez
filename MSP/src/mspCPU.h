@@ -1,6 +1,8 @@
 #ifndef MSP_CPU_H_
 #define MSP_CPU_H_
 
+#include "commons/socketInBigBang.h"
+
 typedef struct{
 	t_socket_paquete *paquete;
 	t_socket *socket;
@@ -8,7 +10,7 @@ typedef struct{
 
 typedef struct{
 	int pid;
-	uint32_t direccionVirtual;
+	//uint32_t direccionVirtual;
 	int tamanio;
 	char* leido;
 }t_envio_leerMSPcpu;

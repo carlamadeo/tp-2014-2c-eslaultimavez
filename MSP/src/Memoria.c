@@ -20,6 +20,10 @@ uint16_t modoSustitucionPaginasMSP;
 t_list *programas, *marcosLibres, *marcosOcupados;
 
 
+//semaforos
+pthread_rwlock_t rw_estructuras;
+pthread_rwlock_t rw_memoria;
+
 /***************************************************************************************************\
  *								--Comienzo Creacion Segmento--									 	 *
 \***************************************************************************************************/
@@ -388,7 +392,7 @@ void buscarPaginasYEscribirMemoria(int pid, t_direccion direccionReal, t_list *p
 			marco = encontrarMarcoPorNumeroMarco(numeroMarco);
 			pagina->numeroMarco = numeroMarco;
 		}
-		pthread_rwlock_wrlock(&rw_memoria);
+
 		if(marco != NULL && marco != -1){
 
 			seReferencioElMarco(marco);
@@ -422,7 +426,7 @@ void buscarPaginasYEscribirMemoria(int pid, t_direccion direccionReal, t_list *p
 
 			contador++;
 		}
-		pthread_rwlock_unlock(&rw_memoria);
+
 	}
 
 	list_iterate(paginasAMemoria, iterarPaginasParaEscribir);
@@ -472,9 +476,9 @@ int mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido)
 	//Creo una lista con todas las paginas que debo pasar a memoria
 	paginasAMemoria = crearListaPaginasAPasarAMemoria(cantidadPaginas, pagina, segmento->tablaPaginas);
 	
-	pthread_rwlock_rdlock(&rw_memoria);
+
 	buscarPaginasYLeerMemoria(pid, direccionReal, paginasAMemoria, tamanio, leido);
-	pthread_rwlock_unlock(&rw_memoria);
+	//pthread_rwlock_unlock(&rw_memoria);
 	
 	pthread_rwlock_unlock(&rw_estructuras);
 	
@@ -497,13 +501,18 @@ void buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *pagin
 
 	memset(leido, 0, tamanio);
 
+	pthread_rwlock_rdlock(&rw_memoria);
+
 	void iterarPaginasParaLeer(t_pagina *pagina){
 
 		//Si la pagina se encuentra en disco, la paso a un marco libre y la borro de disco
 		if(pagina->numeroMarco == EN_DISCO){
 			log_info(MSPlogger, "La pagina %d se encuentra en memoria secundaria", pagina->numero);
+			pthread_rwlock_unlock(&rw_memoria);
+			pthread_rwlock_wrlock(&rw_memoria);
 			numeroMarco = traerPaginaDeDiscoAMemoria(pid, direccionReal.numeroSegmento, direccionReal.numeroPagina);
 			pagina->numeroMarco = numeroMarco;
+			pthread_rwlock_unlock(&rw_memoria);
 		}
 
 		//Si la pagina no se encuentra ni en disco ni en memoria la paso a un marco libre

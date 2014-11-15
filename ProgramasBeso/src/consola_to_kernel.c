@@ -40,6 +40,7 @@ void consolaRealizarHandshakeConLOADER(t_programaBESO* self) {
 	t_socket_paquete *paqueteLoader = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 	socket_recvPaquete(self->socket_ProgramaBESO->socket, paqueteLoader);
 
+	//printf(" valor que llega a la consola: %d \n",paqueteLoader->header.type);
 	int fin = 1;
 	while( fin<1024 ){
 		switch(paqueteLoader->header.type){
@@ -52,7 +53,6 @@ void consolaRealizarHandshakeConLOADER(t_programaBESO* self) {
 				log_info(self->loggerProgramaBESO, "Programa: recibio un ERROR_POR_SEGMENTATION_FAULT");
 				close(self->socket_ProgramaBESO->socket->descriptor);
 				fin=1024;
-				//paqueteLoader->header.type= 46;
 				break;
 			default:
 				log_info(self->loggerProgramaBESO, "Programa: Llego cualquier cosa que no se esperaba.");
