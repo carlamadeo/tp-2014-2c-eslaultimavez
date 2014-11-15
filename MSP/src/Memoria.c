@@ -122,7 +122,7 @@ double cantidadMemoriaTotal(){
 \***************************************************************************************************/
 
 int mspDestruirSegmento(int pid, uint32_t direccionBase){
-
+	pthread_rwlock_wrlock(&rw_estructuras);
 	t_direccion direccionReal = calculoDireccionReal(direccionBase);
 
 	if (direccionBase == 0)
@@ -159,6 +159,7 @@ int mspDestruirSegmento(int pid, uint32_t direccionBase){
 			else{
 				log_error(MSPlogger, "No se encontro el segmento con base %0.8p para el programa con PID %d. No se hace nada. ", direccionBase, pid);
 				return ERROR_POR_SEGMENTO_DESCONOCIDO;
+				pthread_rwlock_unlock(&rw_estructuras);
 			}
 		}
 		else
@@ -166,7 +167,7 @@ int mspDestruirSegmento(int pid, uint32_t direccionBase){
 	}
 
 	return SIN_ERRORES;
-
+	pthread_rwlock_unlock(&rw_estructuras);
 }
 
 void eliminarSegmentoDeListaDelPrograma(t_programa *programa, int numeroSegmento){
@@ -257,7 +258,8 @@ int mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tam
 	int cantidadPaginas;
 	t_list *paginasAMemoria;
 	t_direccion direccionReal = calculoDireccionReal(direccionVirtual);
-
+	
+	pthread_rwlock_rdlock(&rw_estructuras);
 	t_programa *programa = encontrarPrograma(pid);
 
 	//Compruebo que sea un PID valido
@@ -300,7 +302,9 @@ int mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tam
 	memset(mostrarBuffer, 0, tamanio);
 	memmove(mostrarBuffer, buffer, tamanio);
 	log_info(MSPlogger, "Se ha escrito correctamente en memoria: %s", mostrarBuffer);
-
+ 	
+ 	pthread_rwlock_unlock(&rw_estructuras);
+	
 	list_destroy(paginasAMemoria);
 
 	free(mostrarBuffer);
@@ -435,7 +439,7 @@ int mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido)
 	t_direccion direccionReal = calculoDireccionReal(direccionVirtual);
 	t_list *paginasAMemoria;
 	int cantidadPaginas;
-
+	pthread_rwlock_rdlock(&rw_estructuras);
 	t_programa *programa = encontrarPrograma(pid);
 
 	if(programa == NULL){
@@ -472,8 +476,10 @@ int mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido)
 	buscarPaginasYLeerMemoria(pid, direccionReal, paginasAMemoria, tamanio, leido);
 	pthread_rwlock_unlock(&rw_memoria);
 	
+	pthread_rwlock_unlock(&rw_estructuras);
+	
 	log_info(MSPlogger, "Se ha leido de memoria: %s", leido);
-
+	
 	list_destroy(paginasAMemoria);
 
 	return SIN_ERRORES;
@@ -511,7 +517,7 @@ void buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *pagin
 			numeroMarco = pagina->numeroMarco;
 
 		t_marco *marco = encontrarMarcoEnMarcosOcupados(numeroMarco);
-
+		pthread_rwlock_wrlock(&rw_memoria);
 		if(marco != NULL && numeroMarco != -1){
 
 			seReferencioElMarco(marco);
@@ -546,7 +552,7 @@ void buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *pagin
 			contador++;
 		}
 	}
-
+	pthread_rwlock_unlock(&rw_memoria);
 	list_iterate(paginasAMemoria, iterarPaginasParaLeer);
 }
 
