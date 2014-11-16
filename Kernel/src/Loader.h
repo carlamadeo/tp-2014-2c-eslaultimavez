@@ -1,11 +1,7 @@
 #ifndef LOADER_H_
 #define LOADER_H_
 
-
 #include "Kernel.h"
-
-int unPIDGlobal = 100;
-int unTIDGlobal = 1000;
 
 pthread_t programaBesoHilo, conexionConMSPHilo;
 t_list* listaDeProgramas;
@@ -17,7 +13,7 @@ typedef struct{
 
 
 typedef struct{
-	char * codigoBeso;
+	char *codigoBeso;
 }t_codigoBeso;
 
 typedef struct {
