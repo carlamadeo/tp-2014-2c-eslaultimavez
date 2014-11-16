@@ -9,7 +9,6 @@ typedef struct {
 	t_log *loggerProgramaBESO;
 	int puertoLoader;
 	char *ipLoader;
-	char *codigo;
 } t_programaBESO;
 
 

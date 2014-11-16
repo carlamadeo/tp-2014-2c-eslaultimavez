@@ -41,9 +41,9 @@ void kernel_comenzar_Loader(t_kernel* self);
 t_programa* obtenerProgramaConsolaSegunDescriptor(t_kernel* self,int descriptor);
 void atienderProgramaConsola(t_kernel* self,t_programa* programa, fd_set* master);
 void atenderNuevaConexionPrograma(t_kernel* self,t_socket* socketNuevoCliente, fd_set* master, int* fdmax);
-t_TCB_Kernel* loaderCrearTCB(t_kernel* self,t_codigoBeso *unCodigo,t_socket* socketNuevoCliente);
+t_TCB_Kernel* loaderCrearTCB(t_kernel* self, char *programaBeso, t_socket* socketNuevoCliente);
 uint32_t loaderCrearSegmento(t_kernel* self, t_CrearSegmentoBeso* codigoBesoAMSP);
-int loaderEscribirMemoria(t_kernel* self,t_TCB_Kernel* unTCB, t_codigoBeso *unCodigo,  t_socket* socketNuevoCliente);
+int loaderEscribirMemoria(t_kernel* self,t_TCB_Kernel* unTCB, char *programaBeso, t_socket* socketNuevoCliente);
 
 
 

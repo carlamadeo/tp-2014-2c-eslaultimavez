@@ -159,39 +159,41 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 
 	else{
 
-		if (socket_sendPaquete(socketNuevoCliente, HANDSHAKE_LOADER,0, NULL) >= 0)
+		if (socket_sendPaquete(socketNuevoCliente, HANDSHAKE_LOADER, 0, NULL) >= 0)
 			log_info(self->loggerLoader, "Loader: Handshake con Consola!");
 		else
 			log_error(self->loggerLoader, "Loader: Error al recibir los datos de la Consola.");
 
-		//se Recibe el codigo
-		t_socket_paquete *paqueteCodigo = (t_socket_paquete*) malloc(sizeof(t_socket_paquete));
-		socket_recvPaquete(socketNuevoCliente, paqueteCodigo);
+		//se recibe el codigo del archivo Beso
+		t_socket_header header;
 
-		if(paqueteCodigo->header.type == CODIGO_BESO){
+		if(recv(socketNuevoCliente->descriptor, &header, sizeof(t_socket_header), NULL) != sizeof(t_socket_header))
+			log_error(self->loggerLoader, "Loader: No se ha podido recibir la informacion de la Consola");
 
-			t_codigoBeso *unCodigo = malloc(sizeof(t_codigoBeso));
-			unCodigo = (t_codigoBeso *) (paqueteCodigo->data);
+		int sizePrograma = header.length - sizeof(t_socket_header);
+		char *programaBeso = malloc(sizePrograma);
+		memset(programaBeso, 0, sizePrograma + 1);
 
-			//Ver por que no anda!!!
-			//printf("el codigo beso recibido es %s\n", unCodigo->codigoBeso);
-			//t_TCB_Kernel* unTCBenLoader = loaderCrearTCB(self, unCodigo, socketNuevoCliente);
-			log_info(self->loggerLoader, "Loader: TCB completo.");
+		if(recv(socketNuevoCliente->descriptor, programaBeso, sizePrograma, NULL) != sizePrograma)
+			log_error(self->loggerLoader, "Loader: No se ha podido recibir el programa Beso de la Consola");
 
-			//LUEGO EN ESTA PARTE PONERLO AL FINAL DE LA COLA NEW
-			free(paqueteCodigo);
-		}//fin del ir de CODIGO_BESO
+		t_TCB_Kernel* unTCBenLoader = loaderCrearTCB(self, programaBeso, socketNuevoCliente);
+		log_info(self->loggerLoader, "Loader: TCB completo.");
 
-	}//fin del else
+		//LUEGO EN ESTA PARTE PONERLO AL FINAL DE LA COLA NEW
+
+	}
+
 	free(paquete);
-
 }
+
+
 
 
 //Tiene que hacer el HANDSHAKE con la MSP
 //Para luego crear segmento y escribir en memoria
 
-t_TCB_Kernel* loaderCrearTCB(t_kernel* self,t_codigoBeso *unCodigo,t_socket* socketNuevoCliente){
+t_TCB_Kernel* loaderCrearTCB(t_kernel* self, char *programaBeso, t_socket* socketNuevoCliente){
 
 	t_TCB_Kernel* unTCB = malloc(sizeof(t_TCB_Kernel));
 
@@ -215,12 +217,12 @@ t_TCB_Kernel* loaderCrearTCB(t_kernel* self,t_codigoBeso *unCodigo,t_socket* soc
 			//funciona que devuelte la base del segmente de codigo
 			t_CrearSegmentoBeso* baseCodigoDeSegmento = malloc(sizeof(t_CrearSegmentoBeso));
 
-			baseCodigoDeSegmento->tamanio = strlen(unCodigo->codigoBeso); // ver que esto este bien!!!
+			baseCodigoDeSegmento->tamanio = strlen(programaBeso); // ver que esto este bien!!!
 			baseCodigoDeSegmento->pid = unTCB->pid;
 			unTCB->base_segmento_codigo = loaderCrearSegmento(self,baseCodigoDeSegmento);
 
 			//funciona de escribir en memoria
-			int unaRespuesta = loaderEscribirMemoria(self, unTCB, unCodigo,socketNuevoCliente);
+			int unaRespuesta = loaderEscribirMemoria(self, unTCB, programaBeso, socketNuevoCliente);
 
 			//Validar check de ERROR y si hay un error mandar a ProgramaBeso
 			switch(unaRespuesta){
@@ -286,7 +288,7 @@ uint32_t loaderCrearSegmento(t_kernel* self, t_CrearSegmentoBeso* codigo){
 }
 
 
-int loaderEscribirMemoria(t_kernel* self,t_TCB_Kernel* unTCB, t_codigoBeso *unCodigo, t_socket* socketNuevoCliente){
+int loaderEscribirMemoria(t_kernel* self,t_TCB_Kernel* unTCB, char *programaBeso, t_socket* socketNuevoCliente){
 
 	t_EscribirSegmentoBeso* escrituraDeCodigo = malloc(sizeof(t_EscribirSegmentoBeso));
 	t_socket_paquete *paqueteConfirmacionEscritura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
@@ -294,9 +296,9 @@ int loaderEscribirMemoria(t_kernel* self,t_TCB_Kernel* unTCB, t_codigoBeso *unCo
 
 	escrituraDeCodigo->direccionVirtual = unTCB->base_segmento_codigo ;
 	escrituraDeCodigo->pid = 545;
-	escrituraDeCodigo->tamanio = sizeof(unCodigo); //ver que de donde sale!!!
+	escrituraDeCodigo->tamanio = sizeof(programaBeso); //ver que de donde sale!!!
 
-	memcpy(escrituraDeCodigo->bufferCodigoBeso, unCodigo, strlen(unCodigo->codigoBeso)); //importante, ver si tiene o no el /0
+	memcpy(escrituraDeCodigo->bufferCodigoBeso, programaBeso, strlen(programaBeso)); //importante, ver si tiene o no el /0
 
 	socket_sendPaquete(self->socketMSP->socket, ESCRIBIR_MEMORIA,sizeof(t_EscribirSegmentoBeso), escrituraDeCodigo);
 

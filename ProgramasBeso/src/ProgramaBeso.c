@@ -39,12 +39,10 @@ int main(int argc, char* argv[]) {
 
 	self->loggerProgramaBESO = log_create(nombreLog, "ProgramaBeso", 1, LOG_LEVEL_DEBUG); //Creo el archivo Log
 
-	consolaExtraer_programaBeso(self, argv[1]);
 	consolaHacerConexionconLoader(self);
-	consolaComunicacionLoader(self);
+	consolaComunicacionLoader(self, argv[1]);
 
 	log_destroy(self->loggerProgramaBESO);
-	free(self->codigo);
 	free(self->ipLoader);
 	free(self);
 
@@ -65,30 +63,4 @@ t_programaBESO* consolaCargarConfiguracion(char* config_file){
 
 	config_destroy(config);
 	return self;
-}
-
-
-void consolaExtraer_programaBeso(t_programaBESO *self, char *parametro){
-
-	FILE *archivoBeso = fopen(parametro, "rb");
-
-	if(archivoBeso == 0){
-		log_error(self->loggerProgramaBESO, "El archivo no pudo abrirse");
-		exit(-1);
-	}
-
-	fseek(archivoBeso, 0, SEEK_END);	//Me coloco al final del fichero para saber el tamanio
-	int sizeArchivoBeso = ftell(archivoBeso);
-	fseek(archivoBeso, 0, SEEK_SET);	//Me coloco al principio del fichero para leerlo
-
-	self->codigo = malloc(sizeof(char)*sizeArchivoBeso + 1);
-
-	int leido = fread(self->codigo, 1, sizeArchivoBeso, archivoBeso);
-
-	if(leido == 0){
-		log_info(self->loggerProgramaBESO, "El archivo no contiene codigo. Cerrando Programa...");
-		exit(-1);
-	}
-
-	fclose(archivoBeso);
 }
