@@ -1,23 +1,11 @@
 #ifndef KERNEL_H_
 #define KERNEL_H_
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 #include <semaphore.h>
 #include <arpa/inet.h>
-#include <unistd.h>
-#include <sys/select.h>
-#include <errno.h>
-#include <string.h>
-#include <commons/config.h>
 #include <commons/log.h>
 #include <commons/collections/list.h>
-#include <commons/temporal.h>
 #include <commons/socketInBigBang.h>
-#include <commons/protocolStructInBigBang.h>
 
 
 

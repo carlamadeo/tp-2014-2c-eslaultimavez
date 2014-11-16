@@ -1,5 +1,7 @@
 
 #include "Loader.h"
+#include "commons/protocolStructInBigBang.h"
+#include <errno.h>
 
 int unPIDGlobal = 0;
 int unTIDGlobal = 0;
@@ -64,11 +66,11 @@ void loaderEscuchaProgramaBeso(t_kernel* self){
 
 					if(i == socketEscucha->descriptor){  //gestionar nuevas conexiones
 
-						if((socketNuevaConexion = socket_acceptClient(socketEscucha))==0)
-							log_error(self->loggerLoader, "Loader: Error en el accep  Loader");
+						if((socketNuevaConexion = socket_acceptClient(socketEscucha)) == 0)
+							log_error(self->loggerLoader, "Loader: Error en el accept");
 
 						else{
-							log_debug(self->loggerLoader, "Loader: ACCEP completo! ");
+							log_debug(self->loggerLoader, "Loader: Accept completo! ");
 							atenderNuevaConexionPrograma(self, socketNuevaConexion, &master, &fdmax);
 						}
 
@@ -173,7 +175,7 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 
 			//Ver por que no anda!!!
 			//printf("el codigo beso recibido es %s\n", unCodigo->codigoBeso);
-			t_TCB_Kernel* unTCBenLoader = loaderCrearTCB(self, unCodigo, socketNuevoCliente);
+			//t_TCB_Kernel* unTCBenLoader = loaderCrearTCB(self, unCodigo, socketNuevoCliente);
 			log_info(self->loggerLoader, "Loader: TCB completo.");
 
 			//LUEGO EN ESTA PARTE PONERLO AL FINAL DE LA COLA NEW

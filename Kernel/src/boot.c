@@ -1,4 +1,5 @@
 #include "boot.h"
+#include "commons/protocolStructInBigBang.h"
 
 void hacer_conexion_con_msp(t_kernel* self) {
 
@@ -11,7 +12,7 @@ void hacer_conexion_con_msp(t_kernel* self) {
 		log_error(self->loggerKernel, "Kernel: Error al hacer el Boot con la MSP!");
 
 	else{
-		log_info(self->loggerKernel, "Kernel: Conectado con la MSP (IP:%s/Puerto:%d)!", self->ipMsp, self->puertoMsp);
+		log_info(self->loggerKernel, "Kernel: Conectado con la MSP (IP: %s/Puerto: %d)!", self->ipMsp, self->puertoMsp);
 		realizarHandshakeConMSP(self);
 	}
 
@@ -110,6 +111,8 @@ int kernelCrearSegmento(t_kernel* self, int pid, int tamanio){
 			return -1;
 		}
 	}
+
+	log_info(self->loggerKernel, "Kernel: Boot completado con éxito.");
 
 	free(datosAEnviar);
 	free(datosRecibidos);

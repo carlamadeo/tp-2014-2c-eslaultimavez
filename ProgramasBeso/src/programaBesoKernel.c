@@ -54,6 +54,11 @@ void consolaComunicacionLoader(t_programaBESO* self){
 			else
 				log_info(self->loggerProgramaBESO, datosDeKernel->mensaje);
 		}
+		else{
+			log_error(self->loggerProgramaBESO, "MSP: El Kernel ha cerrado la conexion.");
+			close(self->socketKernel->socket->descriptor);
+			exit(-1);
+		}
 	}
 
 	free(datosAKernel->codigoBeso);

@@ -9,8 +9,10 @@
  */
 
 #include "Kernel.h"
-#include "Planificador.h"
 #include "Loader.h"
+#include "boot.h"
+#include "commons/string.h"
+#include "commons/config.h"
 
 int main(int argc, char** argv) {
 
@@ -50,22 +52,20 @@ int main(int argc, char** argv) {
 
 	//hace el boot y le manda a la msp el archivo de SystemCall
 	hacer_conexion_con_msp(self);
-	log_info((self->loggerKernel), "Kernel: Boot completado con EXITO.");
-
 
 	//Esto lo hace despues de Bootear
 
 	iretThread = pthread_create( &LoaderHilo, NULL, (void*) kernel_comenzar_Loader, self);
-		if(iretThread) {
-			printf(stderr,"Error - pthread_create() return code: %d\n",iretThread);
-			exit(EXIT_FAILURE);
-		}
+	if(iretThread) {
+		printf(stderr,"Error - pthread_create() return code: %d\n", iretThread);
+		exit(EXIT_FAILURE);
+	}
 
-//	iretThread = pthread_create( &PlanificadorHilo, NULL, (void*) kernel_comenzar_Planificador, self);
-//	if(iretThread) {
-//		printf(stderr,"Error - pthread_create() return code: %d\n",iretThread);
-//		exit(EXIT_FAILURE);
-//	}
+	//	iretThread = pthread_create( &PlanificadorHilo, NULL, (void*) kernel_comenzar_Planificador, self);
+	//	if(iretThread) {
+	//		printf(stderr,"Error - pthread_create() return code: %d\n",iretThread);
+	//		exit(EXIT_FAILURE);
+	//	}
 
 
 	pthread_join(LoaderHilo, NULL);
