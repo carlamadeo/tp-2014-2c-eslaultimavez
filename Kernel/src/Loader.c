@@ -1,6 +1,8 @@
 
 #include "Loader.h"
 
+
+
 void kernel_comenzar_Loader(t_kernel* self){
 
 
@@ -75,6 +77,9 @@ void loaderEscuchaProgramaBeso(t_kernel* self){
 }
 
 
+
+
+//Busca una conexion ya existente
 t_programa* obtenerProgramaConsolaSegunDescriptor(t_kernel* self,int descriptor)
 {
 	log_info(self->loggerLoader,"Loader:Obteniendo Programa descriptor buscado %d",descriptor);
@@ -88,8 +93,15 @@ t_programa* obtenerProgramaConsolaSegunDescriptor(t_kernel* self,int descriptor)
 }
 
 
+
+
+
+//En esta funcion hay que definir bien las cosas por eso la comente
+//ver que pasa cuando se quiere trabajar con un cliente pre existen
+//solo se me ocurre que es para detectar la desconexion de un programaBESO nada mas!
 void atienderProgramaConsola(t_kernel* self,t_programa* programa, fd_set* master)
 {
+	/*
 	t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 
 	if ((socket_recvPaquete(programa->socketProgramaConsola, paquete)) < 0) {
@@ -109,7 +121,7 @@ void atienderProgramaConsola(t_kernel* self,t_programa* programa, fd_set* master
 			log_error(self->loggerLoader, "Loader: Tipo de mensaje enviado por el Programa %d no identificado.", programa->programaTCB.pid);
 		}
 	}
-	free(paquete);
+	free(paquete);*/
 }
 
 
@@ -136,85 +148,16 @@ void atenderNuevaConexionPrograma(t_kernel* self,t_socket* socketNuevoCliente, f
 		//se Recive el codigo
 		socket_recvPaquete(socketNuevoCliente, paquete);
 		if(paquete->header.type == CODIGO_BESO){
-
-
-
 			t_socket_paquete *paqueteCodigo = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 			socket_recvPaquete(socketNuevoCliente, paqueteCodigo);
 			t_codigoBeso *unCodigo = (t_codigoBeso *)malloc(sizeof(t_codigoBeso));
 			unCodigo = (t_codigoBeso *) paqueteCodigo->data;
 
-
-			//Se trabaja con la MSP
-			socket_sendPaquete(self->socketMSP->socket, HANDSHAKE_KERNEL,0, NULL);
-			paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+			t_TCB_Kernel* unTCBenLoader =loaderCrearTCB(self,unCodigo,socketNuevoCliente);
+			log_info(self->loggerLoader, " Loader:TCB completo.");
 
 
-
-			if (socket_recvPaquete(self->socketMSP->socket, paquete) >= 0){
-
-				if(paquete->header.type == HANDSHAKE_MSP){
-					log_info(self->loggerLoader, " Loader:Se recibo HANDSHAKE_MSP");
-
-					t_CrearSegmentoBeso* codigoBesoAMSP = malloc(sizeof(t_CrearSegmentoBeso));
-					socket_sendPaquete(self->socketMSP->socket, CREAR_SEGMENTO,sizeof(t_CrearSegmentoBeso), codigoBesoAMSP);
-
-
-					t_msp_DireccionBase *paqueteMSP = (t_msp_DireccionBase *)malloc(sizeof(t_msp_DireccionBase));
-					socket_recvPaquete(self->socketMSP->socket, paqueteMSP);
-					uint32_t unaDireccionBase = paqueteMSP->direccionBase;
-					log_info(self->loggerLoader, " Loader:Recibe Base de la MSP  %0.8p ", unaDireccionBase);
-
-					//Validar check de ERROR y si hay un error mandar a ProgramaBeso
-					switch(unaDireccionBase){
-					case ERROR_POR_TAMANIO_EXCEDIDO:
-
-						break;
-					case ERROR_POR_MEMORIA_LLENA:
-
-						break;
-					case ERROR_POR_NUMERO_NEGATIVO:
-
-						break;
-					case ERROR_POR_SEGMENTO_INVALIDO:
-
-						break;
-					case ERROR_POR_SEGMENTATION_FAULT:
-
-						break;
-					default:
-						//log sin errrores
-						break;
-
-					}
-
-					t_EscribirSegmentoBeso* escrituraDeCodigo = malloc(sizeof(t_EscribirSegmentoBeso));
-					escrituraDeCodigo->direccionVirtual = unaDireccionBase;
-					escrituraDeCodigo->pid = 545;
-					escrituraDeCodigo->tamanio = sizeof(unCodigo); //ver que de donde sale!!!
-					escrituraDeCodigo->bufferCodigoBeso = unCodigo;
-					socket_sendPaquete(self->socketMSP->socket, ESCRIBIR_MEMORIA,sizeof(t_EscribirSegmentoBeso), escrituraDeCodigo);
-
-
-					t_socket_paquete *paqueteConfirmacionEscritura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-					socket_recvPaquete(socketNuevoCliente, paqueteConfirmacionEscritura);
-					t_confirmacionEscritura *unaConfirmacion = (t_confirmacionEscritura *)malloc(sizeof(t_confirmacionEscritura));
-					unaConfirmacion = (t_confirmacionEscritura *) paqueteConfirmacionEscritura->data;
-
-					switch(unaDireccionBase){
-					case ERROR_POR_SEGMENTATION_FAULT:
-
-						break;
-					default:
-
-						break;
-
-					}
-				}
-
-
-			}else
-				log_error(self->loggerLoader, "Loader: Error con la MSP.");
+			//LUEGO EN ESTA PARTE PONERLO AL FINAL DE LA COLA NEW
 
 		}//fin del ir de CODIGO_BESO
 
@@ -225,16 +168,127 @@ void atenderNuevaConexionPrograma(t_kernel* self,t_socket* socketNuevoCliente, f
 }
 
 
+//Tiene que hacer el HANDSHAKE con la MSP
+//Para luego crear segmento y escribir en memoria
+
+t_TCB_Kernel* loaderCrearTCB(t_kernel* self,t_codigoBeso *unCodigo,t_socket* socketNuevoCliente){
+
+	t_TCB_Kernel* unTCB = malloc(sizeof(t_TCB_Kernel));
+
+	unPIDGlobal ++;
+	unTIDGlobal ++;
+
+	unTCB->pid = unPIDGlobal;
+	unTCB->tid = unTIDGlobal;
+	unTCB->km = 0;
 
 
-void loaderCrearTCB(t_kernel* self, char* codigoPrograma, int tamanioEnBytes, int pid, int tid){
+	socket_sendPaquete(self->socketMSP->socket, HANDSHAKE_KERNEL,0, NULL);
+
+	t_socket_paquete *paqueteMSP = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+	if (socket_recvPaquete(self->socketMSP->socket, paqueteMSP) >= 0){
+
+		if(paqueteMSP->header.type == HANDSHAKE_MSP){
+			log_info(self->loggerLoader, " Loader:Se recibo HANDSHAKE_MSP");
 
 
+			//funciona que devuelte la base del segmente de codigo
+			t_CrearSegmentoBeso* baseCodigoDeSegmento = malloc(sizeof(t_CrearSegmentoBeso));
+			baseCodigoDeSegmento->tamanio = strlen(unCodigo->codigoBeso); // ver que esto este bien!!!
+			baseCodigoDeSegmento->pid = unTCB->pid;
+			unTCB->base_segmento_codigo = loaderCrearSegmento(self,baseCodigoDeSegmento);
+
+			//funciona de escribir en memoria
+			int unaRespuesta = loaderEscribirMemoria(self, unTCB, unCodigo,socketNuevoCliente);
+
+			//Validar check de ERROR y si hay un error mandar a ProgramaBeso
+			switch(unaRespuesta){
+			case ERROR_POR_TAMANIO_EXCEDIDO:
+
+				break;
+			case ERROR_POR_MEMORIA_LLENA:
+
+				break;
+			case ERROR_POR_NUMERO_NEGATIVO:
+
+				break;
+			case ERROR_POR_SEGMENTO_INVALIDO:
+
+				break;
+			case ERROR_POR_SEGMENTATION_FAULT:
+
+				break;
+			default:
+				//log sin errrores
+				break;
+
+			}// fin del switch
+
+
+			//falta ahora hacer el stack
+
+			//funciona que devuelte la base del segmente de codigo
+			t_CrearSegmentoBeso* baseCodigoDeStack = malloc(sizeof(t_CrearSegmentoBeso));
+			baseCodigoDeStack->tamanio = self->tamanioStack; // ver que esto este bien!!!
+			baseCodigoDeStack->pid = unTCB->pid;
+			unTCB->base_stack = loaderCrearSegmento(self,baseCodigoDeStack);
+
+		}// fin del if HANDSHAKE_MSP
+
+
+	}else
+		log_error(self->loggerLoader, "Loader: Error con la MSP.");
+
+	free(paqueteMSP);
+
+	return unTCB;
 }
 
 
-int loaderCrearSegmento(t_kernel* self,int pid, int tamanio){
+uint32_t loaderCrearSegmento(t_kernel* self, t_CrearSegmentoBeso* codigo){
 
 
-	return 1;
+	socket_sendPaquete(self->socketMSP->socket, CREAR_SEGMENTO,sizeof(t_CrearSegmentoBeso), codigo);
+
+	t_socket_paquete *paqueteCodigo = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+	socket_recvPaquete(self->socketMSP->socket, paqueteCodigo);
+	t_msp_DireccionBase* unaDireccionBase = (t_msp_DireccionBase *)malloc(sizeof(t_msp_DireccionBase));
+	unaDireccionBase = (t_msp_DireccionBase *) paqueteCodigo->data;
+
+
+	log_info(self->loggerLoader, " Loader:Recibe Base de la MSP  %0.8p ", unaDireccionBase);
+
+	// se valida afuera de la funcion
+	free(paqueteCodigo);
+	return unaDireccionBase->direccionBase;
+}
+
+
+int loaderEscribirMemoria(t_kernel* self,t_TCB_Kernel* unTCB, t_codigoBeso *unCodigo, t_socket* socketNuevoCliente){
+
+	t_EscribirSegmentoBeso* escrituraDeCodigo = malloc(sizeof(t_EscribirSegmentoBeso));
+	escrituraDeCodigo->direccionVirtual = unTCB->base_segmento_codigo ;
+	escrituraDeCodigo->pid = 545;
+	escrituraDeCodigo->tamanio = sizeof(unCodigo); //ver que de donde sale!!!
+	memcpy(escrituraDeCodigo->bufferCodigoBeso,unCodigo, strlen(unCodigo->codigoBeso)); //importante, ver si tiene o no el /0
+
+	socket_sendPaquete(self->socketMSP->socket, ESCRIBIR_MEMORIA,sizeof(t_EscribirSegmentoBeso), escrituraDeCodigo);
+
+
+	t_socket_paquete *paqueteConfirmacionEscritura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+	socket_recvPaquete(socketNuevoCliente, paqueteConfirmacionEscritura);
+	t_confirmacionEscritura *unaConfirmacionEscritura = (t_confirmacionEscritura *)malloc(sizeof(t_confirmacionEscritura));
+	unaConfirmacionEscritura = (t_confirmacionEscritura *) paqueteConfirmacionEscritura->data;
+
+	switch(unaConfirmacionEscritura->estado){
+	case ERROR_POR_SEGMENTATION_FAULT:
+
+		break;
+	default:
+
+		break;
+
+	}
+
+	return unaConfirmacionEscritura->estado;
 }

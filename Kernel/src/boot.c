@@ -48,14 +48,8 @@ void crearTCBKERNEL(t_kernel* self, char* codigoPrograma, int tamanioEnBytes, in
 	t_programaEnKernel* programaEnElKernel = malloc( sizeof(t_programaEnKernel) );
 	log_info(self->loggerKernel, "Kernel: Crear un TCB.");
 
-	//t_medatada_program* metadata = metadata_desde_literal(codigoPrograma);
-
 	programaEnElKernel->TCB.pid = pid;
 	programaEnElKernel->TCB.tid = tid;
-
-	//ver porque rompre
-	//programaEnElKernel->PCB.puntero_instruccion = metadata->instruccion_inicio;
-
 
 	programaEnElKernel->TCB.base_segmento_codigo = kernelCrearSegmento(self, pid, tamanioEnBytes); //beso
 
