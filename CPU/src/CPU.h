@@ -88,11 +88,11 @@ typedef struct {
 					int retardo;
 				}t_CPU;
 
-		typedef struct{
+/*		typedef struct{
 			t_TCB_CPU tcb;
 			t_list* proximo;
 		}t_lista_TCBs;
-
+*/
 
 		typedef struct {
 			t_socket * socket;
@@ -195,8 +195,9 @@ typedef struct {
  */
 
 
-
+t_CPU* self;
 t_TCB_CPU* tcb;
+t_list* lista;
 struct lista_TCBs* primero;
 struct lista_TCBs* ultimo;
 
@@ -223,9 +224,9 @@ t_info_conexion info_conexion_KERNEL;
 
 void verificar_argumentosCPU(int argc, char* argv[]);
 t_CPU* cpu_cargar_configuracion(char* config_file);
-void ejecutar_instruccion(int linea, t_TCB_CPU* tcb);
-void cpuProcesar_tcb(int pid, t_TCB_CPU* tcb);
-void cambioContexto(t_TCB_CPU* tcb);
+void ejecutar_instruccion(int linea, int indice);
+void cpuProcesar_tcb(int indice);
+void cambioContexto(int indice);
 int determinar_registro(char registro);
 
 

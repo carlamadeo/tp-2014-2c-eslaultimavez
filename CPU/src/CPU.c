@@ -12,41 +12,35 @@
 #include "cpu_to_msp.h"
 #include "cpu_to_kernel.h"
 #include "codigoESO.h"
+#include <commons/collections/list.h>
 
 
 
 int main(int argc, char** argv) {
 
+	lista=list_create();
+
 	verificar_argumentosCPU(argc, argv);
 	char* config_file = argv[1];
-	t_CPU* self = cpu_cargar_configuracion(config_file);
+	self = cpu_cargar_configuracion(config_file);
 
 	self->loggerCPU = log_create("logCPU.log", "CPU", 1, LOG_LEVEL_DEBUG);
-
-
 	self->socketMSP  = cpuConectarConMPS(self);
-	//self->socketPlanificador = conectarCPUConKernel(self);
+	self->socketPlanificador = conectarCPUConKernel(self);
 
 
 
-/*	while(1){
+
+while(1){
 		t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
-		if(socket_recvPaquete(socketDelKernel, paquete) >= 0){
+		if(socket_recvPaquete(self->socketPlanificador->socket, paquete) >= 0){
 			if( paquete->header.type == TCB_NUEVO ){
-				struct lista_TCBs* nuevo;
-				t_TCB_CPU *tcb_temp;
-				tcb_temp=(t_TCB_CPU *)paquete->data;
-				nuevo->tcb=tcb_temp;
-				int pid =nuevo->tcb.pid;
-				if(primero==NULL){
-					primero=nuevo;
-					ultimo=nuevo;
-				}else{
-					ultimo->proximo=nuevo;
-					}
-					cpuProcesar_tcb(pid, &(nuevo->tcb));
-
+				t_TCB_CPU* nuevo=malloc(sizeof(t_TCB_CPU));
+				nuevo=(t_TCB_CPU*)paquete->data;
+				int indice=list_add(lista,nuevo)==0;
+				cpuProcesar_tcb(indice);
+				free(nuevo);
 			} else {
 				log_error(logger, "Se recibio un codigo inesperado de KERNEL en main de cpu: %d", paquete->header.type);
 			}
@@ -59,7 +53,6 @@ int main(int argc, char** argv) {
 		free(paquete);
 		usleep(100);
 	}//Fin del while 1
-*/
 
 
 	/* De aca en adelante, se tiene que eliminar porque se desconecto la CPU */
@@ -76,31 +69,20 @@ int main(int argc, char** argv) {
 
 
 
-void cpuProcesar_tcb(int pid, t_TCB_CPU* nuevo){
+void cpuProcesar_tcb(int indice){
 
-	/*con el pid buscar en la lista el TCB asociado*/
-	/*struct lista_TCBs* auxiliar;
-	auxiliar=primero;
-	while(auxiliar->proximo!=NULL){
-		if(auxiliar->tcb->pid==nuevo->pid){
-			&(nuevo)=&(auxiliar->tcb);
-			break;
-		}
-
-		auxiliar=auxiliar->proximo;
-
-	}
-	*/
+	t_TCB_CPU* nuevo=malloc(sizeof(t_TCB_CPU));
+//	nuevo=(t_TCB_CPU *)list_get_element(lista, indice);//busco el TCB en la lista
 	if(nuevo==NULL){
-		log_error(logger, "error de CPU\n");
+		log_info(self->loggerCPU, "CPU: error al intentar procesar TCB no encontrado\n");
+		log_info(self->loggerCPU, "CPU: Desconectando CPU\n");
 		exit(-1);
 	}
+	log_info(self->loggerCPU, "CPU: Comenzando a procesar TCB con pid:\n %d", nuevo->pid);
 
-	log_info(logger, "Comienzo a procesar el TCB de pid:\n %d", nuevo->pid);
 
-	/*pregunto por KM del tcb a ejecutar*/
 	int seguir_ejecucion=1;
-	while(seguir_ejecucion==0){
+	while(seguir_ejecucion==1){
 
 		/*hago el pedido de la instruccion */
 		char *data=malloc(sizeof(int)+sizeof(uint32_t)); /*pid+puntero_instruccion*/
@@ -117,17 +99,18 @@ void cpuProcesar_tcb(int pid, t_TCB_CPU* nuevo){
 
 		/*pido los primeros 4 bytes especificados por PID+Puntero_Instruccion*/
 
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(logger, "Error en envio de direccion a la MSP\n %d", nuevo->pid);
-			//cpuCambioDeConextoError();
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP\n %d", nuevo->pid);
+
 		}
+		free(pedir_instruccion);
 
 		/*hago el recv de la peticion anterior*/
 
 		t_socket_paquete *paquete_MSP = malloc(sizeof(t_socket_paquete));
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 					if( paquete_MSP->header.type == LEER_MEMORIA ){
-						log_info(logger, "recibo instruccion en posicion:\n %d ", nuevo->puntero_instruccion);
+						log_info(self->loggerCPU, "CPU: se recibio instruccion de la direccion:\n %d ", nuevo->puntero_instruccion);
 						/*reservo memoria en una variable linea para guardar los 4 caracteres de ESO*/
 						char *nombre_instruccion = malloc(sizeof(char)*4);
 						/*guardo en la variable linea los 4 caracteres que forman el nombre de la instruccion ESO*/
@@ -150,7 +133,9 @@ void cpuProcesar_tcb(int pid, t_TCB_CPU* nuevo){
 						    	 if(strncmp( &(instrucciones_eso[indice]), nombre_instruccion+2, 1 )==0){
 						    		 indice++;
 						    		 if(strncmp( &(instrucciones_eso[indice]), nombre_instruccion+3, 1 )==0){
-						    			 ejecutar_instruccion(instruccion, nuevo);
+						    			 usleep(self->retardo); //tiempo que debe esperar la CPU antes de ejecutar una instruccion ESO
+						    			 ejecutar_instruccion(instruccion, indice);
+						    			 free(nombre_instruccion);
 						    			 break;
 						    				 }else{
 						    					 indice++;
@@ -168,13 +153,13 @@ void cpuProcesar_tcb(int pid, t_TCB_CPU* nuevo){
 						   	} //fin de while
 
 						} else {
-						log_error(logger, "Se recibio un codigo inesperado de MSP:\n %d", paquete_MSP->header.type);
+							log_info(self->loggerCPU, "CPU: Se recibio un codigo inesperado de MSP:\n %d", paquete_MSP->header.type);
 
 						}
 		}else{
-				log_info(logger, "MSP ha cerrado su conexion\n");
-				printf("MSP ha cerrado su conexion\n");
-				exit(-1);
+			log_info(self->loggerCPU, "CPU: MSP ha cerrado su conexion\n");
+			printf("MSP ha cerrado su conexion\n");
+			exit(-1);
 			}
 
 	    free(paquete_MSP);
@@ -184,51 +169,59 @@ void cpuProcesar_tcb(int pid, t_TCB_CPU* nuevo){
 
 		char *pid_enviar=malloc(sizeof(int));
 		*pid_enviar=tcb->pid;
-		if (socket_sendPaquete((t_socket*)socketDelKernel, CPU_TERMINE_UNA_LINEA, sizeof(int), pid_enviar)<=0){
-				log_info(logger, "fallo pedido de datos de Consola\n %d", nuevo->pid);
+		if (socket_sendPaquete(self->socketPlanificador->socket, CPU_TERMINE_UNA_LINEA, sizeof(int), pid_enviar)<=0){
+			log_info(self->loggerCPU, "CPU: fallo pedido de datos de Consola\n %d", nuevo->pid);
 		}
-
+		free(pid_enviar);
 
 		t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
-			if(socket_recvPaquete(socketDelKernel, paquete) >= 0){
+			if(socket_recvPaquete(self->socketPlanificador->socket, paquete) >= 0){
 				switch(paquete->header.type){
 				case CPU_SEGUI_EJECUTANDO:
 					seguir_ejecucion=1;
 					break;
 				case KERNEL_FIN_TCB_QUANTUM:
-					cambioContexto(nuevo);
+					cambioContexto(indice);
 					seguir_ejecucion=0;
+					free(nuevo);
 					break;
 				case ERROR_POR_DESCONEXION_DE_CONSOLA:
+					cambioContexto(indice);
+					free(nuevo);
 					break;
 				default:
-					log_info(logger, "Codigo inesperado de KERNEL\n");
-					printf("Codigo inesperado de KERNEL\n");
+					free(nuevo);
+					log_info(self->loggerCPU, "Codigo inesperado del KERNEL\n");
+					printf("Codigo inesperado del KERNEL\n");
 					exit(-1);
 				}
 			}else{
-				log_info(logger, "KERNEL ha cerrado su conexion\n");
+				free(nuevo);
+				log_info(self->loggerCPU, "KERNEL ha cerrado su conexion\n");
 				printf("KERNEL ha cerrado su conexion\n");
 				exit(-1);
 				}
+			free(paquete);
 
 			}
 
 }
 
-void cambioContexto(t_TCB_CPU* tcb){
+void cambioContexto(int indice){
 	char *data=malloc(sizeof(t_TCB_CPU)); /*TCB*/
-	int stmp_size=0;
-	memcpy(data, tcb, stmp_size=(sizeof(t_TCB_CPU)));
-
+	t_TCB_CPU* tcb=malloc(sizeof(t_TCB_CPU));
+//	tcb=(t_TCB_CPU *)list_get_element(lista, indice);
+	memcpy(data, tcb, sizeof(t_TCB_CPU));
+	free(tcb);
 	/*antes de hacer el send, deberia actualizarce el STACK?*/
-	if (socket_sendPaquete((t_socket*)socketDelKernel, KERNEL_FIN_TCB_QUANTUM,stmp_size, data)<=0){
-				log_info(logger, "falló cambio de conexto\n %d", tcb->pid);
-
+	if (socket_sendPaquete(self->socketPlanificador->socket, KERNEL_FIN_TCB_QUANTUM,sizeof(t_TCB_CPU), data)<=0){
+		log_info(self->loggerCPU, "CPU: falló cambio de conexto\n %d", tcb->pid);
 	}else{
-		log_info(logger, "falló cambio de conexto\n %d", tcb->pid);
+		log_info(self->loggerCPU, "CPU: realizando cambio de contexto\n %d", tcb->pid);
+		list_remove(lista, indice);
 		}
+	free(data);
 }
 
 int determinar_registro(char registro){
@@ -246,7 +239,9 @@ int determinar_registro(char registro){
 }
 
 
- void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
+ void ejecutar_instruccion(int linea, int indice){
+
+	 /*LA LOGICA CAMBIA, AHORA BUSCO CON EL INDICE EN LA LISTA EL TCB AFECTADO EN EL PROCESO*/
 	 /*
 		char *data=malloc(sizeof(int)+sizeof(uint32_t)+sizeof(char)); //pid+puntero_instruccion
 		t_paquete_MSP *pedir_instruccion = malloc(sizeof(t_paquete_MSP));

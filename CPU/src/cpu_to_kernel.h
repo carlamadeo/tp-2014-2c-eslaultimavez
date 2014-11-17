@@ -3,9 +3,7 @@
 
 #include "CPU.h"
 
-int retardo, quantum, stack;
-
-t_socket* conectarCPUConKernel(t_CPU* self);
+t_socket_client* conectarCPUConKernel(t_CPU* self);
 void cpuRealizarHandshakeConKernel(t_CPU* self);
 
 
