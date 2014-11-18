@@ -124,9 +124,6 @@ typedef struct {
 t_CPU* self;
 t_TCB_CPU* tcb;
 t_list* lista;
-struct lista_TCBs* primero;
-struct lista_TCBs* ultimo;
-
 
 char * config_file;
 

@@ -70,7 +70,8 @@ void cpuProcesar_tcb(t_CPU* self){
 
 		t_CPU_LEER_MEMORIA* unCPU_LEER_MEMORIA = malloc(sizeof(t_CPU_LEER_MEMORIA));
 		unCPU_LEER_MEMORIA->pid = self->tcb->pid;
-		unCPU_LEER_MEMORIA->tamanio = self->tcb->tamanio_segmento_codigo;
+		unCPU_LEER_MEMORIA->tamanio = sizeof(char)*4;
+		//unCPU_LEER_MEMORIA->tamanio = self->tcb->tamanio_segmento_codigo; // esto esta mal, vos tenes que pedirle 4 byte a la MSP no el .bc completo!
 		unCPU_LEER_MEMORIA->direccionVirtual = self->tcb->puntero_instruccion;
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, sizeof(t_CPU_LEER_MEMORIA), unCPU_LEER_MEMORIA)<=0){
 			log_info(self->loggerCPU, "Error en envio de direccion a la MSP\n %d", self->tcb->pid);
@@ -85,7 +86,7 @@ void cpuProcesar_tcb(t_CPU* self){
 				log_info(self->loggerCPU, "CPU: recibo un LEER_MEMORIA:\n %d ", paquete_MSP->header.type);
 				/*reservo memoria en una variable linea para guardar los 4 caracteres de ESO*/
 				char *nombre_instruccion = malloc(sizeof(char)*4);
-				/*guardo en la variable linea los 4 caracteres que forman el nombre de la instruccion ESO*/
+				/*guardo en la variable nombre_instruccion los 4 caracteres que forman el nombre de la instruccion ESO*/
 				int doffset=0, dtemp_size=0;
 				memcpy(nombre_instruccion, paquete_MSP->data, dtemp_size=sizeof(char));
 				doffset=dtemp_size;
@@ -96,9 +97,12 @@ void cpuProcesar_tcb(t_CPU* self){
 				memcpy(nombre_instruccion + doffset, paquete_MSP->data + doffset, dtemp_size=sizeof(char));
 
 				char instrucciones_eso[]={'L','O','A','D','G','E','T','M','S','E','T','M','M','O','V','R','A','D','D','R','S','U','B','R','M','U','L','R','M','O','D','R','D','I','V','R','I','N','C','R','D','E','C','R','C','O','M','P','C','G','E','Q','C','L','E','Q','G','O','T','O','J','M','P','Z','J','N','P','Z','I','N','T','E','S','H','I','F','N','O','P','P','P','U','S','H','T','A','K','E','X','X','X','X','M','A','L','C','F','R','E','E','I','N','N','N','I','N','N','C','O','U','T','N','O','U','T','C','C','R','E','A','J','O','I','N','B','L','O','K','W','A','K','E','\0'};
-				int instruccion=1, indice=0;
 
-
+				/*
+				 * NO ACCEDE A LA FUNCION EJECUTAR_INSTRUCCION PORQUE ALTERASTE PRIMERAMENTE LOS CODIGOS ESO EN EL CPU.H
+				 * ESTE ALGORITMO SE BASABA EN DICHOS CODIGOS PARA AGREGAR EL PARAMENTRO ADECUADO A LA FUNCION EJECUTAR_INSTRUCCION
+				 * POR LO TANTO MAS ABAJO ADECUAMOS EL ALGORITMO A TUS CODIGOS
+				 instruccion=1, indice=0;
 				//ERROR NO LLEGA A LA FUNCION ejecutar_instruccion
 				if(strncmp( &(instrucciones_eso[indice]), nombre_instruccion+2, 1 )==0){
 					indice++;
@@ -111,6 +115,33 @@ void cpuProcesar_tcb(t_CPU* self){
 						indice++;
 				}
 
+				*/
+
+				int instruccion=1001, indice=0;
+					while (instrucciones_eso[indice]!='\0'){
+						if (strncmp( &(instrucciones_eso[indice]), nombre_instruccion,1 )==0){
+						  indice++;
+						  if(strncmp( &(instrucciones_eso[indice]), nombre_instruccion+1, 1 )==0){
+							 indice++;
+							 if(strncmp( &(instrucciones_eso[indice]), nombre_instruccion+2, 1 )==0){
+								 indice++;
+								 if(strncmp( &(instrucciones_eso[indice]), nombre_instruccion+3, 1 )==0){
+									 ejecutar_instruccion(instruccion, self);
+									 break;
+										 }else{
+											 indice++;
+											 }
+							 }else{
+								 indice+=2;
+									}
+						  }else{
+							  indice+=3;
+								 }
+					   }else{
+						   indice+=4;
+							 }
+						 instruccion++;
+					} //fin while de algoritmo detectar instruccion ESO
 
 			} else {
 				log_error(self->loggerCPU, "CPU: recibio un codigo inesperado de la MSP:\n %d", paquete_MSP->header.type);
@@ -139,15 +170,14 @@ void cpuProcesar_tcb(t_CPU* self){
 		if(socket_recvPaquete(self->socketPlanificador->socket, paquete) >= 0){
 			switch(paquete->header.type){
 			case CPU_SEGUI_EJECUTANDO:
-				seguir_ejecucion=1;
 				break;
 			case KERNEL_FIN_TCB_QUANTUM:
-
 				cambioContexto(self);
 				seguir_ejecucion=0;
 				break;
 			case ERROR_POR_DESCONEXION_DE_CONSOLA:
 				log_info(self->loggerCPU, "CPU: recive un ERROR_POR_DESCONEXION_DE_CONSOLA.\n");
+
 				break;
 			default:
 				log_info(self->loggerCPU, "CPU: recive un inesperado al mandar un CPU_TERMINE_UNA_LINEA.\n");
@@ -164,9 +194,10 @@ void cpuProcesar_tcb(t_CPU* self){
 }
 
 void cambioContexto(t_CPU* self){
-	//antes de hacer el send, deberia actualizarce el STACK
 
-	if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,0,NULL)<=0){
+	//antes de hacer el send, deberia actualizarce el STACK
+	//el stack sufre modificaciones cuando se ejecutan las instrucciones ESO, no se actualiza, lo que se actualiza es el TCB.
+	if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
 		log_info(self->loggerCPU, "CPU: falló cambio de conexto.\n");
 
 	}else{
@@ -186,38 +217,29 @@ int determinar_registro(char registro){
 	default: return -1;
 	}
 
-}
+} //fin while procesar TCB
 
 
 void ejecutar_instruccion(int linea, t_CPU* self){
 
-	char *data=malloc(sizeof(int)+sizeof(uint32_t)+sizeof(char)); //pid+puntero_instruccion
-	t_paquete_MSP *pedir_instruccion = malloc(sizeof(t_paquete_MSP));
-	int soffset=0, stmp_size=0;
-	char *tamanio_leer;
+	t_CPU_LEER_MEMORIA* unCPU_LEER_MEMORIA = malloc(sizeof(t_CPU_LEER_MEMORIA)); //pid+puntero_instruccion+tamanio_parametros
 	t_socket_paquete *paquete_MSP = malloc(sizeof(t_socket_paquete));
 
 
 	switch(linea){
 	case LOAD:
-		*tamanio_leer='5';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=5;
 
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
-				log_info(self->loggerCPU, "recibiendo parametros de instruccion LOAD\n" );
+				log_info(self->loggerCPU, "CPU: recibiendo parametros de instruccion LOAD\n" );
 				char registro;
 				int32_t numero;
 				memcpy(&(registro), paquete_MSP->data, sizeof(char));
@@ -228,25 +250,18 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		}
 		break;
 	case GETM:
-		*tamanio_leer='2';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=2;
 
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
-				log_info(self->loggerCPU, "recibiendo parametros de instruccion GETM\n" );
+				log_info(self->loggerCPU, "CPU: recibiendo parametros de instruccion GETM\n" );
 				char registroA, registroB;
 				memcpy(&(registroA), paquete_MSP->data, sizeof(char));
 				memcpy(&(registroB), (paquete_MSP->data) + sizeof(char),sizeof(char));
@@ -258,25 +273,18 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		}
 		break;
 	case SETM:
-		*tamanio_leer='6';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=6;
 
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
-				log_info(self->loggerCPU, "recibiendo parametros de instruccion SETM\n" );
+				log_info(self->loggerCPU, "CPU: recibiendo parametros de instruccion SETM\n" );
 				char registroA, registroB;
 				int32_t numero;
 				memcpy(&(numero), paquete_MSP->data, sizeof(int));
@@ -289,25 +297,17 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		}
 		break;
 	case MOVR:
-		*tamanio_leer='2';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=2;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
-
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
-				log_info(self->loggerCPU, "recibiendo parametros de instruccion MOVR\n" );
+				log_info(self->loggerCPU, "CPU: recibiendo parametros de instruccion MOVR\n" );
 				char registroA, registroB;
 				memcpy(&(registroA), (paquete_MSP->data), sizeof(char));
 				memcpy(&(registroB), (paquete_MSP->data)+ sizeof(char),sizeof(char));
@@ -318,25 +318,17 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		}
 		break;
 	case ADDR:
-		*tamanio_leer='2';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=2;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
-
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
-				log_info(self->loggerCPU, "recibiendo parametros de instruccion ADDR\n" );
+				log_info(self->loggerCPU, "CPU: recibiendo parametros de instruccion ADDR\n" );
 				char registroA, registroB;
 				memcpy(&(registroA), (paquete_MSP->data), sizeof(char));
 				memcpy(&(registroB), (paquete_MSP->data)+ sizeof(char),sizeof(char));
@@ -347,25 +339,17 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		}
 		break;
 	case SUBR:
-		*tamanio_leer='2';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=2;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
-
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
-				log_info(self->loggerCPU, "recibiendo parametros de instruccion SUBR\n" );
+				log_info(self->loggerCPU, "CPU: recibiendo parametros de instruccion SUBR\n" );
 				char registroA, registroB;
 				memcpy(&(registroA), (paquete_MSP->data), sizeof(char));
 				memcpy(&(registroB), (paquete_MSP->data)+ sizeof(char),sizeof(char));
@@ -378,25 +362,17 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 
 		break;
 	case MULR:
-		*tamanio_leer='2';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=2;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
-
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
-				log_info(self->loggerCPU, "recibiendo parametros de instruccion MULR\n" );
+				log_info(self->loggerCPU, "CPU: recibiendo parametros de instruccion MULR\n" );
 				char registroA, registroB;
 				memcpy(&(registroA), (paquete_MSP->data), sizeof(char));
 				memcpy(&(registroB), (paquete_MSP->data)+ sizeof(char),sizeof(char));
@@ -408,25 +384,17 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 
 		break;
 	case MODR:
-		*tamanio_leer='2';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=2;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
-
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
-				log_info(self->loggerCPU, "recibiendo parametros de instruccion MODR\n" );
+				log_info(self->loggerCPU, "CPU: recibiendo parametros de instruccion MODR\n" );
 				char registroA, registroB;
 				memcpy(&(registroA), (paquete_MSP->data), sizeof(char));
 				memcpy(&(registroB), (paquete_MSP->data)+ sizeof(char),sizeof(char));
@@ -438,23 +406,15 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 
 		break;
 	case DIVR:
-		*tamanio_leer='2';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=2;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
-
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
 				log_info(self->loggerCPU, "recibiendo parametros de instruccion DIVR\n" );
 				char registroA, registroB;
@@ -468,23 +428,15 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 
 		break;
 	case INCR:
-		*tamanio_leer='1';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=1;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
-
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
 				log_info(self->loggerCPU, "recibiendo parametros de instruccion INCR\n" );
 				char registro;
@@ -496,23 +448,15 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 
 		break;
 	case DECR:
-		*tamanio_leer='1';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=1;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
-
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
 				log_info(self->loggerCPU, "recibiendo parametros de instruccion DECR\n" );
 				char registro;
@@ -524,25 +468,17 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 
 		break;
 	case COMP:
-		*tamanio_leer='2';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=2;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
-
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
-				log_info(self->loggerCPU, "recibiendo parametros de instruccion COMP\n" );
+				log_info(self->loggerCPU, "CPU: recibiendo parametros de instruccion COMP\n" );
 				char registroA, registroB;
 				memcpy(&(registroA), paquete_MSP->data, sizeof(char));
 				memcpy(&(registroB), (paquete_MSP->data) + sizeof(char),sizeof(char));
@@ -554,25 +490,17 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 
 		break;
 	case CGEQ:
-		*tamanio_leer='2';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=2;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
-
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
-				log_info(self->loggerCPU, "recibiendo parametros de instruccion CGEQ\n" );
+				log_info(self->loggerCPU, "CPU: recibiendo parametros de instruccion CGEQ\n" );
 				char registroA, registroB;
 				memcpy(&(registroA), paquete_MSP->data, sizeof(char));
 				memcpy(&(registroB), (paquete_MSP->data) + sizeof(char),sizeof(char));
@@ -584,25 +512,17 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 
 		break;
 	case CLEQ:
-		*tamanio_leer='2';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=2;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
-
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
-				log_info(self->loggerCPU, "recibiendo parametros de instruccion CLEQ\n" );
+				log_info(self->loggerCPU, "CPU: recibiendo parametros de instruccion CLEQ\n" );
 				char registroA, registroB;
 				memcpy(&(registroA), paquete_MSP->data, sizeof(char));
 				memcpy(&(registroB), (paquete_MSP->data) + sizeof(char),sizeof(char));
@@ -614,25 +534,17 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 
 		break;
 	case GOTO:
-		*tamanio_leer='1';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=1;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
-
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
-				log_info(self->loggerCPU, "recibiendo parametros de instruccion GOTO\n" );
+				log_info(self->loggerCPU, "CPU: recibiendo parametros de instruccion GOTO\n" );
 				char registro;
 				memcpy(&(registro), paquete_MSP->data, sizeof(char));
 				int reg=determinar_registro(registro);
@@ -642,25 +554,17 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 
 		break;
 	case JMPZ:
-		*tamanio_leer='4';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=4;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
-
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
-				log_info(self->loggerCPU, "recibiendo parametros de instruccion JMPZ\n" );
+				log_info(self->loggerCPU, "CPU: recibiendo parametros de instruccion JMPZ\n" );
 				int32_t numero;
 				memcpy(&(numero), paquete_MSP->data, sizeof(int32_t));
 				//GETM_ESO(numero, self->tcb);
@@ -669,25 +573,17 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 
 		break;
 	case JPNZ:
-		*tamanio_leer='4';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=4;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
-
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
-				log_info(self->loggerCPU, "recibiendo parametros de instruccion JPNZ\n" );
+				log_info(self->loggerCPU, "CPU: recibiendo parametros de instruccion JPNZ\n" );
 				int32_t numero;
 				memcpy(&(numero), paquete_MSP->data, sizeof(int32_t));
 				//GETM_ESO(numero, self->tcb);
@@ -696,25 +592,17 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 
 		break;
 	case INTE:
-		*tamanio_leer='4';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=4;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
-
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
-				log_info(self->loggerCPU, "recibiendo parametros de instruccion INTE\n" );
+				log_info(self->loggerCPU, "CPU: recibiendo parametros de instruccion INTE\n" );
 				uint32_t direccion;
 				memcpy(&(direccion), paquete_MSP->data, sizeof(uint32_t));
 				INTE_ESO(direccion, self->tcb);
@@ -723,51 +611,40 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 
 		break;
 	case SHIF:
-		*tamanio_leer='5';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=5;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
-
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
-				log_info(self->loggerCPU, "recibiendo parametros de instruccion LOAD\n" );
-
+				log_info(self->loggerCPU, "CPU: recibiendo parametros de instruccion SHIF\n" );
+				char registro;
+				int32_t numero;
+				memcpy(&(numero), paquete_MSP->data, sizeof(int32_t));
+				memcpy(&(registro), (paquete_MSP->data) + sizeof(int32_t),sizeof(char));
+				int reg=determinar_registro(registro);
+				SHIF_ESO(numero, reg, self->tcb);
 			}
 		}
 
 		break;
 	case NOPP: break;
 	case PUSH:
-		*tamanio_leer='5';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=5;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
-
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
-				log_info(self->loggerCPU, "recibiendo parametros de instruccion PUSH\n" );
+				log_info(self->loggerCPU, "CPU: recibiendo parametros de instruccion PUSH\n" );
 				char registro;
 				int32_t numero;
 				memcpy(&(numero), paquete_MSP->data, sizeof(int32_t));
@@ -779,25 +656,17 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 
 		break;
 	case TAKE:
-		*tamanio_leer='5';
-		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
-		soffset+=stmp_size;
-		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
-		soffset+=stmp_size;
+		unCPU_LEER_MEMORIA->pid=self->tcb->pid;
+		unCPU_LEER_MEMORIA->direccionVirtual=(self->tcb->puntero_instruccion)+4;
+		unCPU_LEER_MEMORIA->tamanio=5;
 
-		pedir_instruccion->tamanio = soffset;
-		pedir_instruccion->data = data;
-
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA, pedir_instruccion->tamanio, pedir_instruccion->data)<=0){
-			log_info(self->loggerCPU, "Error en envio de direccion a la MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 		}
 
-
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if( paquete_MSP->header.type == LEER_MEMORIA ){
-				log_info(self->loggerCPU, "recibiendo parametros de instruccion TAKE\n" );
+				log_info(self->loggerCPU, "CPU: recibiendo parametros de instruccion TAKE\n" );
 				char registro;
 				int32_t numero;
 				memcpy(&(numero), paquete_MSP->data, sizeof(int32_t));
