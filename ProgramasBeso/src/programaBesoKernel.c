@@ -26,11 +26,11 @@ void realizarHandshakeConLoader(t_programaBESO* self){
 	t_socket_paquete *paquete = (t_socket_paquete*) malloc(sizeof(t_socket_paquete));
 
 	if (socket_sendPaquete(self->socketKernel->socket, HANDSHAKE_PROGRAMA, 0, NULL) > 0)
-		log_info(self->loggerProgramaBESO, "Consola se presenta al Kernel!");
+		log_info(self->loggerProgramaBESO, "Consola: envia al Kernel: HANDSHAKE_PROGRAMA ");
 
 	if (socket_recvPaquete(self->socketKernel->socket, paquete) >= 0) {
 		if(paquete->header.type == HANDSHAKE_LOADER)
-			log_info(self->loggerProgramaBESO, "Consola: Se realizaron los Handshake con el Kernel correctamente");
+			log_info(self->loggerProgramaBESO, "Consola: recive del Kernel: HANDSHAKE_LOADER");
 	}
 	else
 		log_error(self->loggerProgramaBESO, "Consola: Error al recibir los datos del Kernel.");
@@ -56,9 +56,9 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 	header.length = sizeof(header) + sizeArchivoBeso;
 
 	if(send(self->socketKernel->socket->descriptor, &header, sizeof(t_socket_header), 0) != sizeof(t_socket_header) || sendfile(self->socketKernel->socket->descriptor, archivoBeso->_fileno, &offset, sizeArchivoBeso) != sizeArchivoBeso)
-		log_error(self->loggerProgramaBESO, "No se pudo enviar el archivo");
+		log_error(self->loggerProgramaBESO, "Consola: No se pudo enviar el archivo");
 
-
+	log_info(self->loggerProgramaBESO, "Consola: Espera respuesta del kernel");
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_datosKernel* datosAKernel = malloc(sizeof(t_datosKernel));
 	t_datosMostrarConsola* datosDeKernel = (t_datosMostrarConsola*) (paquete->data);
@@ -72,9 +72,9 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 	while(1){
 		if (socket_recvPaquete(self->socketKernel->socket, paquete) >= 0){
 			if(datosDeKernel->codigo == MENSAJE_DE_ERROR)
-				log_error(self->loggerProgramaBESO, datosDeKernel->mensaje);
+				log_error(self->loggerProgramaBESO, "Consola: recive un MENSAJE_DE_ERROR: %c",datosDeKernel->mensaje);
 			else
-				log_info(self->loggerProgramaBESO, datosDeKernel->mensaje);
+				log_info(self->loggerProgramaBESO, "Consola: recibe OK: %c ",datosDeKernel->mensaje);
 		}
 		else{
 			log_error(self->loggerProgramaBESO, "Consola: El Kernel ha cerrado la conexion.");

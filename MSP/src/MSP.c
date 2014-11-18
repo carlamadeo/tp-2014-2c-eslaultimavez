@@ -108,7 +108,7 @@ int mspLanzarhilo(){
 				log_info(MSPlogger,"Hilo CPU creado correctamente.");
 				i++;
 			}
-
+			printf("estoy aca");
 			socket_freePaquete(paquete);
 		}
 	return 0;

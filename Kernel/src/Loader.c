@@ -35,7 +35,7 @@ void loaderEscuchaProgramaBeso(t_kernel* self){
 		log_error(self->loggerLoader, "Loader: Error al poner a escuchar al Loader: %s", strerror(errno));
 	}
 
-	log_info(self->loggerLoader, "Loader: Ya se esta escuchando conexiones entrantes en el puerto: %d",self->puertoLoader);
+	log_info(self->loggerLoader, "Loader:escuchando conexiones entrantes en el puerto: %d",self->puertoLoader);
 
 	FD_SET(socketEscucha->descriptor, &master);
 	fdmax = socketEscucha->descriptor; /* seguir la pista del descriptor de fichero mayor*/
@@ -160,23 +160,27 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 	else{
 
 		if (socket_sendPaquete(socketNuevoCliente, HANDSHAKE_LOADER, 0, NULL) >= 0)
-			log_info(self->loggerLoader, "Loader: Handshake con Consola!");
+			log_info(self->loggerLoader, "Loader: enva a Consola: HANDSHAKE_LOADER");
 		else
-			log_error(self->loggerLoader, "Loader: Error al recibir los datos de la Consola.");
+			log_error(self->loggerLoader, "Loader: Error al enviar los datos de la Consola.");
 
 		//se recibe el codigo del archivo Beso
 		t_socket_header header;
 
+		//printf("se pone a esperar: \n");
 		if(recv(socketNuevoCliente->descriptor, &header, sizeof(t_socket_header), NULL) != sizeof(t_socket_header))
 			log_error(self->loggerLoader, "Loader: No se ha podido recibir la informacion de la Consola");
 
 		int sizePrograma = header.length - sizeof(t_socket_header);
+		//printf("sizePrograma: %d\n",sizePrograma);
 		char *programaBeso = malloc(sizePrograma);
-		memset(programaBeso, 0, sizePrograma + 1);
-
+		//printf("programaBeso: %c\n",programaBeso);
+		memset(programaBeso, 0, sizePrograma + 1);//Rompe en esta Linea
+		//printf("programaBeso tranquilo: %c\n",programaBeso);
 		if(recv(socketNuevoCliente->descriptor, programaBeso, sizePrograma, NULL) != sizePrograma)
 			log_error(self->loggerLoader, "Loader: No se ha podido recibir el programa Beso de la Consola");
 
+		log_info(self->loggerLoader," Loader:  recibio un programaBeso de Consola:  %s ", programaBeso);
 		t_TCB_Kernel* unTCBenLoader = loaderCrearTCB(self, programaBeso, socketNuevoCliente);
 		log_info(self->loggerLoader, "Loader: TCB completo.");
 
@@ -203,8 +207,11 @@ t_TCB_Kernel* loaderCrearTCB(t_kernel* self, char *programaBeso, t_socket* socke
 
 	unPIDGlobal ++;
 	unTIDGlobal ++;
-
+	//printf("sizePrograma:\n");
+	//Si no esta levantada la MSP, tiene que romper!
 	socket_sendPaquete(self->socketMSP->socket, HANDSHAKE_KERNEL,0, NULL);
+	log_info(self->loggerLoader,"Loader: envia a MSP: HANDSHAKE_KERNEL.");
+
 
 	t_socket_paquete *paqueteMSP = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 
@@ -212,7 +219,7 @@ t_TCB_Kernel* loaderCrearTCB(t_kernel* self, char *programaBeso, t_socket* socke
 
 		if(paqueteMSP->header.type == HANDSHAKE_MSP){
 
-			log_info(self->loggerLoader, "Loader: Se recibo HANDSHAKE_MSP");
+			log_info(self->loggerLoader,"Loader: Se recibo HANDSHAKE_MSP");
 
 			//funciona que devuelte la base del segmente de codigo
 			t_CrearSegmentoBeso* baseCodigoDeSegmento = malloc(sizeof(t_CrearSegmentoBeso));
