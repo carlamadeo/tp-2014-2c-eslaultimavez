@@ -147,10 +147,10 @@ t_log* logger;
 
 void verificar_argumentosCPU(int argc, char* argv[]);
 t_CPU* cpu_cargar_configuracion(char* config_file);
-void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual);
+void ejecutar_instruccion(int linea, t_CPU* self);
 void cpuProcesar_tcb(t_CPU* self);
 //void cpuProcesar_tcb(int pid, t_TCB_CPU* nuevo);
-void cambioContexto(t_TCB_CPU* tcb);
+void cambioContexto(t_CPU* self);
 int determinar_registro(char registro);
 
 

@@ -92,7 +92,7 @@ t_kernel* kernel_cargar_configuracion(char* config_file){
 	self->puertoPlanificador = config_get_int_value(config, "PUERTO_PLANIFICADOR");
 	self->ipMsp = string_duplicate(config_get_string_value(config, "IP_MSP"));
 	self->puertoMsp = config_get_int_value(config, "PUERTO_MSP");
-	self->quamtum = string_duplicate(config_get_string_value(config, "QUANTUM"));
+	self->quamtum = config_get_int_value(config, "QUANTUM");
 	self->systemCalls  = string_duplicate(config_get_string_value(config, "SYSCALLS"));
 	self->tamanioStack = config_get_int_value(config, "TAMANIOSTACK");
 

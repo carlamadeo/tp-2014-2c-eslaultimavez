@@ -99,7 +99,7 @@ typedef struct {
 	int puertoPlanificador;
 	char* ipMsp;
 	int puertoMsp;
-	char* quamtum;
+	int quamtum;
 	char* systemCalls;
 	int tamanioStack;
 } t_kernel;

@@ -87,16 +87,54 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 	}
 
 	//se tiene que mandar un TCB
-	t_TCB_Kernel* unTCB = test_TCB();
+	t_TCB_Kernel* unTCB = test_TCB();//esta funcion tiene que recibir un TCB del LOADER
 
 	socket_sendPaquete(socketNuevoCliente, TCB_NUEVO,sizeof(t_TCB_Kernel), unTCB);
 	log_info(self->loggerPlanificador, "Planificador: envia TCB_NUEVO.");
-
 	free(paquete);
 
+
+	//mientras no termine los quamtum o no alla alla interrupcion
+
+
+	while (self->quamtum>0){
+		self->quamtum--;
+		t_socket_paquete *paqueteCPU = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+		socket_recvPaquete(socketNuevoCliente, paqueteCPU);
+
+
+		switch(paqueteCPU->header.type){
+		case CPU_TERMINE_UNA_LINEA:
+			if (self->quamtum>0){
+				socket_sendPaquete(socketNuevoCliente, CPU_SEGUI_EJECUTANDO,0, NULL);
+				log_info(self->loggerPlanificador, "Planificador: envia CPU_SEGUI_EJECUTANDO.");
+
+			}else{
+				socket_sendPaquete(socketNuevoCliente, KERNEL_FIN_TCB_QUANTUM,0, NULL);
+				log_info(self->loggerPlanificador, "Planificador: envia KERNEL_FIN_TCB_QUANTUM.");
+			}
+			break;
+
+		default:
+			log_error(self->loggerPlanificador, "Planificador:Conexión cerrada con CPU.");
+			FD_CLR(socketNuevoCliente->descriptor, master);
+			close(socketNuevoCliente->descriptor);
+			break;
+
+		}//fin switch(paqueteCPU->header.type)
+	}//fin del while
+
+	//Cuando sale del while(self->quamtum>0) se tiene que hacer un cambio de Contexto
+
+	t_socket_paquete *paqueteCambioDeContexto = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+	socket_recvPaquete(socketNuevoCliente, paqueteCambioDeContexto);
+	log_info(self->loggerPlanificador, "Planificador: recibe de  CPU: CAMBIO_DE_CONTEXTO.");
+	free(paqueteCambioDeContexto);
 }
 
-void atienderCPU(t_kernel* self,t_cpu* programa, fd_set* master){
+void atienderCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set* master){
+
+
 
 }
 

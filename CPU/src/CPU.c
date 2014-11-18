@@ -97,30 +97,20 @@ void cpuProcesar_tcb(t_CPU* self){
 
 				char instrucciones_eso[]={'L','O','A','D','G','E','T','M','S','E','T','M','M','O','V','R','A','D','D','R','S','U','B','R','M','U','L','R','M','O','D','R','D','I','V','R','I','N','C','R','D','E','C','R','C','O','M','P','C','G','E','Q','C','L','E','Q','G','O','T','O','J','M','P','Z','J','N','P','Z','I','N','T','E','S','H','I','F','N','O','P','P','P','U','S','H','T','A','K','E','X','X','X','X','M','A','L','C','F','R','E','E','I','N','N','N','I','N','N','C','O','U','T','N','O','U','T','C','C','R','E','A','J','O','I','N','B','L','O','K','W','A','K','E','\0'};
 				int instruccion=1, indice=0;
-				while (instrucciones_eso[indice]!='\0'){
-					if (strncmp( &(instrucciones_eso[indice]), nombre_instruccion,1 )==0){
+
+
+				//ERROR NO LLEGA A LA FUNCION ejecutar_instruccion
+				if(strncmp( &(instrucciones_eso[indice]), nombre_instruccion+2, 1 )==0){
+					indice++;
+					if(strncmp( &(instrucciones_eso[indice]), nombre_instruccion+3, 1 )==0){
+						//usleep(self->retardo); //tiempo que debe esperar la CPU antes de ejecutar una instruccion ESO
+						ejecutar_instruccion(instruccion, self);
+						free(nombre_instruccion);
+						break;
+					}else
 						indice++;
-						if(strncmp( &(instrucciones_eso[indice]), nombre_instruccion+1, 1 )==0){
-							indice++;
-							if(strncmp( &(instrucciones_eso[indice]), nombre_instruccion+2, 1 )==0){
-								indice++;
-								if(strncmp( &(instrucciones_eso[indice]), nombre_instruccion+3, 1 )==0){
-									ejecutar_instruccion(instruccion, self->tcb);
-									break;
-								}else{
-									indice++;
-								}
-							}else{
-								indice+=2;
-							}
-						}else{
-							indice+=3;
-						}
-					}else{
-						indice+=4;
-					}
-					instruccion++;
-				} //fin de while
+				}
+
 
 			} else {
 				log_error(self->loggerCPU, "CPU: recibio un codigo inesperado de la MSP:\n %d", paquete_MSP->header.type);
@@ -152,18 +142,20 @@ void cpuProcesar_tcb(t_CPU* self){
 				seguir_ejecucion=1;
 				break;
 			case KERNEL_FIN_TCB_QUANTUM:
-				cambioContexto(self->tcb);
+
+				cambioContexto(self);
 				seguir_ejecucion=0;
 				break;
 			case ERROR_POR_DESCONEXION_DE_CONSOLA:
+				log_info(self->loggerCPU, "CPU: recive un ERROR_POR_DESCONEXION_DE_CONSOLA.\n");
 				break;
 			default:
-				log_info(self->loggerCPU, "Codigo inesperado de KERNEL\n");
+				log_info(self->loggerCPU, "CPU: recive un inesperado al mandar un CPU_TERMINE_UNA_LINEA.\n");
 				printf("Codigo inesperado de KERNEL\n");
 				exit(-1);
 			}
 		}else{
-			log_info(self->loggerCPU, "KERNEL ha cerrado su conexion\n");
+			log_info(self->loggerCPU, "CPU: Error al esperar un paquete.\n");
 			exit(-1);
 		}
 
@@ -171,17 +163,14 @@ void cpuProcesar_tcb(t_CPU* self){
 
 }
 
-void cambioContexto(t_TCB_CPU* tcb){
-	char *data=malloc(sizeof(t_TCB_CPU)); /*TCB*/
-	int stmp_size=0;
-	memcpy(data, tcb, stmp_size=(sizeof(t_TCB_CPU)));
+void cambioContexto(t_CPU* self){
+	//antes de hacer el send, deberia actualizarce el STACK
 
-	/*antes de hacer el send, deberia actualizarce el STACK?*/
-	if (socket_sendPaquete(self->socketPlanificador->socket, KERNEL_FIN_TCB_QUANTUM,stmp_size, data)<=0){
-		log_info(self->loggerCPU, "falló cambio de conexto\n %d", tcb->pid);
+	if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,0,NULL)<=0){
+		log_info(self->loggerCPU, "CPU: falló cambio de conexto.\n");
 
 	}else{
-		log_info(self->loggerCPU, "falló cambio de conexto\n %d", tcb->pid);
+		log_info(self->loggerCPU, "CPU: envio al Planificador: CAMBIO_DE_CONTEXTO\n ");
 	}
 }
 
@@ -200,7 +189,7 @@ int determinar_registro(char registro){
 }
 
 
-void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
+void ejecutar_instruccion(int linea, t_CPU* self){
 
 	char *data=malloc(sizeof(int)+sizeof(uint32_t)+sizeof(char)); //pid+puntero_instruccion
 	t_paquete_MSP *pedir_instruccion = malloc(sizeof(t_paquete_MSP));
@@ -212,9 +201,9 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 	switch(linea){
 	case LOAD:
 		*tamanio_leer='5';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -234,15 +223,15 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				memcpy(&(registro), paquete_MSP->data, sizeof(char));
 				memcpy(&(numero), (paquete_MSP->data) + sizeof(char),sizeof(int32_t));
 				int reg=determinar_registro(registro);
-				LOAD_ESO(reg, numero, tcb_actual);
+				LOAD_ESO(reg, numero, self->tcb);
 			}
 		}
 		break;
 	case GETM:
 		*tamanio_leer='2';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -263,16 +252,16 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				memcpy(&(registroB), (paquete_MSP->data) + sizeof(char),sizeof(char));
 				int regA=determinar_registro(registroA);
 				int regB=determinar_registro(registroB);
-				GETM_ESO(regA,regB, tcb_actual);
+				GETM_ESO(regA,regB, self->tcb);
 
 			}
 		}
 		break;
 	case SETM:
 		*tamanio_leer='6';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -295,15 +284,15 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				memcpy(&(registroB), (paquete_MSP->data)+ sizeof(int)+ sizeof(char),sizeof(char));
 				int regA=determinar_registro(registroA);
 				int regB=determinar_registro(registroB);
-				SETM_ESO(numero,regA,regB, tcb_actual);
+				SETM_ESO(numero,regA,regB, self->tcb);
 			}
 		}
 		break;
 	case MOVR:
 		*tamanio_leer='2';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -324,15 +313,15 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				memcpy(&(registroB), (paquete_MSP->data)+ sizeof(char),sizeof(char));
 				int regA=determinar_registro(registroA);
 				int regB=determinar_registro(registroB);
-				MOVR_ESO(regA, regB, tcb_actual);
+				MOVR_ESO(regA, regB, self->tcb);
 			}
 		}
 		break;
 	case ADDR:
 		*tamanio_leer='2';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -353,15 +342,15 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				memcpy(&(registroB), (paquete_MSP->data)+ sizeof(char),sizeof(char));
 				int regA=determinar_registro(registroA);
 				int regB=determinar_registro(registroB);
-				ADDR_ESO(regA, regB, tcb_actual);
+				ADDR_ESO(regA, regB, self->tcb);
 			}
 		}
 		break;
 	case SUBR:
 		*tamanio_leer='2';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -382,7 +371,7 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				memcpy(&(registroB), (paquete_MSP->data)+ sizeof(char),sizeof(char));
 				int regA=determinar_registro(registroA);
 				int regB=determinar_registro(registroB);
-				SUBR_ESO(regA, regB, tcb_actual);
+				SUBR_ESO(regA, regB, self->tcb);
 			}
 		}
 
@@ -390,9 +379,9 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 		break;
 	case MULR:
 		*tamanio_leer='2';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -413,16 +402,16 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				memcpy(&(registroB), (paquete_MSP->data)+ sizeof(char),sizeof(char));
 				int regA=determinar_registro(registroA);
 				int regB=determinar_registro(registroB);
-				MULR_ESO(regA, regB, tcb_actual);
+				MULR_ESO(regA, regB, self->tcb);
 			}
 		}
 
 		break;
 	case MODR:
 		*tamanio_leer='2';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -443,16 +432,16 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				memcpy(&(registroB), (paquete_MSP->data)+ sizeof(char),sizeof(char));
 				int regA=determinar_registro(registroA);
 				int regB=determinar_registro(registroB);
-				MODR_ESO(regA, regB, tcb_actual);
+				MODR_ESO(regA, regB, self->tcb);
 			}
 		}
 
 		break;
 	case DIVR:
 		*tamanio_leer='2';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -473,16 +462,16 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				memcpy(&(registroB), (paquete_MSP->data)+ sizeof(char),sizeof(char));
 				int regA=determinar_registro(registroA);
 				int regB=determinar_registro(registroB);
-				DIVR_ESO(regA, regB, tcb_actual);
+				DIVR_ESO(regA, regB, self->tcb);
 			}
 		}
 
 		break;
 	case INCR:
 		*tamanio_leer='1';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -501,16 +490,16 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				char registro;
 				memcpy(&(registro), (paquete_MSP->data), sizeof(char));
 				int reg=determinar_registro(registro);
-				INCR_ESO(reg,tcb_actual);
+				INCR_ESO(reg,self->tcb);
 			}
 		}
 
 		break;
 	case DECR:
 		*tamanio_leer='1';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -529,16 +518,16 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				char registro;
 				memcpy(&(registro), (paquete_MSP->data), sizeof(char));
 				int reg=determinar_registro(registro);
-				DECR_ESO(reg,tcb_actual);
+				DECR_ESO(reg,self->tcb);
 			}
 		}
 
 		break;
 	case COMP:
 		*tamanio_leer='2';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -559,16 +548,16 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				memcpy(&(registroB), (paquete_MSP->data) + sizeof(char),sizeof(char));
 				int regA=determinar_registro(registroA);
 				int regB=determinar_registro(registroB);
-				COMP_ESO(regA,regB, tcb_actual);
+				COMP_ESO(regA,regB, self->tcb);
 			}
 		}
 
 		break;
 	case CGEQ:
 		*tamanio_leer='2';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -589,16 +578,16 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				memcpy(&(registroB), (paquete_MSP->data) + sizeof(char),sizeof(char));
 				int regA=determinar_registro(registroA);
 				int regB=determinar_registro(registroB);
-				CGEQ_ESO(regA,regB, tcb_actual);
+				CGEQ_ESO(regA,regB, self->tcb);
 			}
 		}
 
 		break;
 	case CLEQ:
 		*tamanio_leer='2';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -619,16 +608,16 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				memcpy(&(registroB), (paquete_MSP->data) + sizeof(char),sizeof(char));
 				int regA=determinar_registro(registroA);
 				int regB=determinar_registro(registroB);
-				CLEQ_ESO(regA,regB, tcb_actual);
+				CLEQ_ESO(regA,regB, self->tcb);
 			}
 		}
 
 		break;
 	case GOTO:
 		*tamanio_leer='1';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -647,16 +636,16 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				char registro;
 				memcpy(&(registro), paquete_MSP->data, sizeof(char));
 				int reg=determinar_registro(registro);
-				GOTO_ESO(reg,tcb_actual);
+				GOTO_ESO(reg,self->tcb);
 			}
 		}
 
 		break;
 	case JMPZ:
 		*tamanio_leer='4';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -674,16 +663,16 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				log_info(self->loggerCPU, "recibiendo parametros de instruccion JMPZ\n" );
 				int32_t numero;
 				memcpy(&(numero), paquete_MSP->data, sizeof(int32_t));
-				//GETM_ESO(numero, tcb_actual);
+				//GETM_ESO(numero, self->tcb);
 			}
 		}
 
 		break;
 	case JPNZ:
 		*tamanio_leer='4';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -701,16 +690,16 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				log_info(self->loggerCPU, "recibiendo parametros de instruccion JPNZ\n" );
 				int32_t numero;
 				memcpy(&(numero), paquete_MSP->data, sizeof(int32_t));
-				//GETM_ESO(numero, tcb_actual);
+				//GETM_ESO(numero, self->tcb);
 			}
 		}
 
 		break;
 	case INTE:
 		*tamanio_leer='4';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -728,16 +717,16 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				log_info(self->loggerCPU, "recibiendo parametros de instruccion INTE\n" );
 				uint32_t direccion;
 				memcpy(&(direccion), paquete_MSP->data, sizeof(uint32_t));
-				INTE_ESO(direccion, tcb_actual);
+				INTE_ESO(direccion, self->tcb);
 			}
 		}
 
 		break;
 	case SHIF:
 		*tamanio_leer='5';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -761,9 +750,9 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 	case NOPP: break;
 	case PUSH:
 		*tamanio_leer='5';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -784,16 +773,16 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				memcpy(&(numero), paquete_MSP->data, sizeof(int32_t));
 				memcpy(&(registro), (paquete_MSP->data) + sizeof(int32_t),sizeof(char));
 				int reg=determinar_registro(registro);
-				PUSH_ESO(numero, reg, tcb_actual);
+				PUSH_ESO(numero, reg, self->tcb);
 			}
 		}
 
 		break;
 	case TAKE:
 		*tamanio_leer='5';
-		memcpy(data, &(tcb_actual->pid), stmp_size=(sizeof(int)));
+		memcpy(data, &(self->tcb->pid), stmp_size=(sizeof(int)));
 		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb_actual->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
+		memcpy(data + soffset, &(self->tcb->puntero_instruccion)+4, stmp_size=(sizeof(uint32_t)));
 		soffset+=stmp_size;
 		memcpy(data, tamanio_leer , stmp_size=sizeof(char));
 		soffset+=stmp_size;
@@ -814,23 +803,23 @@ void ejecutar_instruccion(int linea, t_TCB_CPU* tcb_actual){
 				memcpy(&(numero), paquete_MSP->data, sizeof(int32_t));
 				memcpy(&(registro), (paquete_MSP->data) + sizeof(int32_t),sizeof(char));
 				int reg=determinar_registro(registro);
-				TAKE_ESO(numero, reg, tcb_actual);
+				TAKE_ESO(numero, reg, self->tcb);
 			}
 		}
 
 		break;
 	case XXXX:
-		XXXX_ESO(tcb_actual);
+		XXXX_ESO(self->tcb);
 		break;
-	case MALC: MALC_ESO(tcb_actual); break;
-	case FREE: FREE_ESO(tcb_actual); break;
-	case INNN: INNN_ESO(tcb_actual); break;
-	case INNC: INNC_ESO(tcb_actual); break;
-	case OUTN: OUTN_ESO(tcb_actual); break;
-	case OUTC: OUTC_ESO(tcb_actual); break;
-	case CREA: CREA_ESO(tcb_actual); break;
-	case JOIN: JOIN_ESO(tcb_actual); break;
-	case BLOK: BLOK_ESO(tcb_actual); break;
+	case MALC: MALC_ESO(self->tcb); break;
+	case FREE: FREE_ESO(self->tcb); break;
+	case INNN: INNN_ESO(self->tcb); break;
+	case INNC: INNC_ESO(self->tcb); break;
+	case OUTN: OUTN_ESO(self->tcb); break;
+	case OUTC: OUTC_ESO(self->tcb); break;
+	case CREA: CREA_ESO(self->tcb); break;
+	case JOIN: JOIN_ESO(self->tcb); break;
+	case BLOK: BLOK_ESO(self->tcb); break;
 	default: break;
 
 	}
