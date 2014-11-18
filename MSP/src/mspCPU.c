@@ -127,6 +127,9 @@ void escribirMemoriaCPU(t_socket  *socketCPU, t_socket_paquete *paquete){
 void leerMemoriaCPU(t_socket  *socketCPU, t_socket_paquete *paquete){
 
 	//TODO ver si es necesario hacer un malloc a datosACPU->lectura!!!
+	//jorge Para mi si es muy importante!
+	//es mas tiene que estar inicialisada con un valor
+	//porque la pasas como parametro en la funcion mspLeerMemoria y fijate que esta vacia
 	t_datos_aCPULectura* datosACPU = malloc(sizeof(t_datos_aCPULectura));
 	t_datos_deCPULectura* datosDeCPU = (t_datos_deCPULectura*) (paquete->data);
 
@@ -141,7 +144,7 @@ void leerMemoriaCPU(t_socket  *socketCPU, t_socket_paquete *paquete){
 	if (socket_sendPaquete(socketCPU, LEER_MEMORIA, sizeof(t_datos_aCPULectura), datosACPU) > 0)
 		log_info(MSPlogger, "MSP: Los datos de lectura de memoria se han enviado al CPU correctamente");
 
-	free(datosACPU->lectura);
+	//free(datosACPU->lectura);  //jorge comente esto porque tira SEGMENTATION_FAULT
 	free(datosACPU);
 	free(datosDeCPU);
 }
