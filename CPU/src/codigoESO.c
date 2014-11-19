@@ -397,9 +397,9 @@ void INNN_ESO(t_TCB_CPU* tcb){
 	//soffset=stmp_size;
 
 
-//	if (socket_sendPaquete((t_socket*)socketDelKernel, ENTRADA_ESTANDAR_NUMERO,stmp_size, data)<=0){  //22 corresponde a interrupcion
+//	if (socket_sendPaquete((t_socket*)socketDelKernel, ENTRADA_ESTANDAR_NUMERO,stmp_size, data)<=0){
 //		log_info(logger, "Error de Interrupcion %d", tcb->pid);
-//		//cpuCambioDeContextoError();
+//
 //
 //	}
 	free(data);
@@ -415,11 +415,10 @@ void INNN_ESO(t_TCB_CPU* tcb){
 //			//break;
 //		} else {
 //			log_error(logger, "Se recibio un codigo inesperado de MSP: %d", paquete_KERNEL->header.type);
-//			//cpuCambioDeContextoError();
+//
 //		}
 //	}else{
 //		log_info(logger, "MSP ha cerrado su conexion");
-//		//cpuCambioDeContextoError();
 //		printf("MSP ha cerrado su conexion\n");
 //		exit(-1);
 //	}
@@ -483,7 +482,6 @@ void INNC_ESO(t_TCB_CPU* tcb){
 //		}
 //	}else{
 //		log_info(logger, "MSP ha cerrado su conexion");
-//		//cpuCambioDeContextoError();
 //		printf("MSP ha cerrado su conexion\n");
 //		exit(-1);
 //	}
