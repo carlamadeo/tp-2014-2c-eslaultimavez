@@ -368,7 +368,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 				memcpy(&(registroA), (paquete_MSP->data), sizeof(char));
 				memcpy(&(registroB), (paquete_MSP->data)+ sizeof(char),sizeof(char));
 				int regA = determinar_registro(registroA);
-				int regB=determinar_registro(registroB);
+				int regB = determinar_registro(registroB);
 				ADDR_ESO(regA, regB, self->tcb);
 			}
 		}
@@ -442,7 +442,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 				memcpy(&(registroA), (paquete_MSP->data), sizeof(char));
 				memcpy(&(registroB), (paquete_MSP->data)+ sizeof(char),sizeof(char));
 				int regA = determinar_registro(registroA);
-				int regB=determinar_registro(registroB);
+				int regB = determinar_registro(registroB);
 				MODR_ESO(regA, regB, self->tcb);
 			}
 		}
@@ -464,7 +464,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 				memcpy(&(registroA), (paquete_MSP->data), sizeof(char));
 				memcpy(&(registroB), (paquete_MSP->data)+ sizeof(char),sizeof(char));
 				int regA = determinar_registro(registroA);
-				int regB=determinar_registro(registroB);
+				int regB = determinar_registro(registroB);
 				DIVR_ESO(regA, regB, self->tcb);
 			}
 		}
@@ -529,7 +529,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 				memcpy(&(registroA), paquete_MSP->data, sizeof(char));
 				memcpy(&(registroB), (paquete_MSP->data) + sizeof(char),sizeof(char));
 				int regA = determinar_registro(registroA);
-				int regB=determinar_registro(registroB);
+				int regB = determinar_registro(registroB);
 				COMP_ESO(regA,regB, self->tcb);
 			}
 		}
@@ -552,7 +552,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 				memcpy(&(registroA), paquete_MSP->data, sizeof(char));
 				memcpy(&(registroB), (paquete_MSP->data) + sizeof(char),sizeof(char));
 				int regA = determinar_registro(registroA);
-				int regB=determinar_registro(registroB);
+				int regB = determinar_registro(registroB);
 				CGEQ_ESO(regA,regB, self->tcb);
 			}
 		}
@@ -575,7 +575,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 				memcpy(&(registroA), paquete_MSP->data, sizeof(char));
 				memcpy(&(registroB), (paquete_MSP->data) + sizeof(char),sizeof(char));
 				int regA = determinar_registro(registroA);
-				int regB=determinar_registro(registroB);
+				int regB = determinar_registro(registroB);
 				CLEQ_ESO(regA,regB, self->tcb);
 			}
 		}
