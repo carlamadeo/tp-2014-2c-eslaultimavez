@@ -11,7 +11,7 @@ t_socket_client* cpuConectarConMPS(t_CPU* self) {
 	if (self->socketMSP  == NULL ) {
 		log_error(logger, "Error al crear socket del Proceso CPU!");
 	}
-	//log_info(self->loggerCPU, "CPU: Antes del connet (IP:%s/Puerto:%d)!", self->ipMsp, self->puertoMSP);
+	log_info(self->loggerCPU, "CPU: Antes del connet (IP:%s/Puerto:%d)!", self->ipMsp, self->puertoMSP);
 	if (socket_connect(self->socketMSP, self->ipMsp, self->puertoMSP) == 0)
 			log_error(self->loggerCPU, "CPU: Error al hacer el connect con la MSP!");
 

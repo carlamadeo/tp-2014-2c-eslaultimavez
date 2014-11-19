@@ -53,32 +53,32 @@ int main(int argc, char** argv) {
 
 
 	//hace el boot y le manda a la msp el archivo de SystemCall
-	hacer_conexion_con_msp(self);
+//	hacer_conexion_con_msp(self);
+//
+//	//El codigo se levanta de las system calls
+//	char* codigoPrograma;
+//	int tamanioEnBytes = 34;
+//	int pid = 1;
+//	int tid = 53;
+//	crearTCBKERNEL(self, codigoPrograma, tamanioEnBytes, pid, tid);
+//	//
+//	//	//Esto lo hace despues de Bootear
+//	//
+//	iretThread = pthread_create( &LoaderHilo, NULL, (void*) kernel_comenzar_Loader, self);
+//	if(iretThread) {
+//		printf(stderr,"Error - pthread_create() return code: %d\n", iretThread);
+//		exit(EXIT_FAILURE);
+//	}
 
-	//El codigo se levanta de las system calls
-	char* codigoPrograma;
-	int tamanioEnBytes = 34;
-	int pid = 1;
-	int tid = 53;
-	crearTCBKERNEL(self, codigoPrograma, tamanioEnBytes, pid, tid);
-	//
-	//	//Esto lo hace despues de Bootear
-	//
-	iretThread = pthread_create( &LoaderHilo, NULL, (void*) kernel_comenzar_Loader, self);
+	iretThread = pthread_create( &PlanificadorHilo, NULL, (void*) kernel_comenzar_Planificador, self);
 	if(iretThread) {
-		printf(stderr,"Error - pthread_create() return code: %d\n", iretThread);
+		printf(stderr,"Error - pthread_create() return code: %d\n",iretThread);
 		exit(EXIT_FAILURE);
 	}
 
-	//		iretThread = pthread_create( &PlanificadorHilo, NULL, (void*) kernel_comenzar_Planificador, self);
-	//		if(iretThread) {
-	//			printf(stderr,"Error - pthread_create() return code: %d\n",iretThread);
-	//			exit(EXIT_FAILURE);
-	//		}
 
-
-	pthread_join(LoaderHilo, NULL);
-	//pthread_join(PlanificadorHilo, NULL);
+	//pthread_join(LoaderHilo, NULL);
+	pthread_join(PlanificadorHilo, NULL);
 	return EXIT_SUCCESS;
 }
 
