@@ -96,7 +96,6 @@ int mspLanzarhilo(){
 				socketKernel = socketNuevaConexion;
 				kernelDireccion = direccionCliente;
 				mspLanzarHiloKernel(socketKernel);// cambiar esto tiene que ser un hilo!!!
-				log_info(MSPlogger,"Hilo Kernel creado correctamente.");
 			}
 
 			if(paquete->header.type == HANDSHAKE_CPU){
@@ -105,10 +104,9 @@ int mspLanzarhilo(){
 				//mspHiloCpus = realloc(mspHiloCpus, sizeof(pthread_t) * i + 1);
 				mspLanzarHiloCPU(socketCpus); //cambiar esto por un hilo!!!
 				//pthread_create(&mspHiloCpus[i], NULL, mspLanzarHiloCPU, (void *)socketCpus);
-				log_info(MSPlogger,"Hilo CPU creado correctamente.");
 				i++;
 			}
-			printf("estoy aca");
+
 			socket_freePaquete(paquete);
 		}
 	return 0;

@@ -26,7 +26,7 @@ void realizarHandshakeConLoader(t_programaBESO* self){
 	t_socket_paquete *paquete = (t_socket_paquete*) malloc(sizeof(t_socket_paquete));
 
 	if (socket_sendPaquete(self->socketKernel->socket, HANDSHAKE_PROGRAMA, 0, NULL) > 0)
-		log_info(self->loggerProgramaBESO, "Consola: envia al Kernel: HANDSHAKE_PROGRAMA ");
+		log_info(self->loggerProgramaBESO, "Consola: Envia al Kernel: HANDSHAKE_PROGRAMA ");
 
 	if (socket_recvPaquete(self->socketKernel->socket, paquete) >= 0) {
 		if(paquete->header.type == HANDSHAKE_LOADER)
@@ -62,19 +62,19 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_datosKernel* datosAKernel = malloc(sizeof(t_datosKernel));
 	t_datosMostrarConsola* datosDeKernel = (t_datosMostrarConsola*) (paquete->data);
-	/*
+
 	datosAKernel->codigoBeso = self->codigo;
 
 	if (socket_sendPaquete(self->socketKernel->socket, CODIGO_BESO, sizeof(t_datosKernel), datosAKernel) > 0)
 		log_info(self->loggerProgramaBESO, "Consola: Los datos del Programa Beso se enviaron correctamente al Kernel");
 
-	 */
+
 	while(1){
 		if (socket_recvPaquete(self->socketKernel->socket, paquete) >= 0){
 			if(datosDeKernel->codigo == MENSAJE_DE_ERROR)
-				log_error(self->loggerProgramaBESO, "Consola: recive un MENSAJE_DE_ERROR: %c",datosDeKernel->mensaje);
+				log_error(self->loggerProgramaBESO, "Consola: Recibe un MENSAJE_DE_ERROR: %s", datosDeKernel->mensaje);
 			else
-				log_info(self->loggerProgramaBESO, "Consola: recibe OK: %c ",datosDeKernel->mensaje);
+				log_info(self->loggerProgramaBESO, "Consola: Recibe OK: %s",datosDeKernel->mensaje);
 		}
 		else{
 			log_error(self->loggerProgramaBESO, "Consola: El Kernel ha cerrado la conexion.");

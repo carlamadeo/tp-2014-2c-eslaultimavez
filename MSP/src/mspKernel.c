@@ -12,6 +12,9 @@ t_log *MSPlogger;
 
 void *mspLanzarHiloKernel(t_socket *socketKernel){
 	t_socket_paquete *paquete;
+	int i = 1;
+
+	log_info(MSPlogger,"Hilo Kernel creado correctamente.");
 
 	if (socket_sendPaquete(socketKernel, HANDSHAKE_MSP, 0, NULL) > 0)
 		log_info(MSPlogger, "MSP: Handshake con Kernel!");
@@ -19,8 +22,7 @@ void *mspLanzarHiloKernel(t_socket *socketKernel){
 	else
 		log_error(MSPlogger, "MSP: Error al recibir los datos del Kernel.");
 
-
-	while(1){
+	while(i){
 
 		paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
@@ -46,9 +48,9 @@ void *mspLanzarHiloKernel(t_socket *socketKernel){
 		}
 
 		else{
-			log_error(MSPlogger, "MSP: El Kernel ha cerrado la conexion.");
+			log_debug(MSPlogger, "MSP: El Kernel ha cerrado la conexion.");
 			close(socketKernel->descriptor);
-			exit(-1);
+			i = 0;
 		}
 
 		socket_freePaquete(paquete);
@@ -107,16 +109,16 @@ void escribirMemoriaKernel(t_socket  *socketKernel, t_socket_paquete *paquete){
 	t_datos_aKernelEscritura* datosAKernel = malloc(sizeof(t_datos_aKernelEscritura));
 	t_datos_deKernelEscritura* datosDeKernel = (t_datos_deKernelEscritura*) (paquete->data);
 
-	log_info(MSPlogger, "MSP: Kernel esta solicitando leer la memoria...");
+	log_info(MSPlogger, "MSP: Kernel esta solicitando escribir la memoria...");
 
-	log_info(MSPlogger, "MSP: Abriendo el paquete del Kernel: El paquete contiene PID: %d, Direccion Virtual : %0.8p, Tamaño: %d", datosDeKernel->pid, datosDeKernel->direccionVirtual, datosDeKernel->tamanio);
+	log_info(MSPlogger, "MSP: Abriendo el paquete del Kernel: El paquete contiene PID: %d, Direccion Virtual : %0.8p, Tamaño: %d %s", datosDeKernel->pid, datosDeKernel->direccionVirtual, datosDeKernel->tamanio, datosDeKernel->buffer);
 
 	//Esto envía SIN_ERRORES si se escribió la memoria correctamente
 	//o ERROR_POR_SEGMENTATION_FAULT si se intentó escribir memoria inválida
 	datosAKernel->estado = mspEscribirMemoria(datosDeKernel->pid, datosDeKernel->direccionVirtual, datosDeKernel->buffer, datosDeKernel->tamanio);
 
 	if (socket_sendPaquete(socketKernel, ESCRIBIR_MEMORIA, sizeof(t_datos_aKernelEscritura), datosAKernel) > 0)
-		log_info(MSPlogger, "MSP: Los datos de lectura de memoria se han enviado al Kernel correctamente");
+		log_info(MSPlogger, "MSP: Los datos de escritura de memoria se han enviado al Kernel correctamente");
 
 	free(datosAKernel);
 	free(datosDeKernel->buffer);

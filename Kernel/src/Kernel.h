@@ -15,9 +15,6 @@
 #define PATH_LOG "logs/trace.log"
 
 
-
-
-
 typedef struct {
 	int pid;
 	int tid;
@@ -31,13 +28,12 @@ typedef struct {
 } t_TCB_Kernel;
 
 
-
-
 typedef struct {
         int id;
         t_socket* socket;
         int pid;
 } t_cpu;
+
 
 typedef struct { //ENVIO TAMAÑO TOTAL BUFFER Y DATOS
         int numero;
@@ -49,11 +45,13 @@ typedef struct {
         int stack;
 } t_handshake_cpu_kernel;
 
+
 typedef struct {
 		t_TCB_Kernel TCB;
         int tamanioEnBytes;
         t_socket* socket;
 } t_programaEnKernel;
+
 
 typedef struct {
 		t_TCB_Kernel TCB;
@@ -63,10 +61,12 @@ typedef struct {
         char * bloqueado;
 } t_block_proceso;
 
+
 typedef struct {
         u_int32_t num;
         u_int32_t pid;
 } t_envio_num_EnKernel;
+
 
 typedef struct {
         u_int32_t base;
@@ -81,11 +81,11 @@ typedef struct {
         int pid;
 } t_imprimir_int;
 
+
 typedef struct {
         int peso;
         int pid;
 } t_imprimir_texto_EnKernel;
-
 
 
 typedef struct {
@@ -163,7 +163,5 @@ t_kernel* kernel_cargar_configuracion(char* config_file);
 void verificar_argumentosKernel(int argc, char* argv[]);
 
 void finalizarProgramaEnPlanificacion(t_programaEnKernel* programa);
-
-
 
 #endif /* KERNEL_H_ */

@@ -13,8 +13,11 @@ t_log *MSPlogger;
 void *mspLanzarHiloCPU(t_socket * socketCPU){
 	t_socket_paquete *paquete;
 
+	log_info(MSPlogger,"Hilo CPU creado correctamente.");
+
 	if (socket_sendPaquete(socketCPU, HANDSHAKE_MSP, 0, NULL) > 0)
 		log_info(MSPlogger, "MSP: Handshake con CPU!");
+
 
 	else
 		log_error(MSPlogger, "MSP: Error al recibir los datos de la CPU.");
