@@ -12,6 +12,7 @@ t_log *MSPlogger;
 
 void *mspLanzarHiloCPU(t_socket * socketCPU){
 	t_socket_paquete *paquete;
+	int i = 1;
 
 	log_info(MSPlogger,"Hilo CPU creado correctamente.");
 
@@ -23,7 +24,7 @@ void *mspLanzarHiloCPU(t_socket * socketCPU){
 		log_error(MSPlogger, "MSP: Error al recibir los datos de la CPU.");
 
 
-	while(1){
+	while(i){
 
 		paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
@@ -51,7 +52,7 @@ void *mspLanzarHiloCPU(t_socket * socketCPU){
 		else{
 			log_error(MSPlogger, "MSP: El CPU ha cerrado la conexion.");
 			close(socketCPU->descriptor);
-			exit(-1);
+			i = 0;
 		}
 
 		socket_freePaquete(paquete);

@@ -1,5 +1,5 @@
 
-#include "cpu_to_kernel.h"
+#include "cpuKernel.h"
 
 t_socket_client* conectarCPUConKernel(t_CPU* self) {
 
