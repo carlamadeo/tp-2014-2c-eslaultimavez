@@ -11,14 +11,20 @@
 #include "CPU.h"
 #include "cpuMSP.h"
 #include "cpuKernel.h"
-#include "codigoESO.h"
+#include "cpuConfig.h"
+#include <stdlib.h>
 
 
 int main(int argc, char** argv) {
 
 	verificar_argumentosCPU(argc, argv);
-	char* config_file = argv[1];
-	t_CPU* self = cpu_cargar_configuracion(config_file);
+	t_CPU *self = malloc(sizeof(t_CPU));
+	t_config *configCPU;
+
+	if(!cargarConfiguracionCPU(argv[1], self, configCPU)){
+		printf("Archivo de configuracion invalido\n");
+		return EXIT_SUCCESS;
+	}
 
 	self->loggerCPU = log_create("logCPU.log", "CPU", 1, LOG_LEVEL_DEBUG);
 	self->socketMSP = cpuConectarConMPS(self);
@@ -55,10 +61,9 @@ int main(int argc, char** argv) {
 
 	close(socketDelKernel->descriptor);
 	close(socketDelMSP->descriptor);
+
+	destruirConfiguracionCPU(self, configCPU);
 }
-
-
-
 
 
 void cpuProcesar_tcb(t_CPU* self){
@@ -757,22 +762,3 @@ void verificar_argumentosCPU(int argc, char* argv[]){
 		exit (EXIT_FAILURE);
 	}
 }
-
-
-t_CPU* cpu_cargar_configuracion(char* config_file){
-
-	t_CPU* self = malloc(sizeof(t_CPU));
-	t_config* config = config_create(config_file);
-
-	//se obtiene los datos del archivo
-
-	self->puertoPlanificador = config_get_int_value(config, "PUERTO_KERNEL");
-	self->puertoMSP = config_get_int_value(config, "PUERTO_MSP");
-	self->ipPlanificador= string_duplicate(config_get_string_value(config, "IP_KERNEL"));
-	self->ipMsp = string_duplicate(config_get_string_value(config, "IP_MSP"));
-	self->retardo = config_get_int_value(config, "RETARDO");
-
-	config_destroy(config);
-	return self;
-}
-

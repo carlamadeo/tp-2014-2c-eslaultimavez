@@ -12,20 +12,26 @@
 #include "Loader.h"
 #include "Planificador.h"
 #include "boot.h"
-#include "commons/string.h"
 #include "commons/config.h"
 #include "kernelMSP.h"
+#include "kernelConfig.h"
+#include <stdlib.h>
+#include <pthread.h>
 
 int main(int argc, char** argv) {
 
 	verificar_argumentosKernel(argc, argv);
-	char* config_file = argv[1];
-	t_kernel* self = kernel_cargar_configuracion(config_file);
+	t_kernel *self = malloc(sizeof(t_kernel));
+	t_config *configKernel;
 
-	self->loggerKernel = log_create("logKernel.log", "KERNEL", 1, LOG_LEVEL_DEBUG);
-	self->loggerPlanificador = log_create("logKernel.log", "Planificador", 1, LOG_LEVEL_DEBUG);
-	self->loggerLoader = log_create("logKernel.log", "Loader", 1, LOG_LEVEL_DEBUG);
-	log_info((self->loggerKernel), "Kernel: Comienza a ejecutar.");
+	if(!cargarConfiguracionKernel(argv[1], self, configKernel)){
+		printf("Archivo de configuracion invalido\n");
+		return EXIT_SUCCESS;
+	}
+
+	printf("El ip cargado es %s\n", self->ipMsp);
+	printf("El puerto cargado es %d\n", self->puertoMsp);
+	log_info(self->loggerKernel, "Kernel: Comienza a ejecutar.");
 
 	cola_new = list_create();
 	cola_ready = list_create();
@@ -53,22 +59,22 @@ int main(int argc, char** argv) {
 
 
 	//hace el boot y le manda a la msp el archivo de SystemCall
-//	hacer_conexion_con_msp(self);
-//
-//	//El codigo se levanta de las system calls
-//	char* codigoPrograma;
-//	int tamanioEnBytes = 34;
-//	int pid = 1;
-//	int tid = 53;
-//	crearTCBKERNEL(self, codigoPrograma, tamanioEnBytes, pid, tid);
-//	//
-//	//	//Esto lo hace despues de Bootear
-//	//
-//	iretThread = pthread_create( &LoaderHilo, NULL, (void*) kernel_comenzar_Loader, self);
-//	if(iretThread) {
-//		printf(stderr,"Error - pthread_create() return code: %d\n", iretThread);
-//		exit(EXIT_FAILURE);
-//	}
+	hacer_conexion_con_msp(self);
+
+	//El codigo se levanta de las system calls
+	char* codigoPrograma;
+	int tamanioEnBytes = 34;
+	int pid = 1;
+	int tid = 53;
+	crearTCBKERNEL(self, codigoPrograma, tamanioEnBytes, pid, tid);
+	//
+	//	//Esto lo hace despues de Bootear
+	//
+	iretThread = pthread_create( &LoaderHilo, NULL, (void*) kernel_comenzar_Loader, self);
+	if(iretThread) {
+		printf(stderr,"Error - pthread_create() return code: %d\n", iretThread);
+		exit(EXIT_FAILURE);
+	}
 
 	iretThread = pthread_create( &PlanificadorHilo, NULL, (void*) kernel_comenzar_Planificador, self);
 	if(iretThread) {
@@ -77,37 +83,20 @@ int main(int argc, char** argv) {
 	}
 
 
-	//pthread_join(LoaderHilo, NULL);
+	pthread_join(LoaderHilo, NULL);
 	pthread_join(PlanificadorHilo, NULL);
+
+	destruirConfiguracionKernel(self, configKernel);
 	return EXIT_SUCCESS;
 }
 
 void verificar_argumentosKernel(int argc, char* argv[]){
-	if( argc < 2 ){
+	if( argc != 2 ){
 		printf("Modo de empleo: ./Kernel mspKernel.cfg\n");
 		perror("Kernel no recibio las configuraciones");
 		exit (EXIT_FAILURE);
 	}
 }
-
-
-t_kernel* kernel_cargar_configuracion(char* config_file){
-	t_kernel* self = malloc(sizeof(t_kernel));
-	t_config* config = config_create(config_file);
-
-	//se obtiene los datos del archivo
-	self->puertoLoader = config_get_int_value(config, "PUERTO_LOADER");
-	self->puertoPlanificador = config_get_int_value(config, "PUERTO_PLANIFICADOR");
-	self->ipMsp = string_duplicate(config_get_string_value(config, "IP_MSP"));
-	self->puertoMsp = config_get_int_value(config, "PUERTO_MSP");
-	self->quamtum = config_get_int_value(config, "QUANTUM");
-	self->systemCalls  = string_duplicate(config_get_string_value(config, "SYSCALLS"));
-	self->tamanioStack = config_get_int_value(config, "TAMANIOSTACK");
-
-	config_destroy(config);
-	return self;
-}
-
 
 
 void finalizarProgramaEnPlanificacion(t_programaEnKernel* programa){

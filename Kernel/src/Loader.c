@@ -1,7 +1,12 @@
 
 #include "Loader.h"
+#include "kernelConfig.h"
+#include "kernelMSP.h"
 #include "commons/protocolStructInBigBang.h"
 #include <errno.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 int unPIDGlobal = 0;
 int unTIDGlobal = 0;

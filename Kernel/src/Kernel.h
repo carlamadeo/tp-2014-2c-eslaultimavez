@@ -3,10 +3,8 @@
 
 #include <semaphore.h>
 #include <arpa/inet.h>
-#include <commons/log.h>
 #include <commons/collections/list.h>
-#include <commons/socketInBigBang.h>
-#include <commons/protocolStructInBigBang.h>
+#include "commons/socketInBigBang.h"
 
 
 /*----------------------Estructuras del Kernel----------------------------------------*/
@@ -88,23 +86,6 @@ typedef struct {
 } t_imprimir_texto_EnKernel;
 
 
-typedef struct {
-	t_socket_client* socketMSP;
-	t_socket* socketCPU;
-	t_socket* socketConsola;
-	t_log* loggerKernel;
-	t_log* loggerPlanificador;
-	t_log* loggerLoader;
-	int puertoLoader;
-	int puertoPlanificador;
-	char* ipMsp;
-	int puertoMsp;
-	int quamtum;
-	char* systemCalls;
-	int tamanioStack;
-} t_kernel;
-
-
 t_list* cola_new;
 t_list* cola_ready;
 t_list* cola_exec;
@@ -149,6 +130,7 @@ int cantColaBlock;
 typedef char* t_variable_compartida;
 
 /*---------------------- Funciones del Kernel 6 -----------------------------------------------*/
+/*---------------------- Funciones del Kernel 6 -----------------------------------------------*/
 int kernel_imprimirListas();
 void kernel_errorAlPrograma(t_socket* socket, int error);
 void kernel_finalizarPrograma2(t_programaEnKernel* programaEnKernel);
@@ -158,10 +140,10 @@ pthread_t LoaderHilo, PlanificadorHilo;
 
 void kernel_crearColaDeEstados(void);
 int  kernel_escuchar_conexiones(void);
-t_kernel* kernel_cargar_configuracion(char* config_file);
 
 void verificar_argumentosKernel(int argc, char* argv[]);
 
 void finalizarProgramaEnPlanificacion(t_programaEnKernel* programa);
+
 
 #endif /* KERNEL_H_ */

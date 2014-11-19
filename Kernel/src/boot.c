@@ -1,6 +1,9 @@
 #include "boot.h"
-#include "commons/protocolStructInBigBang.h"
 #include "kernelMSP.h"
+#include "Kernel.h"
+#include "kernelConfig.h"
+#include "commons/socketInBigBang.h"
+#include <stdlib.h>
 
 
 void crearTCBKERNEL(t_kernel* self, char* codigoPrograma, int tamanioEnBytes, int pid, int tid){

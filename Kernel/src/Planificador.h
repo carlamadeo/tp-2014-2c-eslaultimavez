@@ -1,8 +1,10 @@
 #ifndef PLANIFICADOR_H_
 #define PLANIFICADOR_H_
 
-
 #include "Kernel.h"
+#include "kernelConfig.h"
+
+
 t_TCB_Kernel* test_TCB ();
 
 t_list* listaCpu;

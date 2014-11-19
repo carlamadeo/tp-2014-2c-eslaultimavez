@@ -8,6 +8,10 @@
 #ifndef KERNELMSP_H_
 #define KERNELMSP_H_
 
+#include <stdint.h>
+#include "kernelConfig.h"
+#include "commons/socketInBigBang.h"
+
 typedef struct{
 	int pid;
 	int tamanio;

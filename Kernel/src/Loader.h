@@ -2,6 +2,7 @@
 #define LOADER_H_
 
 #include "Kernel.h"
+#include "kernelConfig.h"
 
 pthread_t programaBesoHilo, conexionConMSPHilo;
 t_list* listaDeProgramas;

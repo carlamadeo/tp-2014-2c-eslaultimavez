@@ -1,27 +1,17 @@
 #ifndef CPU_H_
 #define CPU_H_
 
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <pthread.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <signal.h>
-#include <unistd.h>
-#include <commons/config.h>
-#include <commons/log.h>
-#include <commons/string.h>
-#include <commons/collections/list.h>
-#include <commons/socketInBigBang.h>
-#include <commons/protocolStructInBigBang.h>
+#include <stdint.h>
+#include "commons/socketInBigBang.h"
+#include "commons/protocolStructInBigBang.h"
 #include "codigoESO.h"
+#include "commons/log.h"
+#include "commons/collections/list.h"
 
+t_log *logger;
 //linea para hacer push
 //#include <commons/threadInBigBang.h>
+
 
 typedef struct {
 	int pid;
@@ -88,7 +78,6 @@ typedef struct {
 	int retardo;
 }t_CPU;
 
-
 typedef struct{
 	int tamanio;
 	char *data;
@@ -120,30 +109,16 @@ typedef struct {
  * Fin de las estucturas para comunicar CPU con Kernel
  */
 
-
-t_CPU* self;
 t_TCB_CPU* tcb;
 t_list* lista;
-
-char * config_file;
-
-#define PATH_LOG "logs/trace.log" //Donde esta el archivo LOG
-#define PATH_CONFIG "../config"
-
-
-
 t_socket* socketDelKernel;
 t_socket* socketDelMSP;
-
-t_log* logger;
-
 
 /*
  * Aqui se declaran las funciones
  */
 
 void verificar_argumentosCPU(int argc, char* argv[]);
-t_CPU* cpu_cargar_configuracion(char* config_file);
 void ejecutar_instruccion(int linea, t_CPU* self);
 void cpuProcesar_tcb(t_CPU* self);
 //void cpuProcesar_tcb(int pid, t_TCB_CPU* nuevo);

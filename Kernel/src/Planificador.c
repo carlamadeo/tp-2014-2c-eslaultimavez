@@ -1,5 +1,11 @@
 #include "Planificador.h"
+#include "kernelConfig.h"
 #include <errno.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include "commons/protocolStructInBigBang.h"
+#include "commons/socketInBigBang.h"
 
 void kernel_comenzar_Planificador(t_kernel* self){
 

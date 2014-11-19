@@ -30,7 +30,7 @@ void realizarHandshakeConLoader(t_programaBESO* self){
 
 	if (socket_recvPaquete(self->socketKernel->socket, paquete) >= 0) {
 		if(paquete->header.type == HANDSHAKE_LOADER)
-			log_info(self->loggerProgramaBESO, "Consola: recive del Kernel: HANDSHAKE_LOADER");
+			log_info(self->loggerProgramaBESO, "Consola: Recibe del Kernel: HANDSHAKE_LOADER");
 	}
 	else
 		log_error(self->loggerProgramaBESO, "Consola: Error al recibir los datos del Kernel.");
