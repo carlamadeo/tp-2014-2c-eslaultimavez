@@ -397,8 +397,8 @@ void INNN_ESO(t_TCB_CPU* tcb){
 	//soffset=stmp_size;
 
 
-//	if (socket_sendPaquete((t_socket*)socketDelKernel, ENTRADA_ESTANDAR_NUMERO,stmp_size, data)<=0){
-//		log_info(logger, "Error de Interrupcion %d", tcb->pid);
+//	if (socket_sendPaquete((t_socket*)socketDelKernel, ENTRADA_ESTANDAR,stmp_size, data)<=0){
+//		log_info(logger, "Error de ENTRADA_ESTANDAR %d", tcb->pid);
 //
 //
 //	}
@@ -441,7 +441,7 @@ void INNC_ESO(t_TCB_CPU* tcb){
 	pedir_bytes->data=data;
 
 //	if (socket_sendPaquete((t_socket*)socketDelKernel, ENTRADA_ESTANDAR_CHAR,pedir_bytes->tamanio, pedir_bytes->data)<=0){  //22 corresponde a interrupcion
-//		log_info(logger, "Error de Interrupcion %d", tcb->pid);
+//		log_info(logger, "Error de ENTRADA_ESTANDAR_CHAR %d", tcb->pid);
 //		//cpuCambioDeContextoError();
 //
 //	}
@@ -492,9 +492,44 @@ void INNC_ESO(t_TCB_CPU* tcb){
 
 }
 void OUTN_ESO(t_TCB_CPU* tcb){
+	t_paquete_MSP *mostrar_bytes = malloc(sizeof(t_paquete_MSP));
+
+	char *data=malloc(sizeof(int)+sizeof(uint32_t)); /*pid+(tamanio)registro_de_programacion['B']*/
+	int soffset, stmp_size=0;
+	memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
+	memcpy(data + soffset, tcb->registro_de_programacion[0], stmp_size=sizeof(int32_t));
+	soffset+=stmp_size;
+	mostrar_bytes->tamanio=soffset;
+	mostrar_bytes->data=data;
+
+	if (socket_sendPaquete((t_socket*)socketDelKernel, SALIDA_ESTANDAR,mostrar_bytes->tamanio, mostrar_bytes->data)<=0){
+		log_info(logger, "Error de SALIDA_ESTANDAR %d", tcb->pid);
+
+
+	}
+	free(data);
+	free(mostrar_bytes);
 
 }
 void OUTC_ESO(t_TCB_CPU* tcb){
+
+	t_paquete_MSP *mostrar_bytes = malloc(sizeof(t_paquete_MSP));
+
+	char *data=malloc(sizeof(int)+sizeof(uint32_t)); /*pid+(tamanio)registro_de_programacion['B']*/
+	int soffset, stmp_size=0;
+	memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
+	memcpy(data + soffset, tcb->registro_de_programacion[0], stmp_size=sizeof(int32_t));
+	soffset+=stmp_size;
+	mostrar_bytes->tamanio=soffset;
+	mostrar_bytes->data=data;
+
+	if (socket_sendPaquete((t_socket*)socketDelKernel, SALIDA_ESTANDAR_CHAR,mostrar_bytes->tamanio, mostrar_bytes->data)<=0){
+		log_info(logger, "Error de SALIDA_ESTANDAR_CHAR %d", tcb->pid);
+
+
+	}
+	free(data);
+	free(mostrar_bytes);
 
 }
 void CREA_ESO(t_TCB_CPU* tcb){
