@@ -3,8 +3,7 @@
 
 #include "kernelConfig.h"
 
-void crearTCBKERNEL(t_kernel* self, char* codigoPrograma, int tamanioEnBytes, int pid, int tid);
-int pedirBaseAMSP(t_kernel* self,int pid, char* buffer, int tamanio);
-
+void crearTCBKERNEL(t_kernel* self);
+int obtenerCogidoBesoSystemCall(t_kernel *self);
 
 #endif /* BOOT_H_ */

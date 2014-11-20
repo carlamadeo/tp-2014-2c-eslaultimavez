@@ -29,9 +29,9 @@ int main(int argc, char** argv) {
 		return EXIT_SUCCESS;
 	}
 
-	printf("El ip cargado es %s\n", self->ipMsp);
-	printf("El puerto cargado es %d\n", self->puertoMsp);
-	log_info(self->loggerKernel, "Kernel: Comienza a ejecutar.");
+	//printf("El ip cargado es %s\n", self->ipMsp);
+	//printf("El puerto cargado es %d\n", self->puertoMsp);
+	//log_info(self->loggerKernel, "Kernel: Comienza a ejecutar.");
 
 	cola_new = list_create();
 	cola_ready = list_create();
@@ -62,11 +62,7 @@ int main(int argc, char** argv) {
 	hacer_conexion_con_msp(self);
 
 	//El codigo se levanta de las system calls
-	char* codigoPrograma;
-	int tamanioEnBytes = 34;
-	int pid = 1;
-	int tid = 53;
-	crearTCBKERNEL(self, codigoPrograma, tamanioEnBytes, pid, tid);
+	crearTCBKERNEL(self);
 	//
 	//	//Esto lo hace despues de Bootear
 	//
@@ -104,3 +100,6 @@ void finalizarProgramaEnPlanificacion(t_programaEnKernel* programa){
 	list_add(cola_exit, programa);
 	sem_post(&mutex_exit);
 }
+
+
+

@@ -6,37 +6,48 @@
 #include <stdlib.h>
 
 
-void crearTCBKERNEL(t_kernel* self, char* codigoPrograma, int tamanioEnBytes, int pid, int tid){
+void crearTCBKERNEL(t_kernel* self){
 
-	uint32_t stack;
-	t_programaEnKernel* programaEnElKernel = malloc( sizeof(t_programaEnKernel) );
 	log_info(self->loggerKernel, "Boot: Creando TCB...");
 
-	programaEnElKernel->TCB.pid = pid;
-	programaEnElKernel->TCB.tid = tid;
+	self->tcbKernel = malloc(sizeof(t_TCB_Kernel));
+	self->tcbKernel->pid = 125;
+	self->tcbKernel->tid = 465;
+	self->tcbKernel->km  = 1;
 
-	programaEnElKernel->TCB.base_segmento_codigo = kernelCrearSegmento(self, pid, tamanioEnBytes); //beso
+	self->tcbKernel->tamanio_segmento_codigo = obtenerCogidoBesoSystemCall(self);
+	self->tcbKernel->base_segmento_codigo = kernelCrearSegmento(self, self->tcbKernel->pid, self->tcbKernel->tamanio_segmento_codigo);
+	self->tcbKernel->puntero_instruccion  = self->tcbKernel->base_segmento_codigo;
 
+	self->tcbKernel->base_stack = kernelCrearSegmento(self, self->tcbKernel->pid, self->tamanioStack);
+	self->tcbKernel->cursor_stack = self->tcbKernel->base_stack;
 
-	if(programaEnElKernel->TCB.base_segmento_codigo == -1){
-		finalizarProgramaEnPlanificacion(programaEnElKernel);
-		//return NULL;
-	}
-
-
-	programaEnElKernel->TCB.base_stack = kernelCrearSegmento(self, pid, self->tamanioStack);
-	if(programaEnElKernel->TCB.base_stack == -1){
-		finalizarProgramaEnPlanificacion(programaEnElKernel);
-		//return NULL;
-	}
-
-	programaEnElKernel->TCB.cursor_stack = programaEnElKernel->TCB.base_stack;
-
-	//faltan todos los logs
-	log_info(self->loggerKernel, "PID %d TID: %d\n",programaEnElKernel->TCB.pid, programaEnElKernel->TCB.tid);
-
-	//Falta escribir la memoria con las SystemCalls
+	self->tcbKernel->registro_de_programacion[0] = 0;
+	self->tcbKernel->registro_de_programacion[1] = 0;
+	self->tcbKernel->registro_de_programacion[2] = 0;
+	self->tcbKernel->registro_de_programacion[3] = 0;
 	log_info(self->loggerKernel, "Boot: Completado con éxito!");
 
 	//return programaEnElKernel;
+}
+
+
+//esta funcion tiene que leer el archivo
+int obtenerCogidoBesoSystemCall(t_kernel *self){
+
+	FILE *archivoBesoSystemCall = fopen("../../ArchivosConfiguracion/besoSystemCall.bc", "r");
+
+	if(archivoBesoSystemCall == 0){
+		log_error(self->loggerKernel, "Kernel: Error al abrir el archivo besoSystemCall");
+		exit(-1);
+	}
+
+	fseek(archivoBesoSystemCall, 0, SEEK_END);	//Me coloco al final del fichero para saber el tamanio
+	size_t sizeArchivoBeso = ftell(archivoBesoSystemCall);
+	fseek(archivoBesoSystemCall, 0, SEEK_SET);	//Me coloco al principio del fichero para leerlo
+
+	//falta hacer el SEND y mandarlo a la msp
+
+
+	return sizeArchivoBeso;
 }

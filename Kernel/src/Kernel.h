@@ -4,6 +4,7 @@
 #include <semaphore.h>
 #include <arpa/inet.h>
 #include <commons/collections/list.h>
+#include "commons/log.h"
 #include "commons/socketInBigBang.h"
 
 
@@ -11,7 +12,6 @@
 #define MAXDATASIZE 1024
 #define PATH_CONFIG "archivoConfiguracion.cfg"
 #define PATH_LOG "logs/trace.log"
-
 
 typedef struct {
 	int pid;
@@ -25,23 +25,31 @@ typedef struct {
 	int32_t registro_de_programacion[4];
 } t_TCB_Kernel;
 
+typedef struct {
+	t_socket_client* socketMSP;
+	t_socket* socketCPU;
+	t_socket* socketConsola;
+	t_log* loggerKernel;
+	t_log* loggerPlanificador;
+	t_log* loggerLoader;
+	int puertoLoader;
+	int puertoPlanificador;
+	char* ipMsp;
+	int puertoMsp;
+	int quamtum;
+	char* systemCalls;
+	int tamanioStack;
+	t_TCB_Kernel* tcbKernel;
+} t_kernel;
+
+
+
 
 typedef struct {
         int id;
         t_socket* socket;
         int pid;
 } t_cpu;
-
-
-typedef struct { //ENVIO TAMAÑO TOTAL BUFFER Y DATOS
-        int numero;
-} t_peso_socket;
-
-
-typedef struct {
-        int quantum;
-        int stack;
-} t_handshake_cpu_kernel;
 
 
 typedef struct {
@@ -53,37 +61,11 @@ typedef struct {
 
 typedef struct {
 		t_TCB_Kernel TCB;
-        int peso;
         t_socket* socket;
         int motivo;
         char * bloqueado;
 } t_block_proceso;
 
-
-typedef struct {
-        u_int32_t num;
-        u_int32_t pid;
-} t_envio_num_EnKernel;
-
-
-typedef struct {
-        u_int32_t base;
-        u_int32_t offset;
-        u_int32_t tamanio;
-        u_int32_t pid;
-} t_envio_bytes_EnKernel;
-
-
-typedef struct {
-        int valor_mostrar;
-        int pid;
-} t_imprimir_int;
-
-
-typedef struct {
-        int peso;
-        int pid;
-} t_imprimir_texto_EnKernel;
 
 
 t_list* cola_new;
@@ -95,7 +77,6 @@ t_list* cola_exit;
 
 
 int iretThread;
-t_socket* socketMSP;
 
 // Semaforos
 sem_t sem_multiprog;    // Contador de la multiprogramacion (Ready + Exec + Block)
@@ -131,6 +112,7 @@ typedef char* t_variable_compartida;
 
 /*---------------------- Funciones del Kernel 6 -----------------------------------------------*/
 /*---------------------- Funciones del Kernel 6 -----------------------------------------------*/
+
 int kernel_imprimirListas();
 void kernel_errorAlPrograma(t_socket* socket, int error);
 void kernel_finalizarPrograma2(t_programaEnKernel* programaEnKernel);
