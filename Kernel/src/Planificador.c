@@ -160,7 +160,7 @@ t_cpu* obtenerCPUSegunDescriptor(t_kernel* self,int descriptor){
 t_TCB_Kernel* test_TCB (){
 	t_TCB_Kernel* test_TCB = malloc(sizeof(t_TCB_Kernel));
 
-	test_TCB->pid= 120;
+	test_TCB->pid= 0;
 	test_TCB->tid= 523;
 	test_TCB->km = 1;
 	test_TCB->base_segmento_codigo = 1048576;

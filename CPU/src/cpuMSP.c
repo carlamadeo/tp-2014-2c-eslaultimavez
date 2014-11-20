@@ -80,7 +80,7 @@ int cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
 }
 
 
-int cpuEscribirMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *programaBeso, int tamanioBeso, t_socket* socketNuevoCliente){
+int cpuEscribirMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *programa, int tamanio, t_socket* socketNuevoCliente){
 
 	t_escribirSegmentoBeso* escrituraDeCodigo = malloc(sizeof(t_escribirSegmentoBeso));
 	t_socket_paquete *paqueteConfirmacionEscritura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
@@ -88,8 +88,8 @@ int cpuEscribirMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *pr
 
 	escrituraDeCodigo->direccionVirtual = direccionVirtual;
 	escrituraDeCodigo->pid = pid;
-	escrituraDeCodigo->tamanio = tamanioBeso;
-	strcpy(escrituraDeCodigo->bufferCodigoBeso, programaBeso);
+	escrituraDeCodigo->tamanio = tamanio;
+	strcpy(escrituraDeCodigo->bufferCodigoBeso, programa);
 
 	log_info(self->loggerCPU, "CPU: Solicitud de escritura de %s en memoria para PID: %d, Direccion Virtual: %0.8p, Tamaño: %d.", escrituraDeCodigo->bufferCodigoBeso, escrituraDeCodigo->pid, escrituraDeCodigo->direccionVirtual, escrituraDeCodigo->tamanio);
 
@@ -113,3 +113,29 @@ int cpuEscribirMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *pr
 	return unaConfirmacionEscritura->estado;
 }
 
+int cpuLeerMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *programa, int tamanio, t_socket* socketNuevoCliente){
+
+	t_datos_aMSPLectura *datosAMSP = malloc(sizeof(t_datos_aMSPLectura));
+	t_socket_paquete *paqueteLectura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+	t_datos_deMSPLectura *unaLectura = (t_datos_deMSPLectura *)malloc(sizeof(t_datos_deMSPLectura));
+
+	datosAMSP->direccionVirtual = direccionVirtual;
+	datosAMSP->pid = pid;
+	datosAMSP->tamanio = tamanio;
+
+	log_info(self->loggerCPU, "Kernel: Solicitud de lectura de memoria para PID: %d, Direccion Virtual: %0.8p, Tamaño: %d.", datosAMSP->pid, datosAMSP->direccionVirtual, datosAMSP->tamanio);
+	printf("aca2\n");
+	socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, sizeof(t_datos_aMSPLectura), datosAMSP);
+	printf("aca3\n");
+	socket_recvPaquete(socketNuevoCliente, paqueteLectura);
+	printf("aca4\n");
+	unaLectura = (t_datos_deMSPLectura *) paqueteLectura->data;
+printf("aca5\n");
+	strcpy(programa, unaLectura->lectura);
+
+	if (unaLectura->estado == ERROR_POR_SEGMENTATION_FAULT){
+		//Pasarle el error al kernel
+	}
+
+	return unaLectura->estado;
+}

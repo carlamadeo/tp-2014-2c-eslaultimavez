@@ -28,6 +28,17 @@ typedef struct {
 	int tamanio;
 } t_escribirSegmentoBeso;
 
+typedef struct{
+	int pid;
+	uint32_t direccionVirtual;
+	int tamanio;
+}t_datos_aMSPLectura;
+
+typedef struct{
+	int estado;
+	char lectura[1000];
+}t_datos_deMSPLectura;
+
 t_socket_client* cpuConectarConMPS(t_CPU* self);
 void cpuRealizarHandshakeConMSP(t_CPU* self);
 int cpuCrearSegmento(t_CPU *self, int pid, int tamanio);
