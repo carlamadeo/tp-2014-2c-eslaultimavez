@@ -84,7 +84,7 @@ void cpuProcesar_tcb(t_CPU* self){
 		unCPU_LEER_MEMORIA->direccionVirtual = self->tcb->puntero_instruccion;
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, sizeof(t_CPU_LEER_MEMORIA), unCPU_LEER_MEMORIA)<=0){
 			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
-			//cpuCambioDeConextoError();
+
 		}
 
 		log_info(self->loggerCPU, "CPU: Envia a MSP LEER_MEMORIA");
@@ -739,17 +739,174 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 	case XXXX:
 		XXXX_ESO(self->tcb);
 		break;
-	case MALC: MALC_ESO(self->tcb); break;
-	case FREE: FREE_ESO(self->tcb); break;
-	case INNN: INNN_ESO(self->tcb); break;
-	case INNC: INNC_ESO(self->tcb); break;
-	case OUTN: OUTN_ESO(self->tcb); break;
-	case OUTC: OUTC_ESO(self->tcb); break;
-	case CREA: CREA_ESO(self->tcb); break;
-	case JOIN: JOIN_ESO(self->tcb); break;
-	case BLOK: BLOK_ESO(self->tcb); break;
-	default: break;
+	case MALC:
+		if(self->tcb->km==1){
+		MALC_ESO(self->tcb);
+		}else{
+			log_error(self->loggerCPU, "CPU: ejecucion ilicita de PID:\n %d", self->tcb->pid);
+			if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
+				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
+			}else{
+				if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
+					log_error(self->loggerCPU, "CPU: fallo: CAMBIO_DE_CONTEXTO\n");
+				}else{
+						log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO\n");
+						}
+					}
+				}
+			break;
 
+	case FREE:
+		if(self->tcb->km==1){
+			FREE_ESO(self->tcb);
+		}else{
+			log_error(self->loggerCPU, "CPU: ejecucion ilicita de PID:\n %d", self->tcb->pid);
+			if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
+				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
+			}else{
+				if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
+					log_error(self->loggerCPU, "CPU: fallo: CAMBIO_DE_CONTEXTO\n");
+				}else{
+						log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO\n");
+						}
+					}
+				}
+		 break;
+	case INNN:
+		if(self->tcb->km==1){
+			INNN_ESO(self->tcb);
+		}else{
+			log_error(self->loggerCPU, "CPU: ejecucion ilicita de PID:\n %d", self->tcb->pid);
+			if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
+				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
+			}else{
+				if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
+					log_error(self->loggerCPU, "CPU: fallo: CAMBIO_DE_CONTEXTO\n");
+				}else{
+						log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO\n");
+						}
+					}
+				}
+
+		 break;
+	case INNC:
+		if(self->tcb->km==1){
+			INNC_ESO(self->tcb);
+		}else{
+			log_error(self->loggerCPU, "CPU: ejecucion ilicita de PID:\n %d", self->tcb->pid);
+			if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
+				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
+			}else{
+				if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
+					log_error(self->loggerCPU, "CPU: fallo: CAMBIO_DE_CONTEXTO\n");
+				}else{
+						log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO\n");
+						}
+					}
+				}
+
+		break;
+	case OUTN:
+		if(self->tcb->km==1){
+			OUTN_ESO(self->tcb);
+		}else{
+			log_error(self->loggerCPU, "CPU: ejecucion ilicita de PID:\n %d", self->tcb->pid);
+			if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
+				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
+			}else{
+				if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
+					log_error(self->loggerCPU, "CPU: fallo: CAMBIO_DE_CONTEXTO\n");
+				}else{
+						log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO\n");
+						}
+					}
+				}
+
+		break;
+
+	case OUTC:
+		if(self->tcb->km==1){
+			OUTC_ESO(self->tcb);
+		}else{
+			log_error(self->loggerCPU, "CPU: ejecucion ilicita de PID:\n %d", self->tcb->pid);
+			if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
+				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
+			}else{
+				if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
+					log_error(self->loggerCPU, "CPU: fallo: CAMBIO_DE_CONTEXTO\n");
+				}else{
+						log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO\n");
+						}
+					}
+				}
+
+		break;
+
+	case CREA:
+
+		if(self->tcb->km==1){
+			CREA_ESO(self->tcb);
+		}else{
+			log_error(self->loggerCPU, "CPU: ejecucion ilicita de PID:\n %d", self->tcb->pid);
+			if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
+				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
+			}else{
+				if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
+					log_error(self->loggerCPU, "CPU: fallo: CAMBIO_DE_CONTEXTO\n");
+				}else{
+						log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO\n");
+						}
+					}
+				}
+
+		break;
+
+	case JOIN:
+		if(self->tcb->km==1){
+			JOIN_ESO(self->tcb);
+		}else{
+			log_error(self->loggerCPU, "CPU: ejecucion ilicita de PID:\n %d", self->tcb->pid);
+			if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
+				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
+			}else{
+				if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
+					log_error(self->loggerCPU, "CPU: fallo: CAMBIO_DE_CONTEXTO\n");
+				}else{
+						log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO\n");
+						}
+					}
+				}
+
+		break;
+
+	case BLOK:
+
+		if(self->tcb->km==1){
+			BLOK_ESO(self->tcb);
+		}else{
+			log_error(self->loggerCPU, "CPU: ejecucion ilicita de PID:\n %d", self->tcb->pid);
+			if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
+				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
+			}else{
+				if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
+					log_error(self->loggerCPU, "CPU: fallo: CAMBIO_DE_CONTEXTO\n");
+				}else{
+						log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO\n");
+						}
+					}
+				}
+
+
+		 break;
+
+	default:
+		log_error(self->loggerCPU, "CPU: error en el switch-case, instruccion no encontrada:\n %d", self->tcb->pid);
+		printf("CPU: error en el switch-case, instruccion no encontrada:\n", self->tcb->pid);
+		break;
+
+	free(unCPU_LEER_MEMORIA);
+	free(paquete_MSP);
+	usleep(100);
 	}
 
 }

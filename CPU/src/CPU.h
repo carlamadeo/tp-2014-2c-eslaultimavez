@@ -109,6 +109,8 @@ typedef struct {
  * Fin de las estucturas para comunicar CPU con Kernel
  */
 
+
+t_CPU* self;
 t_TCB_CPU* tcb;
 t_list* lista;
 t_socket* socketDelKernel;

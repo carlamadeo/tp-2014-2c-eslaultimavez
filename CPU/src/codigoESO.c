@@ -6,9 +6,9 @@
 void LOAD_ESO (int registro, int32_t numero, t_TCB_CPU* tcb){
 	if(registro!=-1){
 		tcb->registro_de_programacion[registro]=numero;
-		//break;
+
 	}
-	log_error(logger, "Error: registro de programacion no encontrado %d", tcb->pid);
+	log_error(self->loggerCPU, "CPU: Error registro de programacion no encontrado\n %d", tcb->pid);
 }
 
 void GETM_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
@@ -27,42 +27,38 @@ void GETM_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 		leer_bytes->data = data;
 
 
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA,leer_bytes->tamanio, leer_bytes->data)<=0){
-			log_info(logger, "Error en envio de direccion a la MSP %d", tcb->pid);
-			//cpuCambioDeContextoError();
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,leer_bytes->tamanio, leer_bytes->data)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP\n %d", tcb->pid);
+
 		}
 
 		free(data);
 		free(leer_bytes);
 
-		/*hago el recv*/
 		t_socket_paquete *paquete_MSP = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-		if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
 			if(paquete_MSP->header.type == LEER_MEMORIA){
-				log_info(logger, "recibiendo contenido de direccion %d", tcb->registro_de_programacion[segundo_registro]);
+				log_info(self->loggerCPU, "CPU: recibiendo contenido de direccion:\n %d", tcb->registro_de_programacion[segundo_registro]);
 				char *contenido = malloc(sizeof(char)*4);
 				memcpy(contenido, paquete_MSP->data, sizeof(char)*4);
 				/*resguardo el contenido en primer registro*/
 				tcb->registro_de_programacion[primer_registro]=*contenido;
-				//break;
 			} else {
-				log_error(logger, "Se recibio un codigo inesperado de MSP: %d", paquete_MSP->header.type);
-				//cpuCambioDeContextoError();
+				log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado de MSP:\n %d", paquete_MSP->header.type);
+
 			}
 		}else{
-			log_info(logger, "MSP ha cerrado su conexion");
-			//cpuCambioDeContextoError();
-			printf("MSP ha cerrado su conexion\n");
+			log_info(self->loggerCPU, "CPU: MSP ha cerrado su conexion\n");
+			printf("CPU: MSP ha cerrado su conexion\n");
 			exit(-1);
 		}
 
 		free(paquete_MSP);
-		//Sleep para que no se tilde
 		usleep(100);
-		//break;
+
 	}
 
-	log_error(logger, "Error: registro de programacion no encontrado %d", tcb->pid);
+	log_error(self->loggerCPU, "CPU: Error registro de programacion no encontrado %d", tcb->pid);
 }
 
 
@@ -84,9 +80,9 @@ void SETM_ESO (int numero, int primer_registro, int segundo_registro, t_TCB_CPU*
 		grabar_byte->tamanio = soffset;
 		grabar_byte->data = data;
 
-		if (socket_sendPaquete((t_socket*)socketDelMSP, ESCRIBIR_MEMORIA, grabar_byte->tamanio, grabar_byte->data)<=0){
-			log_info(logger, "Error de escritura en MSP %d", tcb->pid);
-			//cpuCambioDeContextoError();
+		if (socket_sendPaquete(self->socketMSP->socket, ESCRIBIR_MEMORIA, grabar_byte->tamanio, grabar_byte->data)<=0){
+			log_info(self->loggerCPU, "CPU: fallo: ESCRIBIR_MEMORIA\n %d", tcb->pid);
+
 		}
 	}
 
@@ -126,8 +122,9 @@ void DIVR_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 	int32_t auxiliar=tcb->registro_de_programacion[segundo_registro];
 	if (auxiliar==0){
 		log_info(logger, "fallo de division por cero %d", tcb->pid);
-		//cpuCambioDeContextoError();
-		/*salida estandar informando a la consola que hubo un error de division por cero*/
+		if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
+				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
+		}
 	}else{
 		tcb->registro_de_programacion[0]=tcb->registro_de_programacion[primer_registro]/auxiliar;
 	}
@@ -206,9 +203,9 @@ void INTE_ESO(uint32_t direccion, t_TCB_CPU* tcb){
 	soffset+=stmp_size;
 
 
-	if (socket_sendPaquete((t_socket*)socketDelKernel, INTERRUPCION,stmp_size, data)<=0){  //22 corresponde a interrupcion
+	if (socket_sendPaquete(self->socketPlanificador->socket, INTERRUPCION,stmp_size, data)<=0){  //22 corresponde a interrupcion
 		log_info(logger, "Error de Interrupcion %d", tcb->pid);
-		//cpuCambioDeContextoError();
+
 
 	}
 	free(direccion_send);
@@ -259,8 +256,8 @@ void PUSH_ESO (int numero, int registro, t_TCB_CPU* tcb){
 		paquete_send->tamanio = soffset;
 		paquete_send->data = grabar_byte;
 
-		if (socket_sendPaquete((t_socket*)socketDelMSP, ESCRIBIR_MEMORIA,paquete_send->tamanio, paquete_send->data)<=0){
-			log_info(logger, "Error de escritura en MSP %d", tcb->pid);
+		if (socket_sendPaquete(self->socketMSP->socket, ESCRIBIR_MEMORIA,paquete_send->tamanio, paquete_send->data)<=0){
+			log_info(self->loggerCPU, "CPU: Error de escritura en MSP\n %d", tcb->pid);
 
 		}
 		free(grabar_byte);
@@ -288,9 +285,9 @@ void TAKE_ESO (int numero, int registro, t_TCB_CPU* tcb){
 		leer_bytes->data = data;
 
 
-		if (socket_sendPaquete((t_socket*)socketDelMSP, LEER_MEMORIA,leer_bytes->tamanio, leer_bytes->data)<=0){
-			log_info(logger, "Error en envio de direccion a la MSP %d", tcb->pid);
-			//cpuCambioDeContextoError();
+		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,leer_bytes->tamanio, leer_bytes->data)<=0){
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+
 		}
 
 		free(data);
@@ -308,10 +305,9 @@ void XXXX_ESO (t_TCB_CPU* tcb){
 	memcpy(data, tcb, stmp_size=(sizeof(t_TCB_CPU)));
 
 
-//	if (socket_sendPaquete((t_socket*)socketDelKernel, FIN_PROGRAMA ,stmp_size, data)<=0){
-//		log_info(logger, "Error de finalizacion de proceso %d", tcb->pid);
-//		//cpuCambioDeContextoError();
-//	}
+	if (socket_sendPaquete(self->socketPlanificador->socket, FINALIZAR_PROGRAMA_EXITO ,stmp_size, data)<=0){
+		log_info(self->loggerCPU, "CPU: Error de finalizacion de proceso %d", tcb->pid);
+	}
 	free(data);
 
 }
@@ -322,46 +318,41 @@ void XXXX_ESO (t_TCB_CPU* tcb){
 
 void MALC_ESO (t_TCB_CPU* tcb){
 	//CREAR_SEGMENTO
-
-
-	char *data=malloc(sizeof(int)+sizeof(uint32_t)); /*pid+(tamanio)registro_de_programacion['A']*/
-	t_paquete_MSP *grabar_bytes = malloc(sizeof(t_paquete_MSP));
+	char *data=malloc(sizeof(int)+sizeof(int32_t)); /*pid+(tamanio)registro_de_programacion['A']*/
+	t_paquete_MSP *alocar_bytes = malloc(sizeof(t_paquete_MSP));
 
 	int soffset=0, stmp_size=0;
 	memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
 	soffset=stmp_size;
-	memcpy(data + soffset, tcb->registro_de_programacion[0], stmp_size=sizeof(int32_t));
+	memcpy(data + soffset, &(tcb->registro_de_programacion[0]), stmp_size=sizeof(int32_t));
 	soffset+=stmp_size;
 
-	grabar_bytes->tamanio = soffset;
-	grabar_bytes->data = data;
+	alocar_bytes->tamanio = soffset;
+	alocar_bytes->data = data;
 
-	if (socket_sendPaquete((t_socket*)socketDelMSP, CREAR_SEGMENTO, grabar_bytes->tamanio, grabar_bytes->data)<=0){
-		log_info(logger, "Error de memoria llena en MSP %d", tcb->pid);
-		//cpuCambioDeContextoError();
+	if (socket_sendPaquete(self->socketPlanificador->socket, CREAR_SEGMENTO, alocar_bytes->tamanio, alocar_bytes->data)<=0){
+		log_info(self->socketMSP->socket, "CPU: Error de memoria llena en MSP\n %d", tcb->pid);
 	}
 	t_socket_paquete *paquete_MSP = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-	if(socket_recvPaquete(socketDelMSP, paquete_MSP) > 0){
+	if(socket_recvPaquete(self->socketPlanificador->socket, paquete_MSP) > 0){
 		if(paquete_MSP->header.type == CREAR_SEGMENTO){
-			log_info(logger, "recibiendo direccion virtual ", tcb->pid);
+			log_info(self->loggerCPU, "CPU: recibiendo direccion virtual...\n %d ", tcb->pid);
 			char *contenido = malloc(sizeof(uint32_t));
 			memcpy(contenido, paquete_MSP->data, sizeof(char)*4);
 			/*resguardo la direccion virtual en el registro A*/
 			tcb->registro_de_programacion[0]=*contenido;
-			//break;
-		} else {
-			log_error(logger, "Se recibio un codigo inesperado de MSP: %d", paquete_MSP->header.type);
-			//cpuCambioDeContextoError();
-		}
+			free(paquete_MSP);
+			free(contenido);
+			} else {
+			log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado de MSP:\n %d", paquete_MSP->header.type);
+					}
 	}else{
-		log_info(logger, "MSP ha cerrado su conexion");
-		//cpuCambioDeContextoError();
+		log_info(self->loggerCPU, "CPU: MSP ha cerrado su conexion");
 		printf("MSP ha cerrado su conexion\n");
 		exit(-1);
 	}
+	free(alocar_bytes);
 	free(data);
-	free(grabar_bytes);
-
 }
 
 
@@ -379,8 +370,8 @@ void FREE_ESO(t_TCB_CPU* tcb){
 	leer_byte->tamanio = soffset;
 	leer_byte->data = data;
 
-	if (socket_sendPaquete((t_socket*)socketDelMSP, DESTRUIR_SEGMENTO, leer_byte->tamanio, leer_byte->data)<=0){
-		log_info(logger, "Error en envio de direccion a la MSP %d", tcb->pid);
+	if (socket_sendPaquete(self->socketPlanificador->socket, DESTRUIR_SEGMENTO, leer_byte->tamanio, leer_byte->data)<=0){
+		log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 
 	}
 	free(data);
@@ -391,100 +382,80 @@ void FREE_ESO(t_TCB_CPU* tcb){
 void INNN_ESO(t_TCB_CPU* tcb){
 
 
-	char *data=malloc(sizeof(int)); /*TCB+direccion_SysCall*/
-	int stmp_size=0;
-	//memcpymemcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
-	//soffset=stmp_size;
-
-
-//	if (socket_sendPaquete((t_socket*)socketDelKernel, ENTRADA_ESTANDAR,stmp_size, data)<=0){
-//		log_info(logger, "Error de ENTRADA_ESTANDAR %d", tcb->pid);
-//
-//
-//	}
-	free(data);
+	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR,sizeof(int), &(tcb->pid))<=0){
+		log_info(self->loggerCPU, "CPU: Error de ENTRADA_ESTANDAR\n %d", tcb->pid);
+	}
 
 	t_socket_paquete *paquete_KERNEL = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-//	if(socket_recvPaquete(socketDelMSP, paquete_KERNEL) > 0){
-//		if(paquete_KERNEL->header.type == ENTRADA_ESTANDAR_NUMERO){
-//			log_info(logger, "recibiendo numero ingresado por consola ", tcb->pid);
-//			char *contenido = malloc(sizeof(uint32_t));
-//			memcpy(contenido, paquete_KERNEL->data, sizeof(char)*4);
-//			/*resguardo la direccion virtual en el registro A*/
-//			tcb->registro_de_programacion[0]=contenido;
-//			//break;
-//		} else {
-//			log_error(logger, "Se recibio un codigo inesperado de MSP: %d", paquete_KERNEL->header.type);
-//
-//		}
-//	}else{
-//		log_info(logger, "MSP ha cerrado su conexion");
-//		printf("MSP ha cerrado su conexion\n");
-//		exit(-1);
-//	}
+	if(socket_recvPaquete(self->socketPlanificador->socket, paquete_KERNEL) > 0){
+		if(paquete_KERNEL->header.type == ENTRADA_ESTANDAR){
+			log_info(self->loggerCPU, "CPU: recibiendo numero ingresado por consola\n %d", tcb->pid);
+			tcb->registro_de_programacion[0]=(int)paquete_KERNEL;
+		} else {
+			log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado de MSP:\n %d", paquete_KERNEL->header.type);
+
+		}
+	}else{
+		log_info(self->loggerCPU, "CPU: MSP ha cerrado su conexion\n");
+		printf("CPU: MSP ha cerrado su conexion\n");
+		exit(-1);
+	}
 
 	free(paquete_KERNEL);
-
 	usleep(100);
 
 }
 void INNC_ESO(t_TCB_CPU* tcb){
 
-	t_paquete_MSP *pedir_bytes = malloc(sizeof(t_paquete_MSP));
+	t_paquete_MSP *pedir_cadena = malloc(sizeof(t_paquete_MSP));
 
 	char *data=malloc(sizeof(int)+sizeof(uint32_t)); /*pid+(tamanio)registro_de_programacion['B']*/
-	int soffset, stmp_size=0;
+	int soffset=0, stmp_size=0;
 	memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
-	memcpy(data + soffset, tcb->registro_de_programacion[1], stmp_size=sizeof(int32_t));
+	memcpy(data + soffset, &(tcb->registro_de_programacion[1]), stmp_size=sizeof(int32_t));
 	soffset+=stmp_size;
-	pedir_bytes->tamanio=soffset;
-	pedir_bytes->data=data;
+	pedir_cadena->tamanio=soffset;
+	pedir_cadena->data=data;
 
-//	if (socket_sendPaquete((t_socket*)socketDelKernel, ENTRADA_ESTANDAR_CHAR,pedir_bytes->tamanio, pedir_bytes->data)<=0){  //22 corresponde a interrupcion
-//		log_info(logger, "Error de ENTRADA_ESTANDAR_CHAR %d", tcb->pid);
-//		//cpuCambioDeContextoError();
-//
-//	}
+	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR_CHAR,pedir_cadena->tamanio, pedir_cadena->data)<=0){  //22 corresponde a interrupcion
+		log_info(self->loggerCPU, "CPU: Error de ENTRADA_ESTANDAR_CHAR\n %d", tcb->pid);
+
+
+	}
 	free(data);
-	free(pedir_bytes);
+	free(pedir_cadena);
 
 	t_socket_paquete *paquete_KERNEL = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-//	if(socket_recvPaquete(socketDelMSP, paquete_KERNEL) > 0){
-//		if(paquete_KERNEL->header.type == ENTRADA_ESTANDAR_CHAR){
-//			log_info(logger, "recibiendo CADENA ingresado por consola ", tcb->pid);
-//			char *contenido = malloc(sizeof(uint32_t));
-//			memcpy(contenido, paquete_KERNEL->data, sizeof(char));
-//			//if(contenido<=tcb->registro_de_programacion[1]){
-//
-//			/*resguardo en la direccion virtual apuntada por el registro A*/
-//			//if contenido<=tcb->registro_de_programacion[0]{
-//			char *data=malloc(sizeof(int)+sizeof(uint32_t)+sizeof(char));  /*pid+direccion_logica+datos_a_grabar*/
-//			t_paquete_MSP *grabar_byte = malloc(sizeof(t_paquete_MSP));
-//			int soffset=0, stmp_size=0;
-//			memcpy(grabar_byte, &(tcb->pid), stmp_size=(sizeof(int)));
-//			soffset=stmp_size;
-//			memcpy(grabar_byte + soffset, &(tcb->registro_de_programacion[0]), stmp_size=sizeof(uint32_t));
-//			soffset+=stmp_size;
-//			memcpy(grabar_byte + soffset, contenido, stmp_size=sizeof(char));
-//			soffset+=stmp_size;
-//
-//			grabar_byte->tamanio = soffset;
-//			grabar_byte->data = data;
-//
-//			if (socket_sendPaquete((t_socket*)socketDelMSP, ESCRIBIR_MEMORIA, grabar_byte->tamanio, grabar_byte->data)<=0){
-//				log_info(logger, "Error de escritura en MSP %d", tcb->pid);
-//				//cpuCambioDeContextoError();
-//			}
-//			//}else{}
-//		} else {
-//			log_error(logger, "Se recibio un codigo inesperado de MSP: %d", paquete_KERNEL->header.type);
-//			//cpuCambioDeContextoError();
-//		}
-//	}else{
-//		log_info(logger, "MSP ha cerrado su conexion");
-//		printf("MSP ha cerrado su conexion\n");
-//		exit(-1);
-//	}
+	if(socket_recvPaquete(self->socketPlanificador->socket, paquete_KERNEL) > 0){
+	if(paquete_KERNEL->header.type == ENTRADA_ESTANDAR_CHAR){
+			log_info(self->loggerCPU, "CPU: recibiendo CADENA ingresado por consola ", tcb->pid);
+			char *cadena = malloc(sizeof(uint32_t));
+			memcpy(cadena, paquete_KERNEL->data, sizeof(char));
+
+			char *data=malloc(sizeof(int)+sizeof(uint32_t)+ tcb->registro_de_programacion[1]);  /*pid+direccion_logica+datos_a_grabar*/
+			t_paquete_MSP *grabar_byte = malloc(sizeof(t_paquete_MSP));
+			int soffset=0, stmp_size=0;
+			memcpy(grabar_byte, &(tcb->pid), stmp_size=(sizeof(int)));
+			soffset=stmp_size;
+			memcpy(grabar_byte + soffset, &(tcb->registro_de_programacion[0]), stmp_size=sizeof(uint32_t));
+			soffset+=stmp_size;
+			memcpy(grabar_byte + soffset, cadena, stmp_size=tcb->registro_de_programacion[1]);
+			soffset+=stmp_size;
+
+			grabar_byte->tamanio = soffset;
+			grabar_byte->data = data;
+
+			if (socket_sendPaquete(self->socketMSP->socket, ESCRIBIR_MEMORIA, grabar_byte->tamanio, grabar_byte->data)<=0){
+				log_info(self->loggerCPU, "CPU: Error de escritura en MSP\n %d", tcb->pid);
+			}
+		} else {
+			log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado de MSP:\n %d", paquete_KERNEL->header.type);
+				}
+	}else{
+		log_info(self->loggerCPU, "MSP ha cerrado su conexion\n");
+		printf("MSP ha cerrado su conexion\n");
+		exit(-1);
+	}
 
 	free(paquete_KERNEL);
 
@@ -492,44 +463,58 @@ void INNC_ESO(t_TCB_CPU* tcb){
 
 }
 void OUTN_ESO(t_TCB_CPU* tcb){
-	t_paquete_MSP *mostrar_bytes = malloc(sizeof(t_paquete_MSP));
 
-	char *data=malloc(sizeof(int)+sizeof(uint32_t)); /*pid+(tamanio)registro_de_programacion['B']*/
+	t_paquete_MSP *mostrar_numero = malloc(sizeof(t_paquete_MSP));
+
+	char *data=malloc(sizeof(int)+sizeof(int32_t)); /*pid+(tamanio)registro_de_programacion['B']*/
 	int soffset, stmp_size=0;
 	memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
-	memcpy(data + soffset, tcb->registro_de_programacion[0], stmp_size=sizeof(int32_t));
+	memcpy(data + soffset, &(tcb->registro_de_programacion[0]), stmp_size=sizeof(int32_t));
 	soffset+=stmp_size;
-	mostrar_bytes->tamanio=soffset;
-	mostrar_bytes->data=data;
+	mostrar_numero->tamanio=soffset;
+	mostrar_numero->data=data;
 
-	if (socket_sendPaquete((t_socket*)socketDelKernel, SALIDA_ESTANDAR,mostrar_bytes->tamanio, mostrar_bytes->data)<=0){
-		log_info(logger, "Error de SALIDA_ESTANDAR %d", tcb->pid);
+	if (socket_sendPaquete(self->socketPlanificador->socket, SALIDA_ESTANDAR,mostrar_numero->tamanio, mostrar_numero->data)<=0){
+		log_info(self->loggerCPU, "CPU: Error de SALIDA_ESTANDAR\n %d", tcb->pid);
 
 
 	}
 	free(data);
-	free(mostrar_bytes);
+	free(mostrar_numero);
 
 }
 void OUTC_ESO(t_TCB_CPU* tcb){
 
-	t_paquete_MSP *mostrar_bytes = malloc(sizeof(t_paquete_MSP));
-
-	char *data=malloc(sizeof(int)+sizeof(uint32_t)); /*pid+(tamanio)registro_de_programacion['B']*/
-	int soffset, stmp_size=0;
-	memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
-	memcpy(data + soffset, tcb->registro_de_programacion[0], stmp_size=sizeof(int32_t));
-	soffset+=stmp_size;
-	mostrar_bytes->tamanio=soffset;
-	mostrar_bytes->data=data;
-
-	if (socket_sendPaquete((t_socket*)socketDelKernel, SALIDA_ESTANDAR_CHAR,mostrar_bytes->tamanio, mostrar_bytes->data)<=0){
-		log_info(logger, "Error de SALIDA_ESTANDAR_CHAR %d", tcb->pid);
-
-
+	t_CPU_LEER_MEMORIA* unCPU_LEER_MEMORIA = malloc(sizeof(t_CPU_LEER_MEMORIA));
+	unCPU_LEER_MEMORIA->pid = self->tcb->pid;
+	unCPU_LEER_MEMORIA->tamanio = tcb->registro_de_programacion[1];
+	unCPU_LEER_MEMORIA->direccionVirtual = tcb->registro_de_programacion[0];
+	if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, sizeof(t_CPU_LEER_MEMORIA), unCPU_LEER_MEMORIA)<=0){
+		log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 	}
-	free(data);
-	free(mostrar_bytes);
+
+	t_socket_paquete *cadena = malloc(sizeof(t_socket_paquete));
+
+	if(socket_recvPaquete(self->socketMSP->socket, cadena) > 0){
+		if(cadena->header.type == LEER_MEMORIA){
+			char *mostrar_cadena=malloc(tcb->registro_de_programacion[1]);
+			memcpy(mostrar_cadena, cadena->data, tcb->registro_de_programacion[1]);
+
+			char *data=malloc(sizeof(int)+tcb->registro_de_programacion[1]); /*pid+(tamanio)registro_de_programacion['B']*/
+				int soffset=0, stmp_size=0;
+				memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
+				memcpy(data + soffset, mostrar_cadena, stmp_size=tcb->registro_de_programacion[1]);
+				soffset+=stmp_size;
+
+				if (socket_sendPaquete(self->socketPlanificador->socket, SALIDA_ESTANDAR_CHAR ,soffset, data)<=0){
+					log_info(self->loggerCPU, "CPU: Error de SALIDA_ESTANDAR_CHAR\n %d", tcb->pid);
+
+				}
+				free(data);
+				free(mostrar_cadena);
+		}
+	}
+
 
 }
 void CREA_ESO(t_TCB_CPU* tcb){
@@ -541,10 +526,32 @@ void JOIN_ESO(t_TCB_CPU* tcb){
 
 void BLOK_ESO(t_TCB_CPU* tcb){
 
+	t_paquete_MSP *envio_bytes = malloc(sizeof(t_paquete_MSP));
+
+	char *data=malloc(sizeof(int)+sizeof(uint32_t)); /*pid+(tamanio)registro_de_programacion['B']*/
+	int soffset=0, stmp_size=0;
+	memcpy(data, tcb, stmp_size=(sizeof(t_TCB_CPU)));
+	memcpy(data + soffset, &(tcb->registro_de_programacion[1]), stmp_size=sizeof(int32_t));
+	soffset+=stmp_size;
+	envio_bytes->tamanio=soffset;
+	envio_bytes->data=data;
+
+	if (socket_sendPaquete(self->socketPlanificador->socket, /*BLOK_HILO*/ 32,envio_bytes->tamanio, envio_bytes->data)<=0){
+		log_info(self->loggerCPU, "CPU: Error de BLOQUEO\n %d", tcb->pid);
+	}
+	free(data);
+	free(envio_bytes);
+
+
 }
 
 void WAKE_ESO(t_TCB_CPU* tcb){
 
+	if (socket_sendPaquete(self->socketPlanificador->socket, /*WAKE_HILO*/33,sizeof(int32_t), &(tcb->registro_de_programacion[1]))<=0){
+		log_info(self->loggerCPU, "CPU: Error de DESPERTAR\n %d", tcb->pid);
+
+
+	}
 }
 
 
