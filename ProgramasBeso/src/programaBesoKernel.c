@@ -71,10 +71,31 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 
 	while(1){
 		if (socket_recvPaquete(self->socketKernel->socket, paquete) >= 0){
-			if(datosDeKernel->codigo == MENSAJE_DE_ERROR)
-				log_error(self->loggerProgramaBESO, "Consola: Recibe un MENSAJE_DE_ERROR: %s", datosDeKernel->mensaje);
-			else
-				log_info(self->loggerProgramaBESO, "Consola: Recibe OK: %s",datosDeKernel->mensaje);
+
+			switch(datosDeKernel->codigo){
+
+			case ERROR_POR_TAMANIO_EXCEDIDO:
+				log_info(self->loggerProgramaBESO,"Consola: Envia a Consola: ERROR_POR_TAMANIO_EXCEDIDO");
+				break;
+			case ERROR_POR_MEMORIA_LLENA:
+				log_info(self->loggerProgramaBESO,"Consola: Envia a Consola: ERROR_POR_MEMORIA_LLENA");
+				break;
+			case ERROR_POR_NUMERO_NEGATIVO:
+				log_info(self->loggerProgramaBESO,"Consola: Envia a Consola: ERROR_POR_NUMERO_NEGATIVO");
+				break;
+			case ERROR_POR_SEGMENTO_INVALIDO:
+				log_info(self->loggerProgramaBESO,"Consola: Envia a Consola: ERROR_POR_SEGMENTO_INVALIDO");
+				break;
+			case ERROR_POR_SEGMENTATION_FAULT:
+				log_info(self->loggerProgramaBESO,"Consola: Envia a Consola: ERROR_POR_SEGMENTATION_FAULT");
+				break;
+			default:
+				log_info(self->loggerProgramaBESO,"Consola: Recibe OK: %s",datosDeKernel->mensaje);
+				break;
+
+			}// fin del switch
+
+
 		}
 		else{
 			log_error(self->loggerProgramaBESO, "Consola: El Kernel ha cerrado la conexion.");
@@ -87,3 +108,9 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 	free(datosAKernel);
 	socket_freePaquete(paquete);
 }
+
+
+
+
+
+

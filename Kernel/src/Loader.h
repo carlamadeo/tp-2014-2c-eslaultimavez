@@ -36,5 +36,6 @@ void loaderEscuchaProgramaBeso(t_kernel* self);
 
 void loaderTrabajaConMSP(t_kernel* self);
 
+void loaderValidarEscrituraEnMSP(t_kernel* self, t_socket* socketNuevoCliente, int unaRespuesta);
 
 #endif /* BOOT_H_ */

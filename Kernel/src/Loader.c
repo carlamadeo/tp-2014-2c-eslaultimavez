@@ -58,7 +58,7 @@ void loaderEscuchaProgramaBeso(t_kernel* self){
 		}
 
 		else if (selectResult == 0){
-
+			log_error(self->loggerLoader, "Error en el select del Loader: selectResult==0 ");
 		}
 
 		else{
@@ -213,38 +213,63 @@ t_TCB_Kernel* loaderCrearTCB(t_kernel* self, char *programaBeso, t_socket* socke
 	unPIDGlobal ++;
 	unTIDGlobal ++;
 
+	unTCB->tamanio_segmento_codigo = tamanioBeso;
 	unTCB->base_segmento_codigo = kernelCrearSegmento(self, unTCB->pid, tamanioBeso);
+	unTCB->puntero_instruccion = unTCB->base_segmento_codigo;
 	//funciona de escribir en memoria
 	int unaRespuesta = kernelEscribirMemoria(self, unTCB->pid, unTCB->base_segmento_codigo, programaBeso, tamanioBeso, socketNuevoCliente);
 
 	//Validar check de ERROR y si hay un error mandar a ProgramaBeso
-	switch(unaRespuesta){
+	loaderValidarEscrituraEnMSP(self,socketNuevoCliente,unaRespuesta);
 
-	case ERROR_POR_TAMANIO_EXCEDIDO:
-
-		break;
-	case ERROR_POR_MEMORIA_LLENA:
-
-		break;
-	case ERROR_POR_NUMERO_NEGATIVO:
-
-		break;
-	case ERROR_POR_SEGMENTO_INVALIDO:
-
-		break;
-	case ERROR_POR_SEGMENTATION_FAULT:
-
-		break;
-	default:
-		//log sin errrores
-		break;
-
-	}// fin del switch
-
-
-	//falta ahora hacer el stack
 
 	unTCB->base_stack = kernelCrearSegmento(self, unTCB->pid, self->tamanioStack);
+	unTCB->cursor_stack = unTCB->base_stack;
+	unTCB->registro_de_programacion[0]=0;
+	unTCB->registro_de_programacion[1]=0;
+	unTCB->registro_de_programacion[2]=0;
+	unTCB->registro_de_programacion[3]=0;
 	return unTCB;
 }
 
+void loaderValidarEscrituraEnMSP(t_kernel* self, t_socket* socketNuevoCliente, int unaRespuesta){
+
+	switch(unaRespuesta){
+
+		case ERROR_POR_TAMANIO_EXCEDIDO:
+			if (socket_sendPaquete(socketNuevoCliente, ERROR_POR_TAMANIO_EXCEDIDO, 0, NULL) >= 0)
+				log_info(self->loggerLoader, "Loader: Envia a Consola: ERROR_POR_TAMANIO_EXCEDIDO");
+			else
+				log_error(self->loggerLoader, "Loader: Error al enviar a Consola: ERROR_POR_TAMANIO_EXCEDIDO");
+			break;
+		case ERROR_POR_MEMORIA_LLENA:
+			if (socket_sendPaquete(socketNuevoCliente, ERROR_POR_MEMORIA_LLENA, 0, NULL) >= 0)
+				log_info(self->loggerLoader, "Loader: Envia a Consola: ERROR_POR_MEMORIA_LLENA");
+			else
+				log_error(self->loggerLoader, "Loader: Error al enviar a Consola: ERROR_POR_TAMANIO_EXCEDIDO");
+			break;
+		case ERROR_POR_NUMERO_NEGATIVO:
+			if (socket_sendPaquete(socketNuevoCliente, ERROR_POR_NUMERO_NEGATIVO, 0, NULL) >= 0)
+				log_info(self->loggerLoader, "Loader: Envia a Consola: ERROR_POR_NUMERO_NEGATIVO");
+			else
+				log_error(self->loggerLoader, "Loader: Error al enviar a Consola: ERROR_POR_TAMANIO_EXCEDIDO");
+			break;
+		case ERROR_POR_SEGMENTO_INVALIDO:
+			if (socket_sendPaquete(socketNuevoCliente, ERROR_POR_SEGMENTO_INVALIDO, 0, NULL) >= 0)
+				log_info(self->loggerLoader, "Loader: Envia a Consola: ERROR_POR_SEGMENTO_INVALIDO");
+			else
+				log_error(self->loggerLoader, "Loader: Error al enviar a Consola: ERROR_POR_TAMANIO_EXCEDIDO");
+			break;
+		case ERROR_POR_SEGMENTATION_FAULT:
+			if (socket_sendPaquete(socketNuevoCliente, ERROR_POR_TAMANIO_EXCEDIDO, 0, NULL) >= 0)
+				log_info(self->loggerLoader, "Loader: Envia a Consola: ERROR_POR_SEGMENTATION_FAULT");
+			else
+				log_error(self->loggerLoader, "Loader: Error al enviar a Consola: ERROR_POR_SEGMENTATION_FAULT");
+			break;
+		default:
+			log_info(self->loggerLoader, "Loader: Escribio en la MSP, correctamente");
+			break;
+
+		}// fin del switch
+
+}
