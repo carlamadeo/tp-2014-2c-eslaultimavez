@@ -25,7 +25,7 @@ pthread_t mspHilo;
 pthread_t* mspHiloCpus; // se tiene un vector de los hilos que hay que ir sacando/poniendo dependiendo de las cpus
 pthread_t mspHiloKernel;
 pthread_t mspConsolaHilo;
-pthread_t hiloConexion;
+pthread_t hiloConexion[10];//Ver el maximo de hilos si definimos en archivo configuracion o no. 
 
 void mspLanzarhiloMSPCONSOLA();
 int mspLanzarhiloConexiones();
