@@ -71,6 +71,7 @@ int main(int argc, char *argv[]){
 int mspLanzarhiloConexiones(){
 
 	int i = 1;
+	
 	t_socket *socketEscucha, *socketNuevaConexion;
 
 	log_info(MSPlogger, "Creando un hilo escucha...");
@@ -91,12 +92,12 @@ int mspLanzarhiloConexiones(){
 	while(1){
 
 		socketNuevaConexion = socket_acceptClient(socketEscucha);
-
-		int mspHiloConexion = pthread_create(&hiloConexion, NULL, mspRealizarHandshakes, socketNuevaConexion);
+		int mspHiloConexion = pthread_create(&hiloConexion[i], NULL, mspRealizarHandshakes, socketNuevaConexion);
 		if(mspHiloConexion){
 			log_error(MSPlogger, "Error - pthread_create() return code: %d\n", mspHiloConexion);
 			exit(EXIT_FAILURE);
 		}
+		i++;
 
 	}
 
