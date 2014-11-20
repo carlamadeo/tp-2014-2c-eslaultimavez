@@ -33,7 +33,7 @@ typedef struct {
 typedef struct {
 	int pid;
 	uint32_t direccionVirtual;
-	char *bufferCodigoBeso;
+	char bufferCodigoBeso[1000];
 	int tamanio;
 } t_escribirSegmentoBeso;
 

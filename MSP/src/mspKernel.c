@@ -121,7 +121,6 @@ void escribirMemoriaKernel(t_socket  *socketKernel, t_socket_paquete *paquete){
 		log_info(MSPlogger, "MSP: Los datos de escritura de memoria se han enviado al Kernel correctamente");
 
 	free(datosAKernel);
-	free(datosDeKernel->buffer);
 	free(datosDeKernel);
 }
 

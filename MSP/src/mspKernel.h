@@ -39,7 +39,7 @@ typedef struct{
 typedef struct{
 	int pid;
 	uint32_t direccionVirtual;
-	char *buffer;
+	char buffer[1000];
 	int tamanio;
 }t_datos_deKernelEscritura;
 

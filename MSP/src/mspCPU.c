@@ -50,7 +50,7 @@ void *mspLanzarHiloCPU(t_socket * socketCPU){
 		}
 
 		else{
-			log_error(MSPlogger, "MSP: El CPU ha cerrado la conexion.");
+			log_info(MSPlogger, "MSP: El CPU ha cerrado la conexion.");
 			close(socketCPU->descriptor);
 			i = 0;
 		}
@@ -123,7 +123,6 @@ void escribirMemoriaCPU(t_socket  *socketCPU, t_socket_paquete *paquete){
 		log_info(MSPlogger, "MSP: Los datos de lectura de memoria se han enviado al CPU correctamente");
 
 	free(datosACPU);
-	free(datosDeCPU->buffer);
 	free(datosDeCPU);
 }
 
