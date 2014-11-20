@@ -53,6 +53,7 @@ bool validarConfiguracionKernel(t_config* configKernel){
 }
 
 void destruirConfiguracionKernel(t_kernel *self, t_config *configKernel){
+	free(self->tcbKernel);
 	free(self->ipMsp);
 	free(self->systemCalls);
 	free(self);
