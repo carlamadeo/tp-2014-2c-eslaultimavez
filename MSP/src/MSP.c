@@ -42,13 +42,13 @@ int main(int argc, char *argv[]){
 		return EXIT_SUCCESS;
 	}
 
-//	int mspConsolathreadNum = pthread_create(&mspConsolaHilo, NULL, &mspLanzarhiloMSPCONSOLA, NULL);
-//	if(mspConsolathreadNum) {
-//		log_error(MSPlogger, "Error - pthread_create() return code: %d\n", mspConsolathreadNum);
-//		exit(EXIT_FAILURE);
-//	}
+	//	int mspConsolathreadNum = pthread_create(&mspConsolaHilo, NULL, &mspLanzarhiloMSPCONSOLA, NULL);
+	//	if(mspConsolathreadNum) {
+	//		log_error(MSPlogger, "Error - pthread_create() return code: %d\n", mspConsolathreadNum);
+	//		exit(EXIT_FAILURE);
+	//	}
 
-	int mspHiloNum = pthread_create(&mspHilo, NULL, (void*) mspLanzarhilo, NULL);
+	int mspHiloNum = pthread_create(&mspHilo, NULL, (void*) mspLanzarhiloConexiones, NULL);
 	if(mspHiloNum) {
 		log_error(MSPlogger, "Error - pthread_create() return code: %d\n", mspHiloNum);
 		exit(EXIT_FAILURE);
@@ -67,7 +67,8 @@ int main(int argc, char *argv[]){
 
 }
 
-int mspLanzarhilo(){
+
+int mspLanzarhiloConexiones(){
 
 	int i = 1;
 	t_socket *socketEscucha, *socketNuevaConexion;
@@ -85,31 +86,39 @@ int mspLanzarhilo(){
 		return EXIT_FAILURE;
 	}
 
-	log_info(MSPlogger, "Escuchando conexiones entrantes de la MSP en el Puerto:%d y en el descriptor: %d ",puertoMSP, socketEscucha->descriptor );
+	log_info(MSPlogger, "Escuchando conexiones entrantes de la MSP en el Puerto: %d y en el descriptor: %d ",puertoMSP, socketEscucha->descriptor );
 
 	while(1){
-			socketNuevaConexion = socket_acceptClient(socketEscucha);
-			t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-			socket_recvPaquete(socketNuevaConexion, paquete);
 
-			if(paquete->header.type == HANDSHAKE_KERNEL){
-				socketKernel = socketNuevaConexion;
-				kernelDireccion = direccionCliente;
-				mspLanzarHiloKernel(socketKernel);// cambiar esto tiene que ser un hilo!!!
-			}
+		socketNuevaConexion = socket_acceptClient(socketEscucha);
 
-			if(paquete->header.type == HANDSHAKE_CPU){
-				socketCpus = socketNuevaConexion;
-				cpuDireccion = direccionCliente;
-				//mspHiloCpus = realloc(mspHiloCpus, sizeof(pthread_t) * i + 1);
-				mspLanzarHiloCPU(socketCpus); //cambiar esto por un hilo!!!
-				//pthread_create(&mspHiloCpus[i], NULL, mspLanzarHiloCPU, (void *)socketCpus);
-				i++;
-			}
-
-			socket_freePaquete(paquete);
+		int mspHiloConexion = pthread_create(&hiloConexion, NULL, mspRealizarHandshakes, socketNuevaConexion);
+		if(mspHiloConexion){
+			log_error(MSPlogger, "Error - pthread_create() return code: %d\n", mspHiloConexion);
+			exit(EXIT_FAILURE);
 		}
+
+	}
+
 	return 0;
 }
 
 
+void *mspRealizarHandshakes(t_socket *socketNuevaConexion){
+
+	t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+	socket_recvPaquete(socketNuevaConexion, paquete);
+
+	if(paquete->header.type == HANDSHAKE_KERNEL){
+		log_debug(MSPlogger, "Se establecio una nueva conexion con el Kernel, creando el hilo...");
+		mspLanzarHiloKernel(socketNuevaConexion);
+	}
+
+	else if(paquete->header.type == HANDSHAKE_CPU){
+		log_debug(MSPlogger, "Se establecio una nueva conexion de CPU, creando el hilo...");
+		mspLanzarHiloCPU(socketNuevaConexion);
+	}
+
+	return NULL ;
+
+}

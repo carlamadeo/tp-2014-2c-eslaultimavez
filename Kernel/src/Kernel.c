@@ -78,7 +78,6 @@ int main(int argc, char** argv) {
 		exit(EXIT_FAILURE);
 	}
 
-
 	pthread_join(LoaderHilo, NULL);
 	pthread_join(PlanificadorHilo, NULL);
 
@@ -89,7 +88,6 @@ int main(int argc, char** argv) {
 void verificar_argumentosKernel(int argc, char* argv[]){
 	if( argc != 2 ){
 		printf("Modo de empleo: ./Kernel mspKernel.cfg\n");
-		perror("Kernel no recibio las configuraciones");
 		exit (EXIT_FAILURE);
 	}
 }

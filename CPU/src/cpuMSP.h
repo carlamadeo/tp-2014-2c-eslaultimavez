@@ -3,8 +3,34 @@
 
 #include "CPU.h"
 
+typedef struct{
+	int pid;
+	int tamanio;
+}t_datos_aMSP;
+
+typedef struct{
+	uint32_t direccionBase;
+}t_datos_deMSP;
+
+typedef struct{
+	int estado;
+}t_confirmacionEscritura;
+
+typedef struct {
+	int pid;
+	int tamanio;
+} t_crearSegmentoBeso;
+
+typedef struct {
+	int pid;
+	uint32_t direccionVirtual;
+	char bufferCodigoBeso[1000];
+	int tamanio;
+} t_escribirSegmentoBeso;
+
 t_socket_client* cpuConectarConMPS(t_CPU* self);
 void cpuRealizarHandshakeConMSP(t_CPU* self);
-
+int cpuCrearSegmento(t_CPU *self, int pid, int tamanio);
+int cpuEscribirMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *programaBeso, int tamanioBeso, t_socket* socketNuevoCliente);
 
 #endif /* CPUMPS_H_ */

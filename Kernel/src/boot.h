@@ -4,6 +4,6 @@
 #include "kernelConfig.h"
 
 void crearTCBKERNEL(t_kernel* self);
-int obtenerCogidoBesoSystemCall(t_kernel *self);
+int obtenerCodigoBesoSystemCall(t_kernel *self, char *codigoSystemCall);
 
 #endif /* BOOT_H_ */

@@ -57,5 +57,5 @@ void destruirConfiguracionKernel(t_kernel *self, t_config *configKernel){
 	free(self->ipMsp);
 	free(self->systemCalls);
 	free(self);
-	config_destroy(configKernel);
+	//config_destroy(configKernel);
 }

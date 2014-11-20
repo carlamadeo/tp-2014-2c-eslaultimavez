@@ -50,7 +50,7 @@ void *mspLanzarHiloCPU(t_socket * socketCPU){
 		}
 
 		else{
-			log_info(MSPlogger, "MSP: El CPU ha cerrado la conexion.");
+			log_debug(MSPlogger, "MSP: El CPU ha cerrado la conexion.");
 			close(socketCPU->descriptor);
 			i = 0;
 		}

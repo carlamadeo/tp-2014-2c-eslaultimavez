@@ -33,7 +33,7 @@ void loaderEscuchaProgramaBeso(t_kernel* self){
 	FD_ZERO(&read_fds);
 
 	if (!(socketEscucha = socket_createServer(self->puertoLoader)))
-		log_error(self->loggerLoader, "Loader: Error al crear socket para escuchar Programas. %s", strerror(errno));
+		log_error(self->loggerLoader, "Loader: Error al crear socket para escuchar Programas: %s", strerror(errno));
 
 
 	if(!socket_listen(socketEscucha))
@@ -157,7 +157,7 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 	t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 
 	if ((socket_recvPaquete(socketNuevoCliente, paquete)) < 0) {
-		log_error(self->loggerLoader, "Loader: Error o conexión cerrada por el Cliente correspondiente.");
+		log_error(self->loggerLoader, "Loader: Error o conexión cerrada por el Cliente.");
 		FD_CLR(socketNuevoCliente->descriptor, master);
 		close(socketNuevoCliente->descriptor);
 	}
@@ -165,23 +165,20 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 	else{
 
 		if (socket_sendPaquete(socketNuevoCliente, HANDSHAKE_LOADER, 0, NULL) >= 0)
-			log_info(self->loggerLoader, "Loader: Envia a Consola: HANDSHAKE_LOADER");
+			log_info(self->loggerLoader, "Loader: Envia a Consola HANDSHAKE_LOADER");
 		else
 			log_error(self->loggerLoader, "Loader: Error al enviar los datos de la Consola.");
 
 		//se recibe el codigo del archivo Beso
 		t_socket_header header;
 
-		//printf("se pone a esperar: \n");
 		if(recv(socketNuevoCliente->descriptor, &header, sizeof(t_socket_header), NULL) != sizeof(t_socket_header))
 			log_error(self->loggerLoader, "Loader: No se ha podido recibir la informacion de la Consola");
 
 		int sizePrograma = header.length - sizeof(t_socket_header);
-		//printf("sizePrograma: %d\n",sizePrograma);
 		char *programaBeso = malloc(sizePrograma);
-		//printf("programaBeso: %c\n",programaBeso);
-		memset(programaBeso, 0, sizePrograma + 1);//Rompe en esta Linea
-		//printf("programaBeso tranquilo: %c\n",programaBeso);
+		memset(programaBeso, 0, sizePrograma + 1);
+
 		if(recv(socketNuevoCliente->descriptor, programaBeso, sizePrograma, NULL) != sizePrograma)
 			log_error(self->loggerLoader, "Loader: No se ha podido recibir el programa Beso de la Consola");
 

@@ -55,39 +55,41 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 	t_socket_header header;
 	header.length = sizeof(header) + sizeArchivoBeso;
 
-	if(send(self->socketKernel->socket->descriptor, &header, sizeof(t_socket_header), 0) != sizeof(t_socket_header) || sendfile(self->socketKernel->socket->descriptor, archivoBeso->_fileno, &offset, sizeArchivoBeso) != sizeArchivoBeso)
-		log_error(self->loggerProgramaBESO, "Consola: No se pudo enviar el archivo");
+	if(send(self->socketKernel->socket->descriptor, &header, sizeof(t_socket_header), 0) == sizeof(t_socket_header) && sendfile(self->socketKernel->socket->descriptor, archivoBeso->_fileno, &offset, sizeArchivoBeso) == sizeArchivoBeso)
+		log_info(self->loggerProgramaBESO, "Consola: Los datos del Programa Beso se enviaron correctamente al Kernel");
 
-	log_info(self->loggerProgramaBESO, "Consola: Espera respuesta del kernel");
+	else{
+		log_error(self->loggerProgramaBESO, "Consola: No se pudo enviar el archivo");
+		exit(-1);
+	}
+
+
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_datosKernel* datosAKernel = malloc(sizeof(t_datosKernel));
 	t_datosMostrarConsola* datosDeKernel = (t_datosMostrarConsola*) (paquete->data);
 
 	datosAKernel->codigoBeso = self->codigo;
 
-	if (socket_sendPaquete(self->socketKernel->socket, CODIGO_BESO, sizeof(t_datosKernel), datosAKernel) > 0)
-		log_info(self->loggerProgramaBESO, "Consola: Los datos del Programa Beso se enviaron correctamente al Kernel");
-
-
+	log_info(self->loggerProgramaBESO, "Consola: Espera respuesta del kernel");
 	while(1){
 		if (socket_recvPaquete(self->socketKernel->socket, paquete) >= 0){
 
 			switch(datosDeKernel->codigo){
 
 			case ERROR_POR_TAMANIO_EXCEDIDO:
-				log_info(self->loggerProgramaBESO,"Consola: Envia a Consola: ERROR_POR_TAMANIO_EXCEDIDO");
+				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error por tamaño de segmento excedido");
 				break;
 			case ERROR_POR_MEMORIA_LLENA:
-				log_info(self->loggerProgramaBESO,"Consola: Envia a Consola: ERROR_POR_MEMORIA_LLENA");
+				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error por memoria llena");
 				break;
 			case ERROR_POR_NUMERO_NEGATIVO:
-				log_info(self->loggerProgramaBESO,"Consola: Envia a Consola: ERROR_POR_NUMERO_NEGATIVO");
+				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error por solicitar un tamaño de segmento negativo");
 				break;
 			case ERROR_POR_SEGMENTO_INVALIDO:
-				log_info(self->loggerProgramaBESO,"Consola: Envia a Consola: ERROR_POR_SEGMENTO_INVALIDO");
+				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error por segmento invalido");
 				break;
 			case ERROR_POR_SEGMENTATION_FAULT:
-				log_info(self->loggerProgramaBESO,"Consola: Envia a Consola: ERROR_POR_SEGMENTATION_FAULT");
+				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error del tipo Segmentation Fault");
 				break;
 			default:
 				log_info(self->loggerProgramaBESO,"Consola: Recibe OK: %s",datosDeKernel->mensaje);

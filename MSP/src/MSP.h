@@ -16,7 +16,7 @@ t_list* lista_procesos;
 t_list* cola_paquetes;
 
 t_socket *socketKernel;
-t_socket *socketCpus;
+t_socket *socketCpu;
 struct sockaddr_in direccionCliente;
 struct sockaddr_in kernelDireccion;
 struct sockaddr_in cpuDireccion;
@@ -25,8 +25,10 @@ pthread_t mspHilo;
 pthread_t* mspHiloCpus; // se tiene un vector de los hilos que hay que ir sacando/poniendo dependiendo de las cpus
 pthread_t mspHiloKernel;
 pthread_t mspConsolaHilo;
+pthread_t hiloConexion;
 
 void mspLanzarhiloMSPCONSOLA();
-int mspLanzarhilo();
+int mspLanzarhiloConexiones();
+void *mspRealizarHandshakes(t_socket *socketNuevaConexion);
 
 #endif /* MSP_H_ */
