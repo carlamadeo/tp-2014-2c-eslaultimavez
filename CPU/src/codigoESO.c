@@ -517,10 +517,50 @@ void OUTC_ESO(t_TCB_CPU* tcb){
 
 
 }
-void CREA_ESO(t_TCB_CPU* tcb){
+void CREA_ESO(t_TCB_CPU* tcb){ 	// CREA un hilo hijo de TCB
+	t_TCB_CPU* tcb_hijo;
+	tcb_hijo->pid=tcb->registro_de_programacion[0];
+	tcb_hijo->tid=(tcb->tid) +1;
+	tcb_hijo->km=0;				//se pasa a modo usuario
+	tcb_hijo->base_stack=tcb->base_stack;
+	tcb_hijo->cursor_stack=tcb->cursor_stack;
+	tcb_hijo->puntero_instruccion=tcb->registro_de_programacion[1];
+
+	t_paquete_MSP *crear_hijo = malloc(sizeof(t_paquete_MSP));
+	char *data=malloc(sizeof(t_TCB_CPU)); /*TCB*/
+			int soffset, stmp_size=0;
+			memcpy(data, &(tcb_hijo), stmp_size=(sizeof(t_TCB_CPU)));
+			soffset+=stmp_size;
+			crear_hijo->tamanio=soffset;
+			crear_hijo->data=data;
+
+			if (socket_sendPaquete(self->socketPlanificador->socket, CREAR_HILO,crear_hijo->tamanio, crear_hijo->data)<=0){
+				log_info(self->loggerCPU, "CPU: Error de CREAR_HILO_HIJO\n %d", tcb->pid);
+
+
+			}
+			free(data);
+			free(crear_hijo);
 
 }
 void JOIN_ESO(t_TCB_CPU* tcb){
+	t_paquete_MSP *envio_join = malloc(sizeof(t_paquete_MSP));
+	char *data=malloc((sizeof(int)*2)+sizeof(int32_t)); /*pid+tid llamador+(tid a esperar)registro_de_programacion['B']*/
+		int soffset, stmp_size=0;
+		memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
+		memcpy(data + soffset, &(tcb->tid), stmp_size=(sizeof(int)));
+		memcpy(data + soffset, tcb->registro_de_programacion[0], stmp_size=sizeof(int32_t));
+		soffset+=stmp_size;
+		envio_join->tamanio=soffset;
+		envio_join->data=data;
+
+		if (socket_sendPaquete(self->socketPlanificador->socket,  JOIN_HILO,envio_join->tamanio, envio_join->data)<=0){
+			log_info(self->loggerCPU, "CPU: Error de JOIN\n %d", tcb->pid);
+
+
+		}
+		free(data);
+		free(envio_join);
 
 }
 
