@@ -60,6 +60,7 @@ typedef struct {
 #define JOIN 1031
 #define BLOK 1032
 #define WAKE 1033
+#define CANTIDAD_INSTRUCCIONES 33
 
 /*
  * Estucturas para usar en CPU!
@@ -83,6 +84,10 @@ typedef struct{
 	char *data;
 }t_paquete_MSP;
 
+typedef struct{
+	int estado;
+	char data[1000];
+}t_lectura_MSP;
 
 typedef struct{
 	int pid;
@@ -108,7 +113,6 @@ typedef struct {
 /*
  * Fin de las estucturas para comunicar CPU con Kernel
  */
-
 
 t_CPU* self;
 t_TCB_CPU* tcb;

@@ -43,5 +43,6 @@ t_socket_client* cpuConectarConMPS(t_CPU* self);
 void cpuRealizarHandshakeConMSP(t_CPU* self);
 int cpuCrearSegmento(t_CPU *self, int pid, int tamanio);
 int cpuEscribirMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *programaBeso, int tamanioBeso, t_socket* socketNuevoCliente);
+int cpuLeerMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *programa, int tamanio, t_socket* socketNuevoCliente);
 
 #endif /* CPUMPS_H_ */

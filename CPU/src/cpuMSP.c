@@ -123,14 +123,13 @@ int cpuLeerMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *progra
 	datosAMSP->pid = pid;
 	datosAMSP->tamanio = tamanio;
 
-	log_info(self->loggerCPU, "Kernel: Solicitud de lectura de memoria para PID: %d, Direccion Virtual: %0.8p, Tamaño: %d.", datosAMSP->pid, datosAMSP->direccionVirtual, datosAMSP->tamanio);
-	printf("aca2\n");
+	log_info(self->loggerCPU, "CPU: Solicitud de lectura de memoria para PID: %d, Direccion Virtual: %0.8p, Tamaño: %d.", datosAMSP->pid, datosAMSP->direccionVirtual, datosAMSP->tamanio);
+
 	socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, sizeof(t_datos_aMSPLectura), datosAMSP);
-	printf("aca3\n");
+
 	socket_recvPaquete(socketNuevoCliente, paqueteLectura);
-	printf("aca4\n");
+
 	unaLectura = (t_datos_deMSPLectura *) paqueteLectura->data;
-printf("aca5\n");
 	strcpy(programa, unaLectura->lectura);
 
 	if (unaLectura->estado == ERROR_POR_SEGMENTATION_FAULT){

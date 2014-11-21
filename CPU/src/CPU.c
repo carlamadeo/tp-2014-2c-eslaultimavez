@@ -14,6 +14,9 @@
 #include "cpuConfig.h"
 #include <stdlib.h>
 
+char *instrucciones_eso[] = {"LOAD", "GETM", "SETM", "MOVR", "ADDR", "SUBR", "MULR", "MODR", "DIVR", "INCR", "DECR"
+		"COMP", "CGEQ", "CLEQ", "GOTO", "JMPZ", "JPNZ", "INTE", "SHIF", "NOPP", "PUSH", "TAKE", "XXXX", "MALC", "FREE", "INNN"
+		"INNC", "OUTN", "OUTC", "CREA", "JOIN", "BLOK", "WAKE"};
 
 int main(int argc, char** argv) {
 
@@ -76,105 +79,35 @@ void cpuProcesar_tcb(t_CPU* self){
 	while(seguir_ejecucion){
 		//pido los primeros 4 bytes especificados por PID+Puntero_Instruccion
 
+		t_lectura_MSP * lecturaDeMSP = malloc(sizeof(t_lectura_MSP));
+
 		t_CPU_LEER_MEMORIA* unCPU_LEER_MEMORIA = malloc(sizeof(t_CPU_LEER_MEMORIA));
 		unCPU_LEER_MEMORIA->pid = self->tcb->pid;
-		unCPU_LEER_MEMORIA->tamanio = sizeof(char)*4;
-
 		//unCPU_LEER_MEMORIA->tamanio = self->tcb->tamanio_segmento_codigo; // esto esta mal, vos tenes que pedirle 4 byte a la MSP no el .bc completo!
+		unCPU_LEER_MEMORIA->tamanio = sizeof(char)*4;
 		unCPU_LEER_MEMORIA->direccionVirtual = self->tcb->puntero_instruccion;
-		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, sizeof(t_CPU_LEER_MEMORIA), unCPU_LEER_MEMORIA)<=0){
-			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 
-		}
+		cpuLeerMemoria(self, unCPU_LEER_MEMORIA->pid, unCPU_LEER_MEMORIA->direccionVirtual, lecturaDeMSP->data, unCPU_LEER_MEMORIA->tamanio, self->socketMSP->socket);
 
-		log_info(self->loggerCPU, "CPU: Envia a MSP LEER_MEMORIA");
+		/*reservo memoria en una variable linea para guardar los 4 caracteres de ESO*/
 
-		t_socket_paquete *paquete_MSP = malloc(sizeof(t_socket_paquete));
-
-		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
-
-			if(paquete_MSP->header.type == LEER_MEMORIA){
-
-				log_info(self->loggerCPU, "CPU: Recibe un LEER_MEMORIA: %d ", paquete_MSP->header.type);
-				/*reservo memoria en una variable linea para guardar los 4 caracteres de ESO*/
-				char *nombre_instruccion = malloc(sizeof(char)*4);
-				/*guardo en la variable nombre_instruccion los 4 caracteres que forman el nombre de la instruccion ESO*/
-				int doffset = 0, dtemp_size = 0;
-				memcpy(nombre_instruccion, paquete_MSP->data, dtemp_size=sizeof(char));
-				doffset = dtemp_size;
-				memcpy(nombre_instruccion + doffset, paquete_MSP->data + doffset, dtemp_size=sizeof(char));
-				doffset += dtemp_size;
-				memcpy(nombre_instruccion + doffset, paquete_MSP->data + doffset, dtemp_size=sizeof(char));
-				doffset += dtemp_size;
-				memcpy(nombre_instruccion + doffset, paquete_MSP->data + doffset, dtemp_size=sizeof(char));
-
-				char instrucciones_eso[] = {'L','O','A','D','G','E','T','M','S','E','T','M','M','O','V','R','A','D','D','R','S','U','B','R','M','U','L','R','M','O','D','R','D','I','V','R','I','N','C','R','D','E','C','R','C','O','M','P','C','G','E','Q','C','L','E','Q','G','O','T','O','J','M','P','Z','J','N','P','Z','I','N','T','E','S','H','I','F','N','O','P','P','P','U','S','H','T','A','K','E','X','X','X','X','M','A','L','C','F','R','E','E','I','N','N','N','I','N','N','C','O','U','T','N','O','U','T','C','C','R','E','A','J','O','I','N','B','L','O','K','W','A','K','E','\0'};
-
-				/*
-				 * NO ACCEDE A LA FUNCION EJECUTAR_INSTRUCCION PORQUE ALTERASTE PRIMERAMENTE LOS CODIGOS ESO EN EL CPU.H
-				 * ESTE ALGORITMO SE BASABA EN DICHOS CODIGOS PARA AGREGAR EL PARAMENTRO ADECUADO A LA FUNCION EJECUTAR_INSTRUCCION
-				 * POR LO TANTO MAS ABAJO ADECUAMOS EL ALGORITMO A TUS CODIGOS
-				 instruccion=1, indice=0;
-				//ERROR NO LLEGA A LA FUNCION ejecutar_instruccion
-				if(strncmp( &(instrucciones_eso[indice]), nombre_instruccion+2, 1 )==0){
-					indice++;
-					if(strncmp( &(instrucciones_eso[indice]), nombre_instruccion+3, 1 )==0){
-						//usleep(self->retardo); //tiempo que debe esperar la CPU antes de ejecutar una instruccion ESO
-						ejecutar_instruccion(instruccion, self);
-						free(nombre_instruccion);
-						break;
-					}else
-						indice++;
-				}
-
-				 */
-
-				int instruccion=1001, indice=0;
-				while (instrucciones_eso[indice]!='\0'){
-
-					if (strncmp(&(instrucciones_eso[indice]), nombre_instruccion, 1) == 0){
-
-						indice++;
-						if(strncmp(&(instrucciones_eso[indice]), nombre_instruccion + 1, 1) == 0){
-
-							indice++;
-							if(strncmp(&(instrucciones_eso[indice]), nombre_instruccion+2, 1) == 0){
-								indice++;
-
-								if(strncmp(&(instrucciones_eso[indice]), nombre_instruccion+3, 1) == 0){
-									ejecutar_instruccion(instruccion, self);
-									break;
-								}
-								else
-									indice++;
-							}
-							else
-								indice+=2;
-						}
-						else
-							indice+=3;
-					}
-					else
-						indice+=4;
-
-					instruccion++;
-				} //fin while de algoritmo detectar instruccion ESO
-
+		//Esto es para darse cuenta de que instruccion se trata
+		int encontrado = 0;
+		int indice = 0;
+		while (!encontrado && indice <= CANTIDAD_INSTRUCCIONES){
+			if(strncmp(instrucciones_eso[indice], lecturaDeMSP->data, 4) == 0){
+				ejecutar_instruccion(indice, self);
+				encontrado = 1;
 			}
-			else
-				log_error(self->loggerCPU, "CPU: Recibio un codigo inesperado de la MSP:\n %d", paquete_MSP->header.type);
-
+			indice++;
 		}
 
-		else{
-			log_info(self->loggerCPU, "CPU: Ha cerrado su conexion dentro del procesar TCB\n");
-			exit(-1);
+		if(!encontrado){
+			log_error(self->loggerCPU, "CPU: Recibio un codigo inesperado de la MSP");
 		}
 
-		free(paquete_MSP);
 		//Sleep para que no se tilde
 		usleep(100);
-
 
 		t_CPU_TERMINE_UNA_LINEA* unTerminoLinea = malloc(sizeof(t_CPU_TERMINE_UNA_LINEA));
 		unTerminoLinea->pid = self->tcb->pid;
@@ -214,7 +147,6 @@ void cpuProcesar_tcb(t_CPU* self){
 		}
 
 	}//fin while(1)
-
 }
 
 void cambioContexto(t_CPU* self){
@@ -251,6 +183,8 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 
 	unCPU_LEER_MEMORIA->pid = self->tcb->pid;
 	unCPU_LEER_MEMORIA->direccionVirtual = (self->tcb->puntero_instruccion)+4;
+
+	log_info(self->loggerCPU, "Se ejecutara la instruccion %s", instrucciones_eso[linea]);
 
 	switch(linea){
 	case LOAD:
@@ -739,174 +673,17 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 	case XXXX:
 		XXXX_ESO(self->tcb);
 		break;
-	case MALC:
-		if(self->tcb->km==1){
-		MALC_ESO(self->tcb);
-		}else{
-			log_error(self->loggerCPU, "CPU: ejecucion ilicita de PID:\n %d", self->tcb->pid);
-			if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
-				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
-			}else{
-				if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
-					log_error(self->loggerCPU, "CPU: fallo: CAMBIO_DE_CONTEXTO\n");
-				}else{
-						log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO\n");
-						}
-					}
-				}
-			break;
+	case MALC: MALC_ESO(self->tcb); break;
+	case FREE: FREE_ESO(self->tcb); break;
+	case INNN: INNN_ESO(self->tcb); break;
+	case INNC: INNC_ESO(self->tcb); break;
+	case OUTN: OUTN_ESO(self->tcb); break;
+	case OUTC: OUTC_ESO(self->tcb); break;
+	case CREA: CREA_ESO(self->tcb); break;
+	case JOIN: JOIN_ESO(self->tcb); break;
+	case BLOK: BLOK_ESO(self->tcb); break;
+	default: break;
 
-	case FREE:
-		if(self->tcb->km==1){
-			FREE_ESO(self->tcb);
-		}else{
-			log_error(self->loggerCPU, "CPU: ejecucion ilicita de PID:\n %d", self->tcb->pid);
-			if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
-				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
-			}else{
-				if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
-					log_error(self->loggerCPU, "CPU: fallo: CAMBIO_DE_CONTEXTO\n");
-				}else{
-						log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO\n");
-						}
-					}
-				}
-		 break;
-	case INNN:
-		if(self->tcb->km==1){
-			INNN_ESO(self->tcb);
-		}else{
-			log_error(self->loggerCPU, "CPU: ejecucion ilicita de PID:\n %d", self->tcb->pid);
-			if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
-				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
-			}else{
-				if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
-					log_error(self->loggerCPU, "CPU: fallo: CAMBIO_DE_CONTEXTO\n");
-				}else{
-						log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO\n");
-						}
-					}
-				}
-
-		 break;
-	case INNC:
-		if(self->tcb->km==1){
-			INNC_ESO(self->tcb);
-		}else{
-			log_error(self->loggerCPU, "CPU: ejecucion ilicita de PID:\n %d", self->tcb->pid);
-			if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
-				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
-			}else{
-				if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
-					log_error(self->loggerCPU, "CPU: fallo: CAMBIO_DE_CONTEXTO\n");
-				}else{
-						log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO\n");
-						}
-					}
-				}
-
-		break;
-	case OUTN:
-		if(self->tcb->km==1){
-			OUTN_ESO(self->tcb);
-		}else{
-			log_error(self->loggerCPU, "CPU: ejecucion ilicita de PID:\n %d", self->tcb->pid);
-			if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
-				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
-			}else{
-				if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
-					log_error(self->loggerCPU, "CPU: fallo: CAMBIO_DE_CONTEXTO\n");
-				}else{
-						log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO\n");
-						}
-					}
-				}
-
-		break;
-
-	case OUTC:
-		if(self->tcb->km==1){
-			OUTC_ESO(self->tcb);
-		}else{
-			log_error(self->loggerCPU, "CPU: ejecucion ilicita de PID:\n %d", self->tcb->pid);
-			if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
-				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
-			}else{
-				if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
-					log_error(self->loggerCPU, "CPU: fallo: CAMBIO_DE_CONTEXTO\n");
-				}else{
-						log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO\n");
-						}
-					}
-				}
-
-		break;
-
-	case CREA:
-
-		if(self->tcb->km==1){
-			CREA_ESO(self->tcb);
-		}else{
-			log_error(self->loggerCPU, "CPU: ejecucion ilicita de PID:\n %d", self->tcb->pid);
-			if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
-				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
-			}else{
-				if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
-					log_error(self->loggerCPU, "CPU: fallo: CAMBIO_DE_CONTEXTO\n");
-				}else{
-						log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO\n");
-						}
-					}
-				}
-
-		break;
-
-	case JOIN:
-		if(self->tcb->km==1){
-			JOIN_ESO(self->tcb);
-		}else{
-			log_error(self->loggerCPU, "CPU: ejecucion ilicita de PID:\n %d", self->tcb->pid);
-			if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
-				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
-			}else{
-				if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
-					log_error(self->loggerCPU, "CPU: fallo: CAMBIO_DE_CONTEXTO\n");
-				}else{
-						log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO\n");
-						}
-					}
-				}
-
-		break;
-
-	case BLOK:
-
-		if(self->tcb->km==1){
-			BLOK_ESO(self->tcb);
-		}else{
-			log_error(self->loggerCPU, "CPU: ejecucion ilicita de PID:\n %d", self->tcb->pid);
-			if (socket_sendPaquete(self->socketPlanificador->socket,MENSAJE_DE_ERROR,sizeof(int),&(self->tcb->pid))<=0){
-				log_error(self->loggerCPU, "CPU: fallo: MENSAJE_DE_ERROR\n");
-			}else{
-				if (socket_sendPaquete(self->socketPlanificador->socket,CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU),self->tcb)<=0){
-					log_error(self->loggerCPU, "CPU: fallo: CAMBIO_DE_CONTEXTO\n");
-				}else{
-						log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO\n");
-						}
-					}
-				}
-
-
-		 break;
-
-	default:
-		log_error(self->loggerCPU, "CPU: error en el switch-case, instruccion no encontrada:\n %d", self->tcb->pid);
-		printf("CPU: error en el switch-case, instruccion no encontrada:\n", self->tcb->pid);
-		break;
-
-	free(unCPU_LEER_MEMORIA);
-	free(paquete_MSP);
-	usleep(100);
 	}
 
 }

@@ -163,11 +163,11 @@ t_TCB_Kernel* test_TCB (){
 	test_TCB->pid= 0;
 	test_TCB->tid= 523;
 	test_TCB->km = 1;
-	test_TCB->base_segmento_codigo = 1025;
+	test_TCB->base_segmento_codigo = 2097152;
 	test_TCB->tamanio_segmento_codigo = 1000;
-	test_TCB->base_stack = 576;
-	test_TCB->cursor_stack = 579;
-	test_TCB->puntero_instruccion = 1;
+	test_TCB->base_stack = 1048576;
+	test_TCB->cursor_stack = 1048576;
+	test_TCB->puntero_instruccion = 2097152;
 	//test_TCB->registro_de_programacion = 56;
 
 
