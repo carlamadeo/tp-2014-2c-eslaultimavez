@@ -14,8 +14,8 @@
 #include "cpuConfig.h"
 #include <stdlib.h>
 
-char *instrucciones_eso[] = {"LOAD", "GETM", "SETM", "MOVR", "ADDR", "SUBR", "MULR", "MODR", "DIVR", "INCR", "DECR"
-		"COMP", "CGEQ", "CLEQ", "GOTO", "JMPZ", "JPNZ", "INTE", "SHIF", "NOPP", "PUSH", "TAKE", "XXXX", "MALC", "FREE", "INNN"
+char *instrucciones_eso[] = {"LOAD", "GETM", "SETM", "MOVR", "ADDR", "SUBR", "MULR", "MODR", "DIVR", "INCR", "DECR",
+		"COMP", "CGEQ", "CLEQ", "GOTO", "JMPZ", "JPNZ", "INTE", "SHIF", "NOPP", "PUSH", "TAKE", "XXXX", "MALC", "FREE", "INNN",
 		"INNC", "OUTN", "OUTC", "CREA", "JOIN", "BLOK", "WAKE"};
 
 int main(int argc, char** argv) {
@@ -91,10 +91,11 @@ void cpuProcesar_tcb(t_CPU* self){
 
 		/*reservo memoria en una variable linea para guardar los 4 caracteres de ESO*/
 
+
 		//Esto es para darse cuenta de que instruccion se trata
 		int encontrado = 0;
 		int indice = 0;
-		while (!encontrado && indice <= CANTIDAD_INSTRUCCIONES){
+		while (!encontrado && indice < CANTIDAD_INSTRUCCIONES){
 			if(strncmp(instrucciones_eso[indice], lecturaDeMSP->data, 4) == 0){
 				ejecutar_instruccion(indice, self);
 				encontrado = 1;
@@ -104,6 +105,7 @@ void cpuProcesar_tcb(t_CPU* self){
 
 		if(!encontrado){
 			log_error(self->loggerCPU, "CPU: Recibio un codigo inesperado de la MSP");
+			//Aca tenemos que salir de la funcion porque se recibio cualquier cosa de la MSP!!
 		}
 
 		//Sleep para que no se tilde
