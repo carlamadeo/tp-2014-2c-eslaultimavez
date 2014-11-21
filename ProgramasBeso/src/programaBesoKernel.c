@@ -97,7 +97,6 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 
 			}// fin del switch
 
-
 		}
 		else{
 			log_error(self->loggerProgramaBESO, "Consola: El Kernel ha cerrado la conexion.");
