@@ -78,12 +78,14 @@ void cpuProcesar_tcb(t_CPU* self){
 
 	while(seguir_ejecucion){
 		//pido los primeros 4 bytes especificados por PID+Puntero_Instruccion
-
 		t_lectura_MSP * lecturaDeMSP = malloc(sizeof(t_lectura_MSP));
-
 		t_CPU_LEER_MEMORIA* unCPU_LEER_MEMORIA = malloc(sizeof(t_CPU_LEER_MEMORIA));
-		unCPU_LEER_MEMORIA->pid = self->tcb->pid;
-		//unCPU_LEER_MEMORIA->tamanio = self->tcb->tamanio_segmento_codigo; // esto esta mal, vos tenes que pedirle 4 byte a la MSP no el .bc completo!
+		//se hace el control para saber a donde apuntar dependiendo de si se trata un tcb usuario o kernel...
+		int pid_proceso = 0;
+		if (tcb->km == 0){
+			pid_proceso = self->tcb->pid;
+		}
+		unCPU_LEER_MEMORIA->pid = pid_proceso;
 		unCPU_LEER_MEMORIA->tamanio = sizeof(char)*4;
 		unCPU_LEER_MEMORIA->direccionVirtual = self->tcb->puntero_instruccion;
 
@@ -185,7 +187,8 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 	t_socket_paquete *paquete_MSP = malloc(sizeof(t_socket_paquete));
 
 	unCPU_LEER_MEMORIA->pid = self->tcb->pid;
-	unCPU_LEER_MEMORIA->direccionVirtual = (self->tcb->puntero_instruccion)+4;
+	self->tcb->puntero_instruccion += 4; //avanzo el puntero de instruccion
+	unCPU_LEER_MEMORIA->direccionVirtual = self->tcb->puntero_instruccion;
 
 	log_info(self->loggerCPU, "Se ejecutara la instruccion %s", instrucciones_eso[linea]);
 

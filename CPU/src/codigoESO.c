@@ -54,8 +54,6 @@ void GETM_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 		}
 
 		free(paquete_MSP);
-		usleep(100);
-
 	}
 
 	log_error(self->loggerCPU, "CPU: Error registro de programacion no encontrado %d", tcb->pid);
@@ -330,8 +328,8 @@ void MALC_ESO (t_TCB_CPU* tcb){
 	alocar_bytes->tamanio = soffset;
 	alocar_bytes->data = data;
 
-	if (socket_sendPaquete(self->socketPlanificador->socket, CREAR_SEGMENTO, alocar_bytes->tamanio, alocar_bytes->data)<=0){
-		log_info(self->socketMSP->socket, "CPU: Error de memoria llena en MSP\n %d", tcb->pid);
+	if (socket_sendPaquete(self->socketMSP->socket, CREAR_SEGMENTO, alocar_bytes->tamanio, alocar_bytes->data)<=0){
+		log_info(self->loggerCPU, "CPU: Error de memoria llena en MSP\n %d", tcb->pid);
 	}
 	t_socket_paquete *paquete_MSP = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	if(socket_recvPaquete(self->socketPlanificador->socket, paquete_MSP) > 0){
@@ -370,7 +368,7 @@ void FREE_ESO(t_TCB_CPU* tcb){
 	leer_byte->tamanio = soffset;
 	leer_byte->data = data;
 
-	if (socket_sendPaquete(self->socketPlanificador->socket, DESTRUIR_SEGMENTO, leer_byte->tamanio, leer_byte->data)<=0){
+	if (socket_sendPaquete(self->socketMSP->socket, DESTRUIR_SEGMENTO, leer_byte->tamanio, leer_byte->data)<=0){
 		log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
 
 	}
@@ -402,7 +400,6 @@ void INNN_ESO(t_TCB_CPU* tcb){
 	}
 
 	free(paquete_KERNEL);
-	usleep(100);
 
 }
 void INNC_ESO(t_TCB_CPU* tcb){
@@ -459,15 +456,13 @@ void INNC_ESO(t_TCB_CPU* tcb){
 
 	free(paquete_KERNEL);
 
-	usleep(100);
-
 }
 void OUTN_ESO(t_TCB_CPU* tcb){
 
 	t_paquete_MSP *mostrar_numero = malloc(sizeof(t_paquete_MSP));
 
 	char *data=malloc(sizeof(int)+sizeof(int32_t)); /*pid+(tamanio)registro_de_programacion['B']*/
-	int soffset, stmp_size=0;
+	int soffset=0, stmp_size=0;
 	memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
 	memcpy(data + soffset, &(tcb->registro_de_programacion[0]), stmp_size=sizeof(int32_t));
 	soffset+=stmp_size;
@@ -518,43 +513,106 @@ void OUTC_ESO(t_TCB_CPU* tcb){
 
 }
 void CREA_ESO(t_TCB_CPU* tcb){ 	// CREA un hilo hijo de TCB
-	t_TCB_CPU* tcb_hijo;
+	t_TCB_CPU* tcb_hijo=malloc(sizeof(t_TCB_CPU));
 	tcb_hijo->pid=tcb->registro_de_programacion[0];
-	tcb_hijo->tid=(tcb->tid) +1;
+	tcb_hijo->tid=(tcb->tid)+1;
 	tcb_hijo->km=0;				//se pasa a modo usuario
-	tcb_hijo->base_stack=tcb->base_stack;
-	tcb_hijo->cursor_stack=tcb->cursor_stack;
 	tcb_hijo->puntero_instruccion=tcb->registro_de_programacion[1];
 
-	t_paquete_MSP *crear_hijo = malloc(sizeof(t_paquete_MSP));
-	char *data=malloc(sizeof(t_TCB_CPU)); /*TCB*/
-			int soffset, stmp_size=0;
-			memcpy(data, &(tcb_hijo), stmp_size=(sizeof(t_TCB_CPU)));
-			soffset+=stmp_size;
-			crear_hijo->tamanio=soffset;
-			crear_hijo->data=data;
+	//creando stack del tcb hijo...
+	// tengo que pedirle al kernel que me cree el segmento de stack y luego recibir la base, despues duplicar el contenido del stack del padre y actualizar el cursor (cursor-base del padre)
 
-			if (socket_sendPaquete(self->socketPlanificador->socket, CREAR_HILO,crear_hijo->tamanio, crear_hijo->data)<=0){
+	//CPU->KERNEL : pidiendo al Kernel que cree el STACK del TCB hijo
+	char *pedir_stack=malloc(sizeof(int)); /*pid+(tamanio)registro_de_programacion['A']*/
+	memcpy(pedir_stack, &(tcb_hijo->pid), sizeof(int));
+	log_info(self->loggerCPU, "CPU: solicitando a Kernel creacion de stack PID:\n %s", tcb_hijo->pid);
+	if (socket_sendPaquete(self->socketPlanificador->socket, /*CREAR_STACK*/35, sizeof(int), pedir_stack)<=0){
+		log_info(self->loggerCPU, "CPU: Error al pedir stack\n %d", tcb->pid);
+	}
+	t_socket_paquete *base_stack = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+	if(socket_recvPaquete(self->socketPlanificador->socket, base_stack) > 0){
+		if(base_stack->header.type == /*CREAR_STACK*/35){
+			log_info(self->loggerCPU, "CPU: recibiendo base de stack...\n %d ", tcb->pid);
+			tcb_hijo->base_stack = (int32_t)(base_stack->data);
+			free(base_stack);
+			} else {
+			log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado de Kernel:\n %d", base_stack->header.type);
+					}
+	}else{
+		log_info(self->loggerCPU, "CPU: Kernel ha cerrado su conexion");
+		printf("Kernel ha cerrado su conexion\n");
+		exit(-1);
+	}
+	free(pedir_stack);
+
+	// fin crear stack del tcb hijo...
+
+	// inicializando Stack...
+	//primero: leer el STACK completo del padre
+
+	t_CPU_LEER_MEMORIA* unCPU_LEER_MEMORIA = malloc(sizeof(t_CPU_LEER_MEMORIA));
+	unCPU_LEER_MEMORIA->pid = self->tcb->pid;
+	unCPU_LEER_MEMORIA->tamanio = 1024;
+	unCPU_LEER_MEMORIA->direccionVirtual = tcb->base_stack;
+	if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, sizeof(t_CPU_LEER_MEMORIA), unCPU_LEER_MEMORIA)<=0){
+		log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
+	}
+
+	t_socket_paquete *datos_memoria = malloc(sizeof(t_socket_paquete));
+
+	if(socket_recvPaquete(self->socketMSP->socket, datos_memoria) > 0){
+		if(datos_memoria->header.type == LEER_MEMORIA){
+			char *stack_tcb = malloc(1024);
+			memcpy(stack_tcb, datos_memoria->data, 1024);
+			//segundo: copiar el contenido del stack recibido en el stack del tcb_hijo: ESCRIBIR_MEMORIA
+			char *data=malloc(sizeof(int)+sizeof(uint32_t)+ tcb->registro_de_programacion[1]);  /*pid+direccion_logica+datos_a_grabar*/
+			t_paquete_MSP *grabar_byte = malloc(sizeof(t_paquete_MSP));
+			int soffset=0, stmp_size=0;
+			memcpy(grabar_byte, &(tcb_hijo->pid), stmp_size=(sizeof(int)));
+			soffset=stmp_size;
+			memcpy(grabar_byte + soffset, &(tcb_hijo->base_stack), stmp_size=sizeof(uint32_t));
+			soffset+=stmp_size;
+			memcpy(grabar_byte + soffset, stack_tcb, stmp_size=1024);
+			soffset+=stmp_size;
+
+			grabar_byte->tamanio = soffset;
+			grabar_byte->data = data;
+
+			if (socket_sendPaquete(self->socketMSP->socket, ESCRIBIR_MEMORIA, grabar_byte->tamanio, grabar_byte->data)<=0){
+				log_info(self->loggerCPU, "CPU: Error de escritura en MSP\n %d", tcb->pid);
+			}
+
+		}
+	}
+
+	//tercero: inicializar el cursor de stack del tcb_hijo
+	uint32_t avance_stack = tcb->cursor_stack - tcb->base_stack;
+	tcb_hijo->cursor_stack = avance_stack;
+
+ 	// fin inicializar Stack...
+
+	// enviando a Kernel el TCB a planificar..
+
+	log_info(self->loggerCPU, "CPU: solicitando creacion de TCB HIJO...\n %d", tcb_hijo->pid);
+	if (socket_sendPaquete(self->socketPlanificador->socket, CREAR_HILO, sizeof(t_TCB_CPU) , tcb_hijo)<=0){
 				log_info(self->loggerCPU, "CPU: Error de CREAR_HILO_HIJO\n %d", tcb->pid);
 
-
-			}
-			free(data);
-			free(crear_hijo);
+	}
+	free(tcb_hijo);
 
 }
 void JOIN_ESO(t_TCB_CPU* tcb){
 	t_paquete_MSP *envio_join = malloc(sizeof(t_paquete_MSP));
 	char *data=malloc((sizeof(int)*2)+sizeof(int32_t)); /*pid+tid llamador+(tid a esperar)registro_de_programacion['B']*/
-		int soffset, stmp_size=0;
+		int soffset=0, stmp_size=0;
 		memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
 		memcpy(data + soffset, &(tcb->tid), stmp_size=(sizeof(int)));
-		memcpy(data + soffset, tcb->registro_de_programacion[0], stmp_size=sizeof(int32_t));
+		memcpy(data + soffset, &(tcb->registro_de_programacion[0]), stmp_size=sizeof(int32_t));
 		soffset+=stmp_size;
 		envio_join->tamanio=soffset;
 		envio_join->data=data;
 
-		if (socket_sendPaquete(self->socketPlanificador->socket,  JOIN_HILO,envio_join->tamanio, envio_join->data)<=0){
+		if (socket_sendPaquete(self->socketPlanificador->socket, /* JOIN_HILO*/ 33,envio_join->tamanio, envio_join->data)<=0){
 			log_info(self->loggerCPU, "CPU: Error de JOIN\n %d", tcb->pid);
 
 
