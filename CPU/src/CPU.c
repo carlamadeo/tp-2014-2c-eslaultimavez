@@ -218,7 +218,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 	unCPU_LEER_MEMORIA->direccionVirtual = self->tcb->puntero_instruccion;
 
 	log_info(self->loggerCPU, "Se ejecutara la instruccion %s", instrucciones_eso[linea]);
-	t_list* parametros = create_list();
+	t_list* parametros = list_create();
 
 	switch(linea){
 	case LOAD:

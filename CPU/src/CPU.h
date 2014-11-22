@@ -80,6 +80,7 @@ typedef struct {
 	char* ipPlanificador;
 	char* ipMsp;
 	int quantum;
+	int retardo;
 }t_CPU;
 
 typedef struct{

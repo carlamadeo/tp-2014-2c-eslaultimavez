@@ -197,6 +197,7 @@ t_cpu* obtenerCPUSegunDescriptor(t_kernel* self,int descriptor){
 
 t_programaEnKernel* obtenerTCBdeReady(t_kernel* self){
 
+	log_info(self->loggerPlanificador," Cantidad de elemento en la cola New: %d" ,list_size(cola_new));
 	if (list_size(cola_new)>0){
 		sem_wait(&mutex_new);
 		t_programaEnKernel* programa =list_remove(cola_new, 0); //SE REMUEVE EL PRIMER PROGRAMA DE NEW
