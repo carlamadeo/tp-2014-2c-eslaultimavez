@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-
 t_log *MSPlogger;
 
 void *mspLanzarHiloCPU(t_socket * socketCPU){
@@ -19,10 +18,8 @@ void *mspLanzarHiloCPU(t_socket * socketCPU){
 	if (socket_sendPaquete(socketCPU, HANDSHAKE_MSP, 0, NULL) > 0)
 		log_info(MSPlogger, "MSP: Handshake con CPU!");
 
-
 	else
 		log_error(MSPlogger, "MSP: Error al recibir los datos de la CPU.");
-
 
 	while(i){
 
@@ -62,7 +59,7 @@ void *mspLanzarHiloCPU(t_socket * socketCPU){
 }
 
 
-void crearSegmentoCPU(t_socket  *socketCPU, t_socket_paquete *paquete){
+void crearSegmentoCPU(t_socket *socketCPU, t_socket_paquete *paquete){
 
 	t_datos_aCPUSegmento* datosACPU = malloc(sizeof(t_datos_aCPUSegmento));
 	t_datos_deCPUCrearSegmento* datosDeCPU = (t_datos_deCPUCrearSegmento*) (paquete->data);
@@ -85,7 +82,7 @@ void crearSegmentoCPU(t_socket  *socketCPU, t_socket_paquete *paquete){
 }
 
 
-void destruirSegmentoCPU(t_socket  *socketCPU, t_socket_paquete *paquete){
+void destruirSegmentoCPU(t_socket *socketCPU, t_socket_paquete *paquete){
 
 	t_datos_aCPUSegmento* datosACPU = malloc(sizeof(t_datos_aCPUSegmento));
 	t_datos_deCPUDestruirSegmento* datosDeCPU = (t_datos_deCPUDestruirSegmento*) (paquete->data);
@@ -106,7 +103,7 @@ void destruirSegmentoCPU(t_socket  *socketCPU, t_socket_paquete *paquete){
 }
 
 
-void escribirMemoriaCPU(t_socket  *socketCPU, t_socket_paquete *paquete){
+void escribirMemoriaCPU(t_socket *socketCPU, t_socket_paquete *paquete){
 
 	t_datos_aCPUEscritura* datosACPU = malloc(sizeof(t_datos_aCPUEscritura));
 	t_datos_deCPUEscritura* datosDeCPU = (t_datos_deCPUEscritura*) (paquete->data);
@@ -127,7 +124,7 @@ void escribirMemoriaCPU(t_socket  *socketCPU, t_socket_paquete *paquete){
 }
 
 
-void leerMemoriaCPU(t_socket  *socketCPU, t_socket_paquete *paquete){
+void leerMemoriaCPU(t_socket *socketCPU, t_socket_paquete *paquete){
 
 	//TODO ver si es necesario hacer un malloc a datosACPU->lectura!!!
 	//jorge Para mi si es muy importante!
