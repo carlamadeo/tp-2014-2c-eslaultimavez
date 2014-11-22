@@ -101,7 +101,7 @@ void crearHilosConexiones(){
 		socket_recvPaquete(self->socketClienteCPU, paqueteCPU);
 
 		if(paqueteCPU->header.type == HANDSHAKE_CPU){
-			int mspHiloCPUInt = pthread_create(&mspHiloCpus[contadorCpu], NULL, (void *)mspLanzarHiloCPU, self->socketClienteCPU);
+			int mspHiloCPUInt = pthread_create(&mspHiloCpus, NULL, (void *)mspLanzarHiloCPU, self->socketClienteCPU);
 			if(mspHiloCPUInt){
 				log_error(MSPlogger, "Error - pthread_create() return code: %d\n", mspHiloCPUInt);
 				exit(EXIT_FAILURE);
