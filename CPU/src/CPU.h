@@ -7,6 +7,9 @@
 #include "codigoESO.h"
 #include "commons/log.h"
 #include "commons/collections/list.h"
+#include "commons/panel.h"
+#include "commons/cpu.h"
+#include <unistd.h>
 
 t_log *logger;
 //linea para hacer push
@@ -22,7 +25,7 @@ typedef struct {
 	uint32_t puntero_instruccion;
 	uint32_t base_stack;
 	uint32_t cursor_stack;
-	int32_t registro_de_programacion[4];
+	int32_t registro_de_programacion[5];
 } t_TCB_CPU;
 
 //Codigos ESO
@@ -76,7 +79,7 @@ typedef struct {
 	int puertoMSP;
 	char* ipPlanificador;
 	char* ipMsp;
-	int retardo;
+	int quantum;
 }t_CPU;
 
 typedef struct{
@@ -102,14 +105,7 @@ typedef struct{
 }t_CPU_TERMINE_UNA_LINEA;
 
 
-/*
- * Estucturas para comunicar CPU con Kernel
- */
-typedef struct {
-	int retardo;
-	int quantum;
-	int stack;
-} t_handshake_cpu_kernel;
+
 /*
  * Fin de las estucturas para comunicar CPU con Kernel
  */
@@ -126,7 +122,7 @@ t_socket* socketDelMSP;
 
 void verificar_argumentosCPU(int argc, char* argv[]);
 void ejecutar_instruccion(int linea, t_CPU* self);
-void cpuProcesar_tcb(t_CPU* self);
+int cpuProcesar_tcb(t_CPU* self);
 //void cpuProcesar_tcb(int pid, t_TCB_CPU* nuevo);
 void cambioContexto(t_CPU* self);
 int determinar_registro(char registro);
@@ -202,6 +198,7 @@ void INTE_ESO(uint32_t direccion, t_TCB_CPU* tcb); 	//Interrumpe la ejecución d
 
 /*void FLCL(); //Limpia el registro de flags.*/
 
+void INNN_ESO (t_TCB_CPU* tcb);
 
 void SHIF_ESO (int numero, int registro, t_TCB_CPU* tcb); //Desplaza los bits del registro, tantas veces como se indique en el Número.
 //De ser desplazamiento positivo, se considera hacia la derecha.

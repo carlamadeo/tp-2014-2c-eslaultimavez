@@ -59,7 +59,8 @@ int cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
 				log_info(self->loggerCPU, "CPU: Se recibio de la MSP la direccion base %0.8p ", datosRecibidos->direccionBase);
 
 				if(datosRecibidos->direccionBase < 0){
-					//Manejo de errores
+
+
 					//ERROR_POR_TAMANIO_EXCEDIDO
 					//ERROR_POR_MEMORIA_LLENA
 					//ERROR_POR_NUMERO_NEGATIVO
@@ -79,12 +80,37 @@ int cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
 	return datosRecibidos->direccionBase;
 }
 
+int cpuDestruirSegmento(t_CPU* self){
+
+	t_destruirSegmento* destruir_segmento = malloc(sizeof(t_destruirSegmento));
+	t_socket_paquete *paqueteConfirmacionDestruccionSegmento = malloc(sizeof(t_socket_paquete));
+	t_confirmacion* confirmacion = malloc(sizeof(t_confirmacion));
+
+	destruir_segmento->pid = self->tcb->pid;
+	destruir_segmento->direccionVirtual = self->tcb->registro_de_programacion[0];
+
+	socket_sendPaquete(self->socketMSP->socket, DESTRUIR_SEGMENTO, sizeof(t_destruirSegmento), destruir_segmento);
+
+	socket_recvPaquete(self->socketMSP->socket, paqueteConfirmacionDestruccionSegmento);
+
+	confirmacion = (t_confirmacion *) paqueteConfirmacionDestruccionSegmento->data;
+
+	switch (confirmacion->estado){
+	case SIN_ERRORES:
+		//loguear que se destruyo el segmento
+		return SIN_ERRORES;
+	case ERROR_POR_SEGMENTO_DESCONOCIDO:
+		//logueo
+		return ERROR_POR_SEGMENTO_DESCONOCIDO;
+	}
+	return SIN_ERRORES;
+}
 
 int cpuEscribirMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *programa, int tamanio, t_socket* socketNuevoCliente){
 
 	t_escribirSegmentoBeso* escrituraDeCodigo = malloc(sizeof(t_escribirSegmentoBeso));
 	t_socket_paquete *paqueteConfirmacionEscritura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-	t_confirmacionEscritura *unaConfirmacionEscritura = (t_confirmacionEscritura *)malloc(sizeof(t_confirmacionEscritura));
+	t_confirmacion *unaConfirmacionEscritura = (t_confirmacion *)malloc(sizeof(t_confirmacion));
 
 	escrituraDeCodigo->direccionVirtual = direccionVirtual;
 	escrituraDeCodigo->pid = pid;
@@ -97,7 +123,7 @@ int cpuEscribirMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *pr
 
 	socket_recvPaquete(socketNuevoCliente, paqueteConfirmacionEscritura);
 
-	unaConfirmacionEscritura = (t_confirmacionEscritura *) paqueteConfirmacionEscritura->data;
+	unaConfirmacionEscritura = (t_confirmacion *) paqueteConfirmacionEscritura->data;
 
 	switch(unaConfirmacionEscritura->estado){
 
@@ -133,7 +159,7 @@ int cpuLeerMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *progra
 	strcpy(programa, unaLectura->lectura);
 
 	if (unaLectura->estado == ERROR_POR_SEGMENTATION_FAULT){
-		//Pasarle el error al kernel
+		//loguear
 	}
 
 	return unaLectura->estado;

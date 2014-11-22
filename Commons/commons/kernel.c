@@ -20,7 +20,7 @@ void hilos(t_list* hilos) {
 	printf("Hilos ejecutando: [");
 
 	bool primero = true;
-	void _imprimirPid(t_hilo* hilo) {
+	void _imprimirPid(t_hilo_log* hilo) {
 		if (!primero) printf(", ");
 		printf("{ PID: %d, TID: %d }", hilo->pid, hilo->tid);
 		primero = false;
@@ -30,6 +30,6 @@ void hilos(t_list* hilos) {
 	printf("]\n");
 }
 
-void instruccion_protegida(char* mnemonico, t_hilo* hilo) {
+void instruccion_protegida(char* mnemonico, t_hilo_log* hilo) {
 	printf("El hilo { PID: %d, TID: %d } ejecutó la instrucción %s\n", hilo->pid, hilo->tid, mnemonico);
 }

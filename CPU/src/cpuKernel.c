@@ -3,7 +3,7 @@
 
 t_socket_client* conectarCPUConKernel(t_CPU* self) {
 
-	//log_info(self->loggerCPU, "CPU: Conectando con el Planificador...\n");
+	log_info(self->loggerCPU, "CPU: Conectando con el Planificador...");
 
 	self->socketPlanificador = socket_createClient();
 
@@ -23,7 +23,7 @@ t_socket_client* conectarCPUConKernel(t_CPU* self) {
 void cpuRealizarHandshakeConKernel(t_CPU* self){
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
-	log_debug(self->loggerCPU, "La CPU solicita HANDSHAKE con KERNEL.\n");
+	log_info(self->loggerCPU, "La CPU solicita HANDSHAKE con KERNEL.");
 
 	if (socket_sendPaquete(self->socketPlanificador->socket, HANDSHAKE_CPU, 0, NULL) > 0) {
 		log_info(self->loggerCPU, "CPU le envia HANDSHAKE al KERNEL!");
@@ -31,11 +31,13 @@ void cpuRealizarHandshakeConKernel(t_CPU* self){
 
 	if (socket_recvPaquete(self->socketPlanificador->socket, paquete) >= 0) {
 			if(paquete->header.type == HANDSHAKE_PLANIFICADOR){
-				log_info(self->loggerCPU, "CPU: Recibe del Planificador HANDSHAKE_PLANIFICADOR\n");
+				log_info(self->loggerCPU, "CPU: Recibe del Planificador HANDSHAKE_PLANIFICADOR");
 			} else {
-				log_error(self->loggerCPU, "CPU: Error al recibir HANDSHAKE_PLANIFICADOR del Planificador\n");
+				log_error(self->loggerCPU, "CPU: Error al recibir HANDSHAKE_PLANIFICADOR del Planificador");
 			}
 		} else {
 			log_error(self->loggerCPU, "CPU: Error al recibir paquete del Planificador.");
 		}
 }
+
+

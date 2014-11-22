@@ -45,6 +45,6 @@
 	* @param  mnemonico  Nombre de la funcionalidad.
 	* @param  hilo Estructura TCB del hilo que invocó la funcionalidad.
 	*/
-	void instruccion_protegida(char* mnemonico, t_hilo* hilo);
+	void instruccion_protegida(char* mnemonico, t_hilo_log* hilo);
 
 #endif

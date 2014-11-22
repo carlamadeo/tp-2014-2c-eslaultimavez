@@ -13,6 +13,8 @@
 #include "cpuKernel.h"
 #include "cpuConfig.h"
 #include <stdlib.h>
+#include "commons/panel.h"
+#include "commons/cpu.h"
 
 char *instrucciones_eso[] = {"LOAD", "GETM", "SETM", "MOVR", "ADDR", "SUBR", "MULR", "MODR", "DIVR", "INCR", "DECR",
 		"COMP", "CGEQ", "CLEQ", "GOTO", "JMPZ", "JPNZ", "INTE", "SHIF", "NOPP", "PUSH", "TAKE", "XXXX", "MALC", "FREE", "INNN",
@@ -33,14 +35,36 @@ int main(int argc, char** argv) {
 	self->socketMSP = cpuConectarConMPS(self);
 	self->socketPlanificador = conectarCPUConKernel(self);
 
+	char *nombreLog = malloc(strlen("logCPU_.log") + sizeof(int) + 1);
+
+	sprintf(nombreLog, "%s%d%s", "logCPU_", getpid(), ".log");
+
+	self->loggerCPU = log_create(nombreLog, "CPU", 1, LOG_LEVEL_DEBUG); //Creo el archivo Log
+
+
+
 	while(1){
 		t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
 		if(socket_recvPaquete(self->socketPlanificador->socket, paquete) >= 0){
 
 			if(paquete->header.type == TCB_NUEVO){
-				self->tcb = (t_TCB_CPU*)paquete->data;
-				cpuProcesar_tcb(self);
+				t_TCB_nuevo* nuevo_tcb= (t_TCB_nuevo*)paquete->data;
+				self->tcb = nuevo_tcb->tcb;
+				self->quantum = nuevo_tcb->quantum;
+				t_hilo_log* hilo_log = (t_hilo_log *) nuevo_tcb->tcb;
+				comienzo_ejecucion(hilo_log, self->quantum);
+				int estado_ejecucion = cpuProcesar_tcb(self);
+				switch(estado_ejecucion){
+				case SIN_ERRORES:
+					//loguear
+					break;
+				case MENSAJE_DE_ERROR:
+					//loguear
+					// hacer el cambio de contexto con mensaje de error
+					break;
+				}
+
 			}
 			else
 				log_error(self->loggerCPU, "Se recibio un codigo inesperado de KERNEL en main de cpu: %d", paquete->header.type);
@@ -62,14 +86,14 @@ int main(int argc, char** argv) {
 	log_info(self->loggerCPU, "Se desconecto la CPU. Elimino todo");
 	exit(0);
 
-	close(socketDelKernel->descriptor);
-	close(socketDelMSP->descriptor);
+	close(self->socketPlanificador->socket->descriptor);
+	close(self->socketMSP->socket->descriptor);
 
 	destruirConfiguracionCPU(self, configCPU);
 }
 
 
-void cpuProcesar_tcb(t_CPU* self){
+int cpuProcesar_tcb(t_CPU* self){
 
 	log_info(self->loggerCPU, "CPU: Comienzo a procesar el TCB de pid: %d", self->tcb->pid);
 
@@ -82,17 +106,19 @@ void cpuProcesar_tcb(t_CPU* self){
 		t_CPU_LEER_MEMORIA* unCPU_LEER_MEMORIA = malloc(sizeof(t_CPU_LEER_MEMORIA));
 		//se hace el control para saber a donde apuntar dependiendo de si se trata un tcb usuario o kernel...
 		int pid_proceso = 0;
-		if (tcb->km == 0){
+		if (self->tcb->km == 0){
 			pid_proceso = self->tcb->pid;
 		}
 		unCPU_LEER_MEMORIA->pid = pid_proceso;
 		unCPU_LEER_MEMORIA->tamanio = sizeof(char)*4;
 		unCPU_LEER_MEMORIA->direccionVirtual = self->tcb->puntero_instruccion;
 
-		cpuLeerMemoria(self, unCPU_LEER_MEMORIA->pid, unCPU_LEER_MEMORIA->direccionVirtual, lecturaDeMSP->data, unCPU_LEER_MEMORIA->tamanio, self->socketMSP->socket);
+		int estado_lectura = cpuLeerMemoria(self, unCPU_LEER_MEMORIA->pid, unCPU_LEER_MEMORIA->direccionVirtual, lecturaDeMSP->data, unCPU_LEER_MEMORIA->tamanio, self->socketMSP->socket);
+		if (!(estado_lectura==SIN_ERRORES)){
+			return MENSAJE_DE_ERROR;
+		}
 
-		/*reservo memoria en una variable linea para guardar los 4 caracteres de ESO*/
-
+		//logueo de lectura sin errores
 
 		//Esto es para darse cuenta de que instruccion se trata
 		int encontrado = 0;
@@ -137,21 +163,22 @@ void cpuProcesar_tcb(t_CPU* self){
 					break;
 				case ERROR_POR_DESCONEXION_DE_CONSOLA:
 					log_info(self->loggerCPU, "CPU: Recibe un ERROR_POR_DESCONEXION_DE_CONSOLA");
-					break;
+					return MENSAJE_DE_ERROR;
 				default:
 					log_info(self->loggerCPU, "CPU: Recibe un inesperado al mandar un CPU_TERMINE_UNA_LINEA");
-					exit(-1);
+					return MENSAJE_DE_ERROR;
 				}
 			}
 
 			else{
 				log_info(self->loggerCPU, "CPU: Error al esperar un paquete");
-				exit(-1);
+				return MENSAJE_DE_ERROR;
 			}
 		}
 
 	}//fin while(1)
 
+	return SIN_ERRORES;
 }
 
 void cambioContexto(t_CPU* self){
@@ -191,6 +218,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 	unCPU_LEER_MEMORIA->direccionVirtual = self->tcb->puntero_instruccion;
 
 	log_info(self->loggerCPU, "Se ejecutara la instruccion %s", instrucciones_eso[linea]);
+	t_list* parametros = create_list();
 
 	switch(linea){
 	case LOAD:
@@ -198,7 +226,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 5;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA) <= 0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 			break;
 		}
 
@@ -211,7 +239,12 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 				memcpy(&(registro), paquete_MSP->data, sizeof(char));
 				memcpy(&(numero), (paquete_MSP->data) + sizeof(char),sizeof(int32_t));
 				int reg = determinar_registro(registro);
+				list_add(parametros, registro);
+				list_add(parametros, numero);
+				char* nom_instruccion = "LOAD";
+				ejecucion_instruccion(nom_instruccion, parametros);
 				LOAD_ESO(reg, numero, self->tcb);
+
 			}
 		}
 
@@ -222,7 +255,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 2;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA) <= 0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 			break;
 		}
 
@@ -248,7 +281,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 6;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 			break;
 		}
 
@@ -275,7 +308,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 2;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA) <= 0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 			break;
 		}
 
@@ -300,7 +333,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 2;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA) <= 0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d",self->tcb->pid);
 			break;
 		}
 
@@ -325,7 +358,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 2;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA) <= 0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 			break;
 		}
 
@@ -351,7 +384,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 2;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 			break;
 		}
 
@@ -376,7 +409,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 2;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 			break;
 		}
 
@@ -398,7 +431,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 2;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 			break;
 		}
 
@@ -421,7 +454,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 1;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d",self->tcb->pid);
 			break;
 		}
 
@@ -442,7 +475,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 1;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 			break;
 		}
 
@@ -463,7 +496,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 2;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d",self->tcb->pid);
 			break;
 		}
 
@@ -486,7 +519,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 2;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 			break;
 		}
 
@@ -509,7 +542,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 2;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 			break;
 		}
 
@@ -531,7 +564,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 1;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 			break;
 		}
 
@@ -552,7 +585,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 4;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 			break;
 		}
 
@@ -572,7 +605,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 4;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 			break;
 		}
 
@@ -592,7 +625,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 4;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
-			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 		}
 
 		if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
@@ -611,7 +644,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 5;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 			break;
 		}
 
@@ -636,7 +669,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 5;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 			break;
 		}
 
@@ -659,7 +692,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		unCPU_LEER_MEMORIA->tamanio = 5;
 
 		if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, unCPU_LEER_MEMORIA->tamanio, unCPU_LEER_MEMORIA)<=0){
-			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
+			log_error(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
 			break;
 		}
 
@@ -678,6 +711,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 		break;
 	case XXXX:
 		XXXX_ESO(self->tcb);
+		fin_ejecucion();
 		break;
 	case MALC:
 		if(self->tcb->km==1){
@@ -841,7 +875,7 @@ void ejecutar_instruccion(int linea, t_CPU* self){
 
 	default:
 		log_error(self->loggerCPU, "CPU: error en el switch-case, instruccion no encontrada:\n %d", self->tcb->pid);
-		printf("CPU: error en el switch-case, instruccion no encontrada:\n", self->tcb->pid);
+		printf("CPU: error en el switch-case, instruccion no encontrada:\n %d", self->tcb->pid);
 		break;
 
 		free(unCPU_LEER_MEMORIA);

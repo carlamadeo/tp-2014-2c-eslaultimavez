@@ -19,7 +19,7 @@
 	 * @param  hilo  Estructura conteniendo todos los campos del TCB del hilo.
 	 * @param  quantum  Tamaño del Quantum.
 	 */
-	void comienzo_ejecucion(t_hilo* hilo, uint32_t quantum);
+	void comienzo_ejecucion(t_hilo_log* hilo, uint32_t quantum);
 
 	/**
 	 * Debe invocarse cada vez que un hilo salga de la CPU.
@@ -46,6 +46,6 @@
 
 	//-------------------------------------------------
 	//Retrocompatibilidad con el ejemplo del enunciado:
-	void ejecucion_hilo(t_hilo* hilo, uint32_t quantum);
+	void ejecucion_hilo(t_hilo_log* hilo, uint32_t quantum);
 
 #endif

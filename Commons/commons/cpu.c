@@ -1,9 +1,9 @@
 #include "cpu.h"
 #include <stdio.h>
 
-void comienzo_ejecucion(t_hilo* hilo, uint32_t quantum) {
+void comienzo_ejecucion(t_hilo_log* hilo, uint32_t quantum) {
 	printf("Comienza a ejecutar el hilo { PID: %d, TID: %d }", hilo->pid, hilo->tid);
-	if (hilo->kernel_mode) printf(" en modo kernel");
+	if (hilo->km == 1) printf(" en modo kernel");
 	printf("\n");
 }
 
@@ -38,6 +38,6 @@ void cambio_registros(t_registros_cpu registros) {
 
 //-------------------------------------------------
 //Retrocompatibilidad con el ejemplo del enunciado:
-void ejecucion_hilo(t_hilo* hilo, uint32_t quantum) {
+void ejecucion_hilo(t_hilo_log* hilo, uint32_t quantum) {
 	comienzo_ejecucion(hilo, quantum);
 }

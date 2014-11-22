@@ -14,7 +14,7 @@ typedef struct{
 
 typedef struct{
 	int estado;
-}t_confirmacionEscritura;
+}t_confirmacion;
 
 typedef struct {
 	int pid;
@@ -39,9 +39,16 @@ typedef struct{
 	char lectura[1000];
 }t_datos_deMSPLectura;
 
+typedef struct{
+	int pid;
+	uint32_t direccionVirtual;
+} t_destruirSegmento;
+
+
 t_socket_client* cpuConectarConMPS(t_CPU* self);
 void cpuRealizarHandshakeConMSP(t_CPU* self);
 int cpuCrearSegmento(t_CPU *self, int pid, int tamanio);
+int cpuDestruirSegmento(t_CPU* self);
 int cpuEscribirMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *programaBeso, int tamanioBeso, t_socket* socketNuevoCliente);
 int cpuLeerMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *programa, int tamanio, t_socket* socketNuevoCliente);
 

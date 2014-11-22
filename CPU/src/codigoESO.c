@@ -1,6 +1,8 @@
 #include "codigoESO.h"
 #include "CPU.h"
-
+#include "cpuMSP.h"
+#include "cpuKernel.h"
+#include "commons/protocolStructInBigBang.h"
 
 
 void LOAD_ESO (int registro, int32_t numero, t_TCB_CPU* tcb){
@@ -15,7 +17,22 @@ void GETM_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 
 	if((primer_registro!=-1)&&(segundo_registro!=-1)){
 
-		char *data=malloc(sizeof(int)+sizeof(uint32_t)); /*pid+direccion_logica*/
+
+		t_lectura_MSP * lecturaDeMSP = malloc(sizeof(t_lectura_MSP));
+		t_CPU_LEER_MEMORIA* unCPU_LEER_MEMORIA = malloc(sizeof(t_CPU_LEER_MEMORIA));
+		//se hace el control para saber a donde apuntar dependiendo de si se trata un tcb usuario o kernel...
+		unCPU_LEER_MEMORIA->pid = tcb->pid;
+		unCPU_LEER_MEMORIA->tamanio = sizeof(int32_t);
+		unCPU_LEER_MEMORIA->direccionVirtual = (uint32_t)tcb->registro_de_programacion[1];
+
+		int estado_lectura = cpuLeerMemoria(self, unCPU_LEER_MEMORIA->pid, unCPU_LEER_MEMORIA->direccionVirtual, lecturaDeMSP->data, unCPU_LEER_MEMORIA->tamanio, self->socketMSP->socket);
+
+		//if()
+
+
+		/*
+
+		char *data=malloc(sizeof(int)+sizeof(uint32_t)); //pid+direccion_logica
 		t_paquete_MSP *leer_bytes = malloc(sizeof(t_paquete_MSP));
 		int soffset=0, stmp_size=0;
 		memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
@@ -41,7 +58,7 @@ void GETM_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 				log_info(self->loggerCPU, "CPU: recibiendo contenido de direccion:\n %d", tcb->registro_de_programacion[segundo_registro]);
 				char *contenido = malloc(sizeof(char)*4);
 				memcpy(contenido, paquete_MSP->data, sizeof(char)*4);
-				/*resguardo el contenido en primer registro*/
+				//resguardo el contenido en primer registro
 				tcb->registro_de_programacion[primer_registro]=*contenido;
 			} else {
 				log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado de MSP:\n %d", paquete_MSP->header.type);
@@ -54,9 +71,12 @@ void GETM_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 		}
 
 		free(paquete_MSP);
+
+		*/
 	}
 
 	log_error(self->loggerCPU, "CPU: Error registro de programacion no encontrado %d", tcb->pid);
+
 }
 
 
@@ -404,43 +424,35 @@ void INNN_ESO(t_TCB_CPU* tcb){
 }
 void INNC_ESO(t_TCB_CPU* tcb){
 
-	t_paquete_MSP *pedir_cadena = malloc(sizeof(t_paquete_MSP));
+	t_entrada_estandar* pedir_cadena = malloc(sizeof(t_entrada_estandar));
 
-	char *data=malloc(sizeof(int)+sizeof(uint32_t)); /*pid+(tamanio)registro_de_programacion['B']*/
-	int soffset=0, stmp_size=0;
-	memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
-	memcpy(data + soffset, &(tcb->registro_de_programacion[1]), stmp_size=sizeof(int32_t));
-	soffset+=stmp_size;
-	pedir_cadena->tamanio=soffset;
-	pedir_cadena->data=data;
+	pedir_cadena->pid = tcb->pid;
+	pedir_cadena->tamanio = tcb->registro_de_programacion[1];
+	pedir_cadena->tipo  = 2; //2 es un string
 
 	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR_CHAR,pedir_cadena->tamanio, pedir_cadena->data)<=0){  //22 corresponde a interrupcion
 		log_info(self->loggerCPU, "CPU: Error de ENTRADA_ESTANDAR_CHAR\n %d", tcb->pid);
 
-
+	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR,sizeof(t_entrada_estandar), pedir_cadena)<=0){  //22 corresponde a interrupcion
+		log_info(self->loggerCPU, "CPU: Error de ENTRADA_ESTANDAR_CHAR\n %d", tcb->pid);
 	}
-	free(data);
+
 	free(pedir_cadena);
 
 	t_socket_paquete *paquete_KERNEL = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	if(socket_recvPaquete(self->socketPlanificador->socket, paquete_KERNEL) > 0){
-	if(paquete_KERNEL->header.type == ENTRADA_ESTANDAR_CHAR){
+	if(paquete_KERNEL->header.type == ENTRADA_ESTANDAR){
 			log_info(self->loggerCPU, "CPU: recibiendo CADENA ingresado por consola ", tcb->pid);
-			char *cadena = malloc(sizeof(uint32_t));
-			memcpy(cadena, paquete_KERNEL->data, sizeof(char));
+			char *cadena = malloc(tcb->registro_de_programacion[1]);
+			memcpy(cadena, paquete_KERNEL->data, tcb->registro_de_programacion[1]);
+			int estadoEscritura = cpuEscribirMemoria(self, tcb->pid, tcb->registro_de_programacion[0], cadena, sizeof(tcb->registro_de_programacion[1]), self->socketMSP->socket );
 
-			char *data=malloc(sizeof(int)+sizeof(uint32_t)+ tcb->registro_de_programacion[1]);  /*pid+direccion_logica+datos_a_grabar*/
-			t_paquete_MSP *grabar_byte = malloc(sizeof(t_paquete_MSP));
-			int soffset=0, stmp_size=0;
-			memcpy(grabar_byte, &(tcb->pid), stmp_size=(sizeof(int)));
-			soffset=stmp_size;
-			memcpy(grabar_byte + soffset, &(tcb->registro_de_programacion[0]), stmp_size=sizeof(uint32_t));
-			soffset+=stmp_size;
-			memcpy(grabar_byte + soffset, cadena, stmp_size=tcb->registro_de_programacion[1]);
-			soffset+=stmp_size;
+			if(estadoEscritura == ERROR_POR_SEGMENTATION_FAULT){
+				//loguear
+				//retornar error
+			}
 
-			grabar_byte->tamanio = soffset;
-			grabar_byte->data = data;
+			free(cadena);
 
 			if (socket_sendPaquete(self->socketMSP->socket, ESCRIBIR_MEMORIA, grabar_byte->tamanio, grabar_byte->data)<=0){
 				log_info(self->loggerCPU, "CPU: Error de escritura en MSP\n %d", tcb->pid);
@@ -501,7 +513,7 @@ void OUTC_ESO(t_TCB_CPU* tcb){
 				memcpy(data + soffset, mostrar_cadena, stmp_size=tcb->registro_de_programacion[1]);
 				soffset+=stmp_size;
 
-				if (socket_sendPaquete(self->socketPlanificador->socket, SALIDA_ESTANDAR_CHAR ,soffset, data)<=0){
+				if (socket_sendPaquete(self->socketPlanificador->socket, SALIDA_ESTANDAR ,soffset, data)<=0){
 					log_info(self->loggerCPU, "CPU: Error de SALIDA_ESTANDAR_CHAR\n %d", tcb->pid);
 
 				}
@@ -603,10 +615,9 @@ void CREA_ESO(t_TCB_CPU* tcb){ 	// CREA un hilo hijo de TCB
 }
 void JOIN_ESO(t_TCB_CPU* tcb){
 	t_paquete_MSP *envio_join = malloc(sizeof(t_paquete_MSP));
-	char *data=malloc((sizeof(int)*2)+sizeof(int32_t)); /*pid+tid llamador+(tid a esperar)registro_de_programacion['B']*/
+	char *data=malloc((sizeof(int))+sizeof(int32_t)); /*pid+tid llamador+(tid a esperar)registro_de_programacion['B']*/
 		int soffset=0, stmp_size=0;
-		memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
-		memcpy(data + soffset, &(tcb->tid), stmp_size=(sizeof(int)));
+		memcpy(data, &(tcb->tid), stmp_size=(sizeof(int)));
 		memcpy(data + soffset, &(tcb->registro_de_programacion[0]), stmp_size=sizeof(int32_t));
 		soffset+=stmp_size;
 		envio_join->tamanio=soffset;
