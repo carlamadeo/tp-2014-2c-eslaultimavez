@@ -1,11 +1,8 @@
-#include "Planificador.h"
-#include "kernelConfig.h"
+#include "planificadorMensajesCPU.h"
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "commons/protocolStructInBigBang.h"
-#include "commons/socketInBigBang.h"
 
 void kernel_comenzar_Planificador(t_kernel* self){
 
@@ -36,6 +33,7 @@ void planificadorEscuchaCPU(t_kernel* self){
 	FD_SET(socketEscucha->descriptor, &master);
 	fdmax = socketEscucha->descriptor; /* seguir la pista del descriptor de fichero mayor*/
 
+	int idCPU=0;
 	/* bucle principal*/
 	while(1){
 		read_fds = master;
@@ -57,9 +55,9 @@ void planificadorEscuchaCPU(t_kernel* self){
 
 					if(i == socketEscucha->descriptor){  //gestionar nuevas conexiones
 						if((socketNuevaConexion = socket_acceptClient(socketEscucha))==0) {
-							log_error(self->loggerPlanificador, "Loader: Error en el accep  Planificador");
+							log_error(self->loggerPlanificador, "Planificador: Error en el accep  Planificador");
 						}else  {
-							log_debug(self->loggerPlanificador, "Loader: ACCEP completo! ");
+							log_debug(self->loggerPlanificador, "Planificador: Accept completo! ");
 							atenderNuevaConexionCPU(self, socketNuevaConexion, &master, &fdmax);
 						}
 
@@ -86,14 +84,34 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 		close(socketNuevoCliente->descriptor);
 	}else{
 		//Si recibe una señar de la CPU hace el
-		if (socket_sendPaquete(socketNuevoCliente, HANDSHAKE_PLANIFICADOR, 0, NULL) >= 0)
-			log_info(self->loggerPlanificador, "Planificador: envia HANDSHAKE_LOADER.");
+		if (socket_sendPaquete(socketNuevoCliente, HANDSHAKE_PLANIFICADOR, 0, NULL) >= 0){
+			log_info(self->loggerPlanificador, "Planificador: envia HANDSHAKE_PLANIFICADOR.");
+
+			sem_wait(&mutex_cpuLibre);
+			agregarEnListaDeCPU();
+			sem_post(&mutex_cpuLibre);
+
+		}
+
 		else
-			log_error(self->loggerPlanificador, "Planificador: Error en el HANDSHAKE_LOADER con la CPU.");
+			log_error(self->loggerPlanificador, "Planificador: Error en el HANDSHAKE_PLANIFICADOR con la CPU.");
 	}
 
+	//Se actualiza del select
+	FD_SET(socketNuevoCliente->descriptor, master); /*añadir al conjunto maestro*/
+	if (socketNuevoCliente->descriptor > *fdmax) {
+		log_info(self->loggerPlanificador, "Se actualiza y añade el conjunto maestro %d", socketNuevoCliente->descriptor);
+		*fdmax = socketNuevoCliente->descriptor; /*actualizar el máximo*/
+	}
+
+
+	//esto Cambiar a otra funcion!!!!
+
 	//se tiene que mandar un TCB
-	t_TCB_Kernel* unTCB = test_TCB();//esta funcion tiene que recibir un TCB del LOADER
+
+	t_programaEnKernel* unTCBCOLA = obtenerTCBdeReady(self);
+	t_TCB_Kernel* unTCB = malloc(sizeof(t_TCB_Kernel));
+	unTCB = unTCBCOLA->programaTCB;
 
 	socket_sendPaquete(socketNuevoCliente, TCB_NUEVO,sizeof(t_TCB_Kernel), unTCB);
 	log_info(self->loggerPlanificador, "Planificador: envia TCB_NUEVO.");
@@ -102,6 +120,8 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 
 	//mientras no termine los quamtum o no alla alla interrupcion
 
+	//si se desconecta una CPU, el le tiene que avisar a la consola
+	//con sus correspondiente hijos
 
 	while (self->quamtum>0){
 		self->quamtum--;
@@ -111,16 +131,29 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 
 		switch(paqueteCPU->header.type){
 		case CPU_TERMINE_UNA_LINEA:
-			if (self->quamtum>0){
-				socket_sendPaquete(socketNuevoCliente, CPU_SEGUI_EJECUTANDO,0, NULL);
-				log_info(self->loggerPlanificador, "Planificador: envia CPU_SEGUI_EJECUTANDO.");
-
-			}else{
-				socket_sendPaquete(socketNuevoCliente, KERNEL_FIN_TCB_QUANTUM,0, NULL);
-				log_info(self->loggerPlanificador, "Planificador: envia KERNEL_FIN_TCB_QUANTUM.");
-			}
+			ejecutar_CPU_TERMINE_UNA_LINEA();
 			break;
-
+		case INTERRUPCION:
+			ejecutar_UNA_INTERRUPCION();
+			break;
+		case ENTRADA_ESTANDAR:
+			ejecutar_UNA_ENTRADA_STANDAR();
+			break;
+		case SALIDA_ESTANDAR:
+			ejecutar_UNA_SALIDA_ESTANDAR();
+			break;
+		case CREAR_HILO:
+			ejecutar_UN_CREAR_HILO();
+			break;
+		case JOIN_HILO:
+			ejecutar_UN_JOIN_HILO();
+			break;
+		case BLOK_HILO:
+			ejecutar_UN_BLOK_HILO();
+			break;
+		case WAKE_HILO:
+			ejecutar_UN_WAKE_HILO();
+			break;
 		default:
 			log_error(self->loggerPlanificador, "Planificador:Conexión cerrada con CPU.");
 			FD_CLR(socketNuevoCliente->descriptor, master);
@@ -157,6 +190,22 @@ t_cpu* obtenerCPUSegunDescriptor(t_kernel* self,int descriptor){
 	return cpuBuscado;
 }
 
+
+t_programaEnKernel* obtenerTCBdeReady(t_kernel* self){
+
+	sem_wait(&mutex_new);
+	t_programaEnKernel* programa =list_remove(cola_new, 0); //SE REMUEVE EL PRIMER PROGRAMA DE NEW
+	sem_post(&mutex_new);
+
+	sem_wait(&mutex_ready);
+	list_add(cola_ready,programa);// SE AGREGA UN PROGRAMA EN READY
+	sem_post(&mutex_ready);
+
+
+	log_info(self->loggerPlanificador," Planificador: Obtiene un elemento de la Cola Ready con PID: %d y TID:%d" ,programa->programaTCB->pid,programa->programaTCB->tid );
+	return programa;
+
+}
 t_TCB_Kernel* test_TCB (){
 	t_TCB_Kernel* test_TCB = malloc(sizeof(t_TCB_Kernel));
 
@@ -172,4 +221,10 @@ t_TCB_Kernel* test_TCB (){
 
 
 	return test_TCB;
+}
+
+void finalizarProgramaEnPlanificacion(t_programaEnKernel* programa){
+	sem_wait(&mutex_exit);//BLOQUEO LISTA DE EXIT
+	list_add(cola_exit, programa);
+	sem_post(&mutex_exit);
 }

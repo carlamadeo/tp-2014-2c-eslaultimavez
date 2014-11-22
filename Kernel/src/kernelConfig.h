@@ -2,10 +2,6 @@
 #ifndef KERNELCONFIG_H_
 #define KERNELCONFIG_H_
 #include "Kernel.h"
-#include "commons/socketInBigBang.h"
-#include "commons/log.h"
-#include "commons/config.h"
-
 #include <stdbool.h>
 
 bool cargarConfiguracionKernel(char *config_file, t_kernel* self, t_config *configKernel);

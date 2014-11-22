@@ -1,8 +1,6 @@
 
 #include "Loader.h"
-#include "kernelConfig.h"
 #include "kernelMSP.h"
-#include "commons/protocolStructInBigBang.h"
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
@@ -24,7 +22,7 @@ void kernel_comenzar_Loader(t_kernel* self){
 void loaderEscuchaProgramaBeso(t_kernel* self){
 
 	t_socket *socketEscucha, *socketNuevaConexion;
-	listaDeProgramas = list_create();
+	listaDeProgramasDisponibles = list_create();
 	fd_set master;   //conjunto maestro de descriptores de fichero
 	fd_set read_fds; //conjunto temporal de descriptores de fichero para select()
 	int fdmax,i;
@@ -84,8 +82,8 @@ void loaderEscuchaProgramaBeso(t_kernel* self){
 					else{ //sino no es una nueva conexion busca un programa en la lista
 
 						log_debug(self->loggerLoader, "Loader: Mensaje del Programa descriptor = %d.", i);
-						t_programa* programaCliente = obtenerProgramaConsolaSegunDescriptor(self,i);
-						log_debug(self->loggerLoader, "Loader: Mensaje del Programa PID = %d.", programaCliente->programaTCB.pid);
+						t_programaEnKernel* programaCliente = obtenerProgramaConsolaSegunDescriptor(self,i);
+						log_debug(self->loggerLoader, "Loader: Mensaje del Programa PID = %d.", programaCliente->programaTCB->pid);
 						atienderProgramaConsola(self,programaCliente, &master);
 					}
 				}//fin del if FD_ISSET
@@ -99,17 +97,17 @@ void loaderEscuchaProgramaBeso(t_kernel* self){
 
 
 //Busca una conexion ya existente
-t_programa* obtenerProgramaConsolaSegunDescriptor(t_kernel* self,int descriptor){
+t_programaEnKernel* obtenerProgramaConsolaSegunDescriptor(t_kernel* self,int descriptor){
 
 	log_info(self->loggerLoader,"Loader: Obteniendo Programa descriptor buscado %d", descriptor);
 
-	bool _esProgramaDescriptor(t_programa* programa) {
+	bool _esProgramaDescriptor(t_programaEnKernel* programa) {
 		return (programa->socketProgramaConsola->descriptor == descriptor);
 	}
 
-	t_programa* programaBuscado = list_find(listaDeProgramas, (void*)_esProgramaDescriptor);
+	t_programaEnKernel* programaBuscado = list_find(listaDeProgramasDisponibles, (void*)_esProgramaDescriptor);
 
-	log_info(self->loggerLoader,"Loader: Se encontro programa %d", programaBuscado->programaTCB.pid);
+	log_info(self->loggerLoader,"Loader: Se encontro programa %d", programaBuscado->programaTCB->pid);
 
 	return programaBuscado;
 }
@@ -121,7 +119,7 @@ t_programa* obtenerProgramaConsolaSegunDescriptor(t_kernel* self,int descriptor)
 //En esta funcion hay que definir bien las cosas por eso la comente
 //ver que pasa cuando se quiere trabajar con un cliente pre existen
 //solo se me ocurre que es para detectar la desconexion de un programaBESO nada mas!
-void atienderProgramaConsola(t_kernel* self,t_programa* programa, fd_set* master){
+void atienderProgramaConsola(t_kernel* self,t_programaEnKernel* programa, fd_set* master){
 	/*
 	t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 
@@ -188,7 +186,24 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 		t_TCB_Kernel* unTCBenLoader = loaderCrearTCB(self, programaBeso, socketNuevoCliente, sizePrograma);
 		log_info(self->loggerLoader, "Loader: TCB completo.");
 
-		//LUEGO EN ESTA PARTE PONERLO AL FINAL DE LA COLA NEW
+		//al TCB se lo agrega al final de la Cola NEW con su socket correspondiente
+		t_programaEnKernel *unPrograma = malloc(sizeof(t_programaEnKernel));
+		unPrograma->programaTCB = unTCBenLoader;
+		unPrograma->socketProgramaConsola = socketNuevoCliente;
+
+		sem_wait(&mutex_new);
+		list_add(cola_new,unPrograma);
+		sem_post(&mutex_new);
+		log_info(self->loggerLoader,"Loader: Agrego un elemento a la Cola New con el PID:%d  TID:%d ", unTCBenLoader->pid, unTCBenLoader->tid);
+
+		//Luego se tiene que actualizar las lista que se usan en el select
+		FD_SET(socketNuevoCliente->descriptor, master); /*añadir al conjunto maestro*/
+		if (socketNuevoCliente->descriptor > *fdmax) {
+			log_info(self->loggerLoader, "Se actualiza y añade el conjunto maestro %d", socketNuevoCliente->descriptor);
+			*fdmax = socketNuevoCliente->descriptor; /*actualizar el máximo*/
+		}
+
+
 
 	}
 
@@ -233,40 +248,40 @@ void loaderValidarEscrituraEnMSP(t_kernel* self, t_socket* socketNuevoCliente, i
 
 	switch(unaRespuesta){
 
-		case ERROR_POR_TAMANIO_EXCEDIDO:
-			if (socket_sendPaquete(socketNuevoCliente, ERROR_POR_TAMANIO_EXCEDIDO, 0, NULL) >= 0)
-				log_info(self->loggerLoader, "Loader: Envia a Consola: ERROR_POR_TAMANIO_EXCEDIDO");
-			else
-				log_error(self->loggerLoader, "Loader: Error al enviar a Consola: ERROR_POR_TAMANIO_EXCEDIDO");
-			break;
-		case ERROR_POR_MEMORIA_LLENA:
-			if (socket_sendPaquete(socketNuevoCliente, ERROR_POR_MEMORIA_LLENA, 0, NULL) >= 0)
-				log_info(self->loggerLoader, "Loader: Envia a Consola: ERROR_POR_MEMORIA_LLENA");
-			else
-				log_error(self->loggerLoader, "Loader: Error al enviar a Consola: ERROR_POR_TAMANIO_EXCEDIDO");
-			break;
-		case ERROR_POR_NUMERO_NEGATIVO:
-			if (socket_sendPaquete(socketNuevoCliente, ERROR_POR_NUMERO_NEGATIVO, 0, NULL) >= 0)
-				log_info(self->loggerLoader, "Loader: Envia a Consola: ERROR_POR_NUMERO_NEGATIVO");
-			else
-				log_error(self->loggerLoader, "Loader: Error al enviar a Consola: ERROR_POR_TAMANIO_EXCEDIDO");
-			break;
-		case ERROR_POR_SEGMENTO_INVALIDO:
-			if (socket_sendPaquete(socketNuevoCliente, ERROR_POR_SEGMENTO_INVALIDO, 0, NULL) >= 0)
-				log_info(self->loggerLoader, "Loader: Envia a Consola: ERROR_POR_SEGMENTO_INVALIDO");
-			else
-				log_error(self->loggerLoader, "Loader: Error al enviar a Consola: ERROR_POR_TAMANIO_EXCEDIDO");
-			break;
-		case ERROR_POR_SEGMENTATION_FAULT:
-			if (socket_sendPaquete(socketNuevoCliente, ERROR_POR_TAMANIO_EXCEDIDO, 0, NULL) >= 0)
-				log_info(self->loggerLoader, "Loader: Envia a Consola: ERROR_POR_SEGMENTATION_FAULT");
-			else
-				log_error(self->loggerLoader, "Loader: Error al enviar a Consola: ERROR_POR_SEGMENTATION_FAULT");
-			break;
-		default:
-			log_info(self->loggerLoader, "Loader: Escribio en la MSP, correctamente");
-			break;
+	case ERROR_POR_TAMANIO_EXCEDIDO:
+		if (socket_sendPaquete(socketNuevoCliente, ERROR_POR_TAMANIO_EXCEDIDO, 0, NULL) >= 0)
+			log_info(self->loggerLoader, "Loader: Envia a Consola: ERROR_POR_TAMANIO_EXCEDIDO");
+		else
+			log_error(self->loggerLoader, "Loader: Error al enviar a Consola: ERROR_POR_TAMANIO_EXCEDIDO");
+		break;
+	case ERROR_POR_MEMORIA_LLENA:
+		if (socket_sendPaquete(socketNuevoCliente, ERROR_POR_MEMORIA_LLENA, 0, NULL) >= 0)
+			log_info(self->loggerLoader, "Loader: Envia a Consola: ERROR_POR_MEMORIA_LLENA");
+		else
+			log_error(self->loggerLoader, "Loader: Error al enviar a Consola: ERROR_POR_TAMANIO_EXCEDIDO");
+		break;
+	case ERROR_POR_NUMERO_NEGATIVO:
+		if (socket_sendPaquete(socketNuevoCliente, ERROR_POR_NUMERO_NEGATIVO, 0, NULL) >= 0)
+			log_info(self->loggerLoader, "Loader: Envia a Consola: ERROR_POR_NUMERO_NEGATIVO");
+		else
+			log_error(self->loggerLoader, "Loader: Error al enviar a Consola: ERROR_POR_TAMANIO_EXCEDIDO");
+		break;
+	case ERROR_POR_SEGMENTO_INVALIDO:
+		if (socket_sendPaquete(socketNuevoCliente, ERROR_POR_SEGMENTO_INVALIDO, 0, NULL) >= 0)
+			log_info(self->loggerLoader, "Loader: Envia a Consola: ERROR_POR_SEGMENTO_INVALIDO");
+		else
+			log_error(self->loggerLoader, "Loader: Error al enviar a Consola: ERROR_POR_TAMANIO_EXCEDIDO");
+		break;
+	case ERROR_POR_SEGMENTATION_FAULT:
+		if (socket_sendPaquete(socketNuevoCliente, ERROR_POR_TAMANIO_EXCEDIDO, 0, NULL) >= 0)
+			log_info(self->loggerLoader, "Loader: Envia a Consola: ERROR_POR_SEGMENTATION_FAULT");
+		else
+			log_error(self->loggerLoader, "Loader: Error al enviar a Consola: ERROR_POR_SEGMENTATION_FAULT");
+		break;
+	default:
+		log_info(self->loggerLoader, "Loader: Escribio en la MSP, correctamente");
+		break;
 
-		}// fin del switch
+	}// fin del switch
 
 }

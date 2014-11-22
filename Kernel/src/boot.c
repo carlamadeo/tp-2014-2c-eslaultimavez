@@ -1,10 +1,7 @@
 #include "boot.h"
 #include "Loader.h"
 #include "kernelMSP.h"
-#include "Kernel.h"
 #include "kernelConfig.h"
-#include "commons/socketInBigBang.h"
-#include "commons/protocolStructInBigBang.h"
 #include <stdlib.h>
 #include <errno.h>
 
@@ -35,6 +32,13 @@ void crearTCBKERNEL(t_kernel* self){
 	self->tcbKernel->registro_de_programacion[1] = 0;
 	self->tcbKernel->registro_de_programacion[2] = 0;
 	self->tcbKernel->registro_de_programacion[3] = 0;
+
+
+
+	sem_wait(&mutex_block);
+	list_add(cola_block,self->tcbKernel);
+	sem_post(&mutex_block);
+	log_info(self->loggerLoader,"Boot: Agrego un elemento a la Cola Block con el PID:%d  TID:%d ", self->tcbKernel->pid, self->tcbKernel->tid);
 
 	//return programaEnElKernel;
 }

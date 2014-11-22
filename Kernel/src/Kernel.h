@@ -5,13 +5,15 @@
 #include <arpa/inet.h>
 #include <commons/collections/list.h>
 #include "commons/log.h"
+#include "commons/config.h"
 #include "commons/socketInBigBang.h"
-
+#include "commons/protocolStructInBigBang.h"
 
 /*----------------------Estructuras del Kernel----------------------------------------*/
 #define MAXDATASIZE 1024
 #define PATH_CONFIG "archivoConfiguracion.cfg"
 #define PATH_LOG "logs/trace.log"
+
 
 typedef struct {
 	int pid;
@@ -43,89 +45,29 @@ typedef struct {
 } t_kernel;
 
 
-
-
-typedef struct {
-        int id;
-        t_socket* socket;
-        int pid;
-} t_cpu;
-
-
-typedef struct {
-		t_TCB_Kernel TCB;
-        int tamanioEnBytes;
-        t_socket* socket;
-} t_programaEnKernel;
-
-
-typedef struct {
-		t_TCB_Kernel TCB;
-        t_socket* socket;
-        int motivo;
-        char * bloqueado;
-} t_block_proceso;
-
-
-
+//es la que comparte el loader y el planificador, con los programas cargados
 t_list* cola_new;
-t_list* cola_ready;
-t_list* cola_exec;
+sem_t mutex_new;         // Mutex cola New
+t_list* listaDeProgramasDisponibles;
+
+//La necesita el Boot
 t_list* cola_block;
-t_list* cola_exit;
+sem_t mutex_block;      // Mutex cola Block
 
-
+typedef struct {
+	t_TCB_Kernel* programaTCB;
+	t_socket* socketProgramaConsola;
+} t_programaEnKernel;
 
 int iretThread;
 
-// Semaforos
-sem_t sem_multiprog;    // Contador de la multiprogramacion (Ready + Exec + Block)
-sem_t sem_new;          // Contador de PCBs en New
-sem_t sem_ready;        // Contador de PCBs en Ready
-sem_t sem_exit;         // Contador de PCBs en Exit
-sem_t sem_cpuLibre;     // Contador de CPUs libres
-sem_t sem_cpuExec;      // Contador de CPUs en ejecucion
-sem_t cola_io;
-
-// Mutexs
-sem_t mutex_new;         // Mutex cola New
-sem_t mutex_ready;      // Mutex cola Ready
-sem_t mutex_exec;       // Mutex cola Exec
-sem_t mutex_exit;       // Mutez cola Exit
-sem_t mutex_block;      // Mutez cola Block
-sem_t mutex_cpuLibre;   // Mutex cola de CPUs libres
-sem_t mutex_cpuExec;    // Mutex cola de CPUs procesando
-sem_t mutex_semaforos;  // Mutex cola de Semaforos
-sem_t mutex_pedidos;    // Mutex cola de Semaforos
-t_list* listaDeCPUExec, *listaDeCPULibres, *listaDeIO, *listaDeGlobales;
-
-
-
-int cantColaNew;
-int cantColaReady;
-int cantColaExec;
-int cantColaExit;
-int cantColaBlock;
-
-
-typedef char* t_variable_compartida;
-
-/*---------------------- Funciones del Kernel 6 -----------------------------------------------*/
-/*---------------------- Funciones del Kernel 6 -----------------------------------------------*/
-
-int kernel_imprimirListas();
-void kernel_errorAlPrograma(t_socket* socket, int error);
-void kernel_finalizarPrograma2(t_programaEnKernel* programaEnKernel);
-void kernel_ponerCpuEnLibre(int descriptor);
 
 pthread_t LoaderHilo, PlanificadorHilo;
 
 void kernel_crearColaDeEstados(void);
 int  kernel_escuchar_conexiones(void);
-
 void verificar_argumentosKernel(int argc, char* argv[]);
 
-void finalizarProgramaEnPlanificacion(t_programaEnKernel* programa);
 
 
 #endif /* KERNEL_H_ */

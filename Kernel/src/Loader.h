@@ -1,11 +1,10 @@
 #ifndef LOADER_H_
 #define LOADER_H_
 
-#include "Kernel.h"
 #include "kernelConfig.h"
 
 pthread_t programaBesoHilo, conexionConMSPHilo;
-t_list* listaDeProgramas;
+
 
 typedef struct{
 	char *codigoBeso;
@@ -17,16 +16,11 @@ typedef struct{
 }t_msp_DireccionBase;
 
 
-typedef struct {
-	t_TCB_Kernel programaTCB;
-	t_socket* socketProgramaConsola;
-} t_programa;
-
 void kernel_comenzar_Loader(t_kernel* self);
 
-t_programa* obtenerProgramaConsolaSegunDescriptor(t_kernel* self,int descriptor);
+t_programaEnKernel* obtenerProgramaConsolaSegunDescriptor(t_kernel* self,int descriptor);
 
-void atienderProgramaConsola(t_kernel* self,t_programa* programa, fd_set* master);
+void atienderProgramaConsola(t_kernel* self,t_programaEnKernel* programa, fd_set* master);
 
 void atenderNuevaConexionPrograma(t_kernel* self,t_socket* socketNuevoCliente, fd_set* master, int* fdmax);
 
