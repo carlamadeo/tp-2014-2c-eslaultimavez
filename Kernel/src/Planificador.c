@@ -110,11 +110,15 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 	//se tiene que mandar un TCB
 
 	t_programaEnKernel* unTCBCOLA = obtenerTCBdeReady(self);
-	t_TCB_Kernel* unTCB = malloc(sizeof(t_TCB_Kernel));
-	unTCB = unTCBCOLA->programaTCB;
 
-	socket_sendPaquete(socketNuevoCliente, TCB_NUEVO,sizeof(t_TCB_Kernel), unTCB);
-	log_info(self->loggerPlanificador, "Planificador: envia TCB_NUEVO.");
+	if (unTCBCOLA!= NULL){
+		t_TCB_Kernel* unTCB = malloc(sizeof(t_TCB_Kernel));
+		unTCB = unTCBCOLA->programaTCB;
+
+		socket_sendPaquete(socketNuevoCliente, TCB_NUEVO,sizeof(t_TCB_Kernel), unTCB);
+		log_info(self->loggerPlanificador, "Planificador: envia TCB_NUEVO.");
+
+	}
 	free(paquete);
 
 
@@ -193,18 +197,20 @@ t_cpu* obtenerCPUSegunDescriptor(t_kernel* self,int descriptor){
 
 t_programaEnKernel* obtenerTCBdeReady(t_kernel* self){
 
-	sem_wait(&mutex_new);
-	t_programaEnKernel* programa =list_remove(cola_new, 0); //SE REMUEVE EL PRIMER PROGRAMA DE NEW
-	sem_post(&mutex_new);
+	if (list_size(cola_new)>0){
+		sem_wait(&mutex_new);
+		t_programaEnKernel* programa =list_remove(cola_new, 0); //SE REMUEVE EL PRIMER PROGRAMA DE NEW
+		sem_post(&mutex_new);
 
-	sem_wait(&mutex_ready);
-	list_add(cola_ready,programa);// SE AGREGA UN PROGRAMA EN READY
-	sem_post(&mutex_ready);
+		sem_wait(&mutex_ready);
+		list_add(cola_ready,programa);// SE AGREGA UN PROGRAMA EN READY
+		sem_post(&mutex_ready);
 
+		log_info(self->loggerPlanificador," Planificador: Obtiene un elemento de la Cola Ready con PID: %d y TID:%d" ,programa->programaTCB->pid,programa->programaTCB->tid );
+		return programa;
+	}
 
-	log_info(self->loggerPlanificador," Planificador: Obtiene un elemento de la Cola Ready con PID: %d y TID:%d" ,programa->programaTCB->pid,programa->programaTCB->tid );
-	return programa;
-
+	return NULL;
 }
 t_TCB_Kernel* test_TCB (){
 	t_TCB_Kernel* test_TCB = malloc(sizeof(t_TCB_Kernel));

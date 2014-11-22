@@ -10,25 +10,21 @@
 //pthread_rwlock_t rw_estructuras;
 //pthread_rwlock_t rw_memoria;
 
-t_socket *socketKernel;
-sem_t mutex;
-t_list* lista_procesos;
-t_list* cola_paquetes;
+typedef struct {
+	t_socket* socketMSP;
+	t_socket* socketClienteCPU;
+	t_socket* socketClienteKernel;
+} t_MSP;
 
-t_socket *socketKernel;
-t_socket *socketCpu;
-struct sockaddr_in direccionCliente;
-struct sockaddr_in kernelDireccion;
-struct sockaddr_in cpuDireccion;
 
-pthread_t mspHilo;
 pthread_t* mspHiloCpus; // se tiene un vector de los hilos que hay que ir sacando/poniendo dependiendo de las cpus
-pthread_t mspHiloKernel;
+pthread_t* mspHiloKernel;
 pthread_t mspConsolaHilo;
-pthread_t hiloConexion[10];//Ver el maximo de hilos si definimos en archivo configuracion o no. 
+//pthread_t hiloConexion[100];//Ver el maximo de hilos si definimos en archivo configuracion o no.
+t_list* listaCPUs;
 
 void mspLanzarhiloMSPCONSOLA();
-int mspLanzarhiloConexiones();
-void *mspRealizarHandshakes(t_socket *socketNuevaConexion);
+void mspLanzarConexiones();
+
 
 #endif /* MSP_H_ */

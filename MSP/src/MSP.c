@@ -42,24 +42,77 @@ int main(int argc, char *argv[]){
 		return EXIT_SUCCESS;
 	}
 
+	//IMPORTANTE CONSOLAAAAAAAAA!!!!
 	//	int mspConsolathreadNum = pthread_create(&mspConsolaHilo, NULL, &mspLanzarhiloMSPCONSOLA, NULL);
 	//	if(mspConsolathreadNum) {
 	//		log_error(MSPlogger, "Error - pthread_create() return code: %d\n", mspConsolathreadNum);
 	//		exit(EXIT_FAILURE);
 	//	}
 
-	int mspHiloNum = pthread_create(&mspHilo, NULL, (void*) mspLanzarhiloConexiones, NULL);
-	if(mspHiloNum) {
-		log_error(MSPlogger, "Error - pthread_create() return code: %d\n", mspHiloNum);
-		exit(EXIT_FAILURE);
+
+	//IMPORTANTE HILO KERNEL
+
+	log_info(MSPlogger, "Creando un hilo escucha...");
+	t_MSP* self = malloc(sizeof(t_MSP));
+
+	self->socketMSP = socket_createServer(puertoMSP);
+
+	if (self->socketMSP == NULL)
+		log_error(MSPlogger, "MSP: Error al crear socket para el kernel.");
+
+	if(!socket_listen(self->socketMSP))
+		log_error(MSPlogger, "MSP: Error al poner a escuchar al Loader: %s", strerror(errno));
+
+	else
+		log_info(MSPlogger, "MSP: Escuchando conexiones entrantes en el puerto: %d",puertoMSP);
+
+	self->socketClienteKernel = socket_acceptClient(self->socketMSP);
+
+	t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+	socket_recvPaquete(self->socketClienteKernel, paquete);
+	//printf("MSP: Recibe HANDSHAKE_KERNEL == %d \n", paquete->header.type );
+
+
+	if(paquete->header.type == HANDSHAKE_KERNEL){
+		//mspLanzarHiloKernel(self->socketClienteKernel); //Preguntar porque cuando se pone un hilo rompe!
+		int mspHiloKernelInt = pthread_create(&mspHiloKernel, NULL, (void *)mspLanzarHiloKernel, self->socketClienteKernel);
+		if(mspHiloKernelInt){
+			log_error(MSPlogger, "Error - pthread_create() return code: %d\n", mspHiloKernelInt);
+			exit(EXIT_FAILURE);
+		}
 	}
+	else
+		log_error(MSPlogger, "MSP: Se recibio un Handshake inseperado con el kernel");
 
-	pthread_rwlock_init(&rw_memoria, NULL);
+	int contadorCpu = 0;
 
-	pthread_join(mspHilo, NULL);
+	while(1){
+
+		self->socketClienteCPU = socket_acceptClient(self->socketMSP);
+		contadorCpu++;
+
+		t_socket_paquete *paqueteCPU = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+		socket_recvPaquete(self->socketClienteCPU, paqueteCPU);
+
+		if(paqueteCPU->header.type == HANDSHAKE_CPU){
+			int mspHiloCPUInt = pthread_create(&mspHiloCpus[contadorCpu], NULL, (void *)mspLanzarHiloCPU, self->socketClienteCPU);
+			if(mspHiloCPUInt){
+				log_error(MSPlogger, "Error - pthread_create() return code: %d\n", mspHiloCPUInt);
+				exit(EXIT_FAILURE);
+			}
+
+			log_debug(MSPlogger, "MSP: cantidad de CPUs conectadas: %d",contadorCpu);
+		}
+		else
+			log_error(MSPlogger, "MSP: Se recibio un Handshake inseperado con el cpu");
+	}//fin del while
+
+
+	//mspLanzarhiloConexiones();//Jorge
+
+
 	log_info(MSPlogger, "Finalizando la consola de la MSP...");
 	//pthread_join(mspConsolathreadNum, NULL);
-
 	destruirConfiguracionMSP();
 
 	log_destroy(MSPlogger);
@@ -68,58 +121,3 @@ int main(int argc, char *argv[]){
 }
 
 
-int mspLanzarhiloConexiones(){
-
-	int i = 1;
-	
-	t_socket *socketEscucha, *socketNuevaConexion;
-
-	log_info(MSPlogger, "Creando un hilo escucha...");
-
-
-	if (!(socketEscucha = socket_createServer(puertoMSP))) {
-		log_error(MSPlogger, "Error al crear socket Escucha: %s.", strerror(errno));
-		return EXIT_FAILURE;
-	}
-
-	if(!socket_listen(socketEscucha)) {
-		log_error(MSPlogger, "Error al poner a escuchar descriptor: %s.", strerror(errno));
-		return EXIT_FAILURE;
-	}
-
-	log_info(MSPlogger, "Escuchando conexiones entrantes de la MSP en el Puerto: %d y en el descriptor: %d ",puertoMSP, socketEscucha->descriptor );
-
-	while(1){
-
-		socketNuevaConexion = socket_acceptClient(socketEscucha);
-		int mspHiloConexion = pthread_create(&hiloConexion[i], NULL, mspRealizarHandshakes, socketNuevaConexion);
-		if(mspHiloConexion){
-			log_error(MSPlogger, "Error - pthread_create() return code: %d\n", mspHiloConexion);
-			exit(EXIT_FAILURE);
-		}
-		i++;
-
-	}
-
-	return 0;
-}
-
-
-void *mspRealizarHandshakes(t_socket *socketNuevaConexion){
-
-	t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-	socket_recvPaquete(socketNuevaConexion, paquete);
-
-	if(paquete->header.type == HANDSHAKE_KERNEL){
-		log_debug(MSPlogger, "Se establecio una nueva conexion con el Kernel, creando el hilo...");
-		mspLanzarHiloKernel(socketNuevaConexion);
-	}
-
-	else if(paquete->header.type == HANDSHAKE_CPU){
-		log_debug(MSPlogger, "Se establecio una nueva conexion de CPU, creando el hilo...");
-		mspLanzarHiloCPU(socketNuevaConexion);
-	}
-
-	return NULL ;
-
-}

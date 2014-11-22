@@ -33,7 +33,7 @@ void realizarHandshakeConMSP(t_kernel *self) {
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
 	if (socket_sendPaquete(self->socketMSP->socket, HANDSHAKE_KERNEL, 0, NULL) > 0)
-		log_info(self->loggerKernel, "Kernel se presenta a la MSP!");
+		log_info(self->loggerKernel, "Kernel: Envia HANDSHAKE_KERNEL ");
 
 
 	if (socket_recvPaquete(self->socketMSP->socket, paquete) >= 0) {
@@ -62,7 +62,6 @@ int kernelCrearSegmento(t_kernel *self, int pid, int tamanio){
 
 		if(socket_recvPaquete(self->socketMSP->socket, paquete) >= 0){
 
-			printf("Numero: %d \n",paquete->header.type);
 			if(paquete->header.type == CREAR_SEGMENTO){
 				datosRecibidos = (t_datos_deMSP *) (paquete->data);
 				log_info(self->loggerKernel, "Kernel: Se recibio de la MSP la direccion base %0.8p ", datosRecibidos->direccionBase);
