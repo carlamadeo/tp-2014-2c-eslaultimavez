@@ -6,8 +6,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-int unPIDGlobal = 0;
-int unTIDGlobal = 0;
+int unPIDGlobal = 1;
+int unTIDGlobal = 1;
 
 
 void kernel_comenzar_Loader(t_kernel* self){
@@ -237,6 +237,7 @@ t_TCB_Kernel* loaderCrearTCB(t_kernel* self, char *programaBeso, t_socket* socke
 
 	unTCB->base_stack = kernelCrearSegmento(self, unTCB->pid, self->tamanioStack);
 	unTCB->cursor_stack = unTCB->base_stack;
+	log_info(self->loggerLoader,"Loader: La direccion de base de stack es: %0.8p para el PID: %d y TID:%d", self->tcbKernel->base_stack, self->tcbKernel->pid, self->tcbKernel->tid);
 	unTCB->registro_de_programacion[0]=0;
 	unTCB->registro_de_programacion[1]=0;
 	unTCB->registro_de_programacion[2]=0;

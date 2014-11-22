@@ -62,6 +62,7 @@ int kernelCrearSegmento(t_kernel *self, int pid, int tamanio){
 
 		if(socket_recvPaquete(self->socketMSP->socket, paquete) >= 0){
 
+			printf("Numero: %d \n",paquete->header.type);
 			if(paquete->header.type == CREAR_SEGMENTO){
 				datosRecibidos = (t_datos_deMSP *) (paquete->data);
 				log_info(self->loggerKernel, "Kernel: Se recibio de la MSP la direccion base %0.8p ", datosRecibidos->direccionBase);

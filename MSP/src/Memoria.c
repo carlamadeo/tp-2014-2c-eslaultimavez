@@ -269,7 +269,7 @@ int mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tam
 
 	//Compruebo que el segmento corresponda a ese PID
 	if(segmento == NULL){
-		log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
+		log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault por segmento", direccionVirtual, pid);
 		return ERROR_POR_SEGMENTATION_FAULT;
 	}
 
@@ -283,7 +283,7 @@ int mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tam
 
 	//Compruebo que la pagina pertenezca al segmento
 	if(pagina == NULL){
-		log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault", direccionVirtual, pid);
+		log_error(MSPlogger, "La direccion virtual %0.8p no corresponde al espacio de direcciones del PID %d. Segmentation Fault, por pagina", direccionVirtual, pid);
 		return ERROR_POR_SEGMENTATION_FAULT;
 	}
 

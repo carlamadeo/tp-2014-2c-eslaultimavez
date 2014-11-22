@@ -25,8 +25,16 @@ void crearTCBKERNEL(t_kernel* self){
 
 	bootEscribirMemoria(self, self->tcbKernel->pid, self->tcbKernel->base_segmento_codigo, codigoSC, self->tcbKernel->tamanio_segmento_codigo);
 
-	self->tcbKernel->base_stack = kernelCrearSegmento(self, self->tcbKernel->pid, self->tamanioStack);
-	self->tcbKernel->cursor_stack = self->tcbKernel->base_stack;
+	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+	if(socket_recvPaquete(self->socketMSP->socket, paquete) >= 0){
+		if(paquete->header.type == ESCRIBIR_MEMORIA){ //que bonito!
+			self->tcbKernel->base_stack = kernelCrearSegmento(self, self->tcbKernel->pid, self->tamanioStack);
+			self->tcbKernel->cursor_stack = self->tcbKernel->base_stack;
+			log_info(self->loggerKernel,"Boot: La direccion de base de stack es: %0.8p para el PID: %d y TID:%d", self->tcbKernel->base_stack, self->tcbKernel->pid, self->tcbKernel->tid);
+		}
+
+	}
+
 
 	self->tcbKernel->registro_de_programacion[0] = 0;
 	self->tcbKernel->registro_de_programacion[1] = 0;
