@@ -21,6 +21,7 @@
 
 t_log *MSPlogger;
 int puertoMSP;
+t_MSP* self;
 
 //semaforo
 pthread_rwlock_t rw_memoria;
@@ -49,11 +50,21 @@ int main(int argc, char *argv[]){
 	//		exit(EXIT_FAILURE);
 	//	}
 
+	crearHilosConexiones();
 
-	//IMPORTANTE HILO KERNEL
+	log_info(MSPlogger, "Finalizando la consola de la MSP...");
+	//pthread_join(mspConsolathreadNum, NULL);
+	destruirConfiguracionMSP();
+
+	log_destroy(MSPlogger);
+	return EXIT_SUCCESS;
+
+}
+
+void crearHilosConexiones(){
 
 	log_info(MSPlogger, "Creando un hilo escucha...");
-	t_MSP* self = malloc(sizeof(t_MSP));
+	self = malloc(sizeof(t_MSP));
 
 	self->socketMSP = socket_createServer(puertoMSP);
 
@@ -68,21 +79,16 @@ int main(int argc, char *argv[]){
 
 	self->socketClienteKernel = socket_acceptClient(self->socketMSP);
 
-	t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-	socket_recvPaquete(self->socketClienteKernel, paquete);
-	//printf("MSP: Recibe HANDSHAKE_KERNEL == %d \n", paquete->header.type );
+	t_socket_paquete *paqueteKernel = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+	socket_recvPaquete(self->socketClienteKernel, paqueteKernel);
 
-
-	if(paquete->header.type == HANDSHAKE_KERNEL){
-		//mspLanzarHiloKernel(self->socketClienteKernel); //Preguntar porque cuando se pone un hilo rompe!
+	if(paqueteKernel->header.type == HANDSHAKE_KERNEL){
 		int mspHiloKernelInt = pthread_create(&mspHiloKernel, NULL, (void *)mspLanzarHiloKernel, self->socketClienteKernel);
 		if(mspHiloKernelInt){
 			log_error(MSPlogger, "Error - pthread_create() return code: %d\n", mspHiloKernelInt);
 			exit(EXIT_FAILURE);
 		}
 	}
-	else
-		log_error(MSPlogger, "MSP: Se recibio un Handshake inseperado con el kernel");
 
 	int contadorCpu = 0;
 
@@ -103,21 +109,7 @@ int main(int argc, char *argv[]){
 
 			log_debug(MSPlogger, "MSP: cantidad de CPUs conectadas: %d",contadorCpu);
 		}
-		else
-			log_error(MSPlogger, "MSP: Se recibio un Handshake inseperado con el cpu");
 	}//fin del while
-
-
-	//mspLanzarhiloConexiones();//Jorge
-
-
-	log_info(MSPlogger, "Finalizando la consola de la MSP...");
-	//pthread_join(mspConsolathreadNum, NULL);
-	destruirConfiguracionMSP();
-
-	log_destroy(MSPlogger);
-	return EXIT_SUCCESS;
-
 }
 
 

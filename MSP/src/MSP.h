@@ -25,6 +25,7 @@ t_list* listaCPUs;
 
 void mspLanzarhiloMSPCONSOLA();
 void mspLanzarConexiones();
+void crearHilosConexiones();
 
 
 #endif /* MSP_H_ */
