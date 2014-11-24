@@ -9,6 +9,8 @@
 #define MEMORIA_H_
 
 #include "mspCPU.h"
+#include "mspPrograma.h"
+#include <stdint.h>
 
 #define TAMANIO_PAGINA 256 //Bytes
 #define TAMANIO_MAX_SEGMENTO 1048576 //Bytes
@@ -19,9 +21,6 @@
 #define NOREFERENCIADA_MODIFICADA 2
 #define REFERENCIADA_NOMODIFICADA 3
 #define REFERENCIADA_MODIFICADA 4
-
-#include "mspPrograma.h"
-#include <stdint.h>
 
 typedef struct{
 	int numero;
@@ -45,7 +44,6 @@ typedef struct{
 	int numeroSegmento;
 	int desplazamiento;
 }t_direccion;
-
 
 
 /**
@@ -193,10 +191,5 @@ t_marco *encontrarMarcoPorPagina(t_pagina *pagina);
 t_marco *encontrarMarcoPorNumeroMarco(int numeroMarco);
 t_marco *llevarPaginaAMemoria(t_pagina *pagina);
 
-
-//int calculoNumeroSegmento(uint32_t direccionLogica);
-//int calculoNumeroPagina(uint32_t direccionLogica);
-//int calculoDesplazamiento(uint32_t direccionLogica);
-//bool segmentoYPaginaPorDireccionVirtual(int pid, t_programa *programa, t_segmento *segmento, t_pagina *pagina, uint32_t direccionVirtual);
 
 #endif /* MEMORIA_H_ */

@@ -9,7 +9,7 @@
 #define CONSOLA_H_
 
 
-void *iniciarConsolaMSP();
+void *mspLanzarhiloConsola();
 void consolaCrearSegmento();
 void consolaDestruirSegmento();
 void consolaEscribirMemoria();

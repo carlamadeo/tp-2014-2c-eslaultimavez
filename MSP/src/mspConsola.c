@@ -6,17 +6,16 @@
  */
 
 #include "mspConsola.h"
+#include "MSP.h"
 #include "Memoria.h"
 #include "commons/log.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 
-t_log *MSPlogger;
-t_list *programas;
-t_list *marcosLibres;
+t_MSP *self;
 
-void *mspLanzarhiloMSPCONSOLA() {
+void *mspLanzarhiloConsola() {
 
 	int opcion;
 	while(1)
@@ -176,19 +175,19 @@ void imprimirTablaDeSegmentos() {
 	int pid;
 	int cantSegmentos = 0;
 
-	if(list_size(programas) == 0)
-		log_warning(MSPlogger, "No hay Programas. Nada que mostrar");
+	if(list_size(self->programas) == 0)
+		log_warning(self->logMSP, "No hay Programas. Nada que mostrar");
 
 	else{
 
-		log_info(MSPlogger, "TABLA DE SEGMENTOS:");
+		log_info(self->logMSP, "TABLA DE SEGMENTOS:");
 		void mostrarSegmento(t_segmento *unSegmento){
 			direccionBase = calculoDireccionBase(unSegmento->numero);
 
 			if(direccionBase == 0)
-				log_info(MSPlogger,"Segmento#: %d | Tamanio: %d | Direccion Base: 0x00000000 | Pertenece a Programa: %d", unSegmento->numero, unSegmento->tamanio, pid);
+				log_info(self->logMSP,"Segmento#: %d | Tamanio: %d | Direccion Base: 0x00000000 | Pertenece a Programa: %d", unSegmento->numero, unSegmento->tamanio, pid);
 			else
-				log_info(MSPlogger,"Segmento#: %d | Tamanio: %d | Direccion Base: %0.8p | Pertenece a Programa: %d", unSegmento->numero, unSegmento->tamanio, direccionBase, pid);
+				log_info(self->logMSP,"Segmento#: %d | Tamanio: %d | Direccion Base: %0.8p | Pertenece a Programa: %d", unSegmento->numero, unSegmento->tamanio, direccionBase, pid);
 
 			cantSegmentos+=1;
 		}
@@ -198,10 +197,10 @@ void imprimirTablaDeSegmentos() {
 			list_iterate(unPrograma->tablaSegmentos, mostrarSegmento);
 		}
 
-		list_iterate(programas, mostrarPrograma);
+		list_iterate(self->programas, mostrarPrograma);
 
 		if(cantSegmentos == 0)
-			log_info(MSPlogger, "No hay Segmentos. Nada que mostrar");
+			log_info(self->logMSP, "No hay Segmentos. Nada que mostrar");
 
 	}
 	getchar();
@@ -215,21 +214,21 @@ void consolaImprimirTablaDePaginas() {
 	printf("Ingrese el numero PID del programa: ");
 	scanf("%d", &pid);
 
-	log_info(MSPlogger, "TABLA DE PAGINAS PARA EL PID %d:", pid);
+	log_info(self->logMSP, "TABLA DE PAGINAS PARA EL PID %d:", pid);
 
 	bool matchPrograma(t_programa *unPrograma){
 		return unPrograma->pid == pid;
 	}
 
-	if (list_is_empty(programas))
-		log_info(MSPlogger, "No hay programas. Nada que mostrar");
+	if (list_is_empty(self->programas))
+		log_info(self->logMSP, "No hay programas. Nada que mostrar");
 
 
 	else{
-		t_programa *programa = list_find(programas, matchPrograma);
+		t_programa *programa = list_find(self->programas, matchPrograma);
 
 		if(programa == NULL)
-			log_error(MSPlogger, "No existe el programa con PID %d", pid);
+			log_error(self->logMSP, "No existe el programa con PID %d", pid);
 
 		else{
 			void mostrarPagina(t_pagina *unaPagina){
@@ -239,7 +238,7 @@ void consolaImprimirTablaDePaginas() {
 				else{
 					enMemoria = "No";
 				}
-				log_info(MSPlogger,"Pagina#: %d | En Memoria Principal: %s | Pertenece a Segmento: %d", unaPagina->numero, enMemoria, numeroSegmento);
+				log_info(self->logMSP,"Pagina#: %d | En Memoria Principal: %s | Pertenece a Segmento: %d", unaPagina->numero, enMemoria, numeroSegmento);
 			}
 
 			void mostrarSegmento(t_segmento *unSegmento){
@@ -248,7 +247,7 @@ void consolaImprimirTablaDePaginas() {
 			}
 
 			if(list_is_empty(programa->tablaSegmentos)){
-				log_warning(MSPlogger, "No hay paginas para el PID %d. Nada que mostrar", pid);
+				log_warning(self->logMSP, "No hay paginas para el PID %d. Nada que mostrar", pid);
 			}
 
 			list_iterate(programa->tablaSegmentos, mostrarSegmento);
@@ -265,12 +264,12 @@ void imprimirMarcos() {
 	printf("\n#############################################TABLA DE MARCOS#############################################\n");
 
 	void mostrarMarcosLibres(t_marco *unMarco){
-		log_info(MSPlogger, "Marco#: %d | PID: - | Numero de Segmento: - | Numero de Pagina: -", unMarco->numero);
+		log_info(self->logMSP, "Marco#: %d | PID: - | Numero de Segmento: - | Numero de Pagina: -", unMarco->numero);
 	}
 
 	void iterarPagina(t_pagina *unaPagina){
 		if(unaPagina->numeroMarco >= 0){
-			log_info(MSPlogger, "Marco#: %d | PID: %d | Numero de Segmento: %d | Numero de Pagina: %d", unaPagina->numeroMarco, pid, numeroSegmento, unaPagina->numero);
+			log_info(self->logMSP, "Marco#: %d | PID: %d | Numero de Segmento: %d | Numero de Pagina: %d", unaPagina->numeroMarco, pid, numeroSegmento, unaPagina->numero);
 			cantidadMarcosOcupados+=1;
 		}
 	}
@@ -285,18 +284,18 @@ void imprimirMarcos() {
 		list_iterate(unPrograma->tablaSegmentos, iterarSegmento);
 	}
 
-	log_info(MSPlogger, "\n----------------------------------------------Marcos Libres----------------------------------------------\n\n");
+	log_info(self->logMSP, "\n----------------------------------------------Marcos Libres----------------------------------------------\n\n");
 
-	if(list_size(marcosLibres) > 0)
-		list_iterate(marcosLibres, mostrarMarcosLibres);
+	if(list_size(self->marcosLibres) > 0)
+		list_iterate(self->marcosLibres, mostrarMarcosLibres);
 
-	log_info(MSPlogger, "\n---------------------------------------------Marcos Ocupados---------------------------------------------\n\n");
+	log_info(self->logMSP, "\n---------------------------------------------Marcos Ocupados---------------------------------------------\n\n");
 
-	if(list_size(programas) > 0)
-		list_iterate(programas, iterarPrograma);
+	if(list_size(self->programas) > 0)
+		list_iterate(self->programas, iterarPrograma);
 
 	if(cantidadMarcosOcupados == 0)
-		log_info(MSPlogger,"No hay marcos ocupados que mostrar");
+		log_info(self->logMSP,"No hay marcos ocupados que mostrar");
 
 	getchar();
 }
