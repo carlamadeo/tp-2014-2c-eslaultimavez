@@ -11,27 +11,27 @@
 
 //Instrucciones Protegidas, KM=1   (ninguna de estas operaciones tiene operadores)
 
-void MALC_ESO ();  //Reserva una cantidad de memoria especificada por el registro A.
+int MALC_ESO ();  //Reserva una cantidad de memoria especificada por el registro A.
 			  //La direccion de esta se almacena en el registro A.
 			 //Crea en la MSP un nuevo segmento del tamaño especificado asociado al programa en ejecución.
 
-void FREE_ESO();  //Libera la memoria apuntada por el registro A.
+int FREE_ESO();  //Libera la memoria apuntada por el registro A.
 			 //Solo se podrá liberar memoria alocada por la instrucción de MALC.
 			//Destruye en la MSP el segmento indicado en el registro A.
 
-void INNC_ESO(); //Pide por consola del programa que se ingrese una cadena
+int INNC_ESO(); //Pide por consola del programa que se ingrese una cadena
 			 //no más larga de lo indicado por el registro B.
             //La misma será almacenada en la posición de memoria apuntada por el registro A.
            //Invoca al servicio correspondiente en el proceso Kernel.
 
-void OUTN_ESO();//Imprime por consola del programa el número, con signo almacenado en el registro A.
+int OUTN_ESO();//Imprime por consola del programa el número, con signo almacenado en el registro A.
            //Invoca al servicio correspondiente en el proceso Kernel.
 
-void OUTC_ESO(); //Imprime por consola del programa una cadena de tamaño indicado
+int OUTC_ESO(); //Imprime por consola del programa una cadena de tamaño indicado
             //por el registro B que se encuentra en la direccion apuntada por el registro A.
 		   //Invoca al servicio correspondiente en el proceso Kernel.
 
-void CREA_ESO();  //Crea un hilo, hijo del TCB que ejecutó la llamada al sistema correspondiente.
+int CREA_ESO();  //Crea un hilo, hijo del TCB que ejecutó la llamada al sistema correspondiente.
              //El nuevo hilo tendrá su Program Counter apuntado al número almacenado en el registro B.
             //El identificador del nuevo hilo se almacena en el registro A.
            //Para lograrlo debe generar un nuevo TCB como copia del TCB actual,
@@ -41,15 +41,15 @@ void CREA_ESO();  //Crea un hilo, hijo del TCB que ejecutó la llamada al sistem
        //Asignar la base y cursor de forma acorde (tal que la diferencia entre cursor y base se mantenga igual)
       //y luego invocar al servicio correspondiente en el proceso Kernel con el TCB recién generado.
 
-void  JOIN_ESO ();//Bloquea el programa que ejecutó la llamada al sistema hasta que el hilo con el identificador
+int  JOIN_ESO ();//Bloquea el programa que ejecutó la llamada al sistema hasta que el hilo con el identificador
              //almacenado en el registro A haya finalizado.
             //Invoca al servicio correspondiente en el proceso Kernel.
 
-void BLOK_ESO();  //Bloquea el programa que ejecutó la llamada al sistema
+int BLOK_ESO();  //Bloquea el programa que ejecutó la llamada al sistema
 			 //hasta que el recurso apuntado por B se libere.
             //La evaluación y decisión de si el recurso está libre o no es hecha por la llamada al sistema WAIT pre-compilada.
 
-void WAKE_ESO(); //Desbloquea al primer programa bloqueado por el recurso apuntado por B.
+int WAKE_ESO(); //Desbloquea al primer programa bloqueado por el recurso apuntado por B.
 			//La evaluación y decisión de si el recurso está libre o no es hecha por la llamada al sistema SIGNAL pre-compilada.
 
 //Fin de Instrucciones Protegidas

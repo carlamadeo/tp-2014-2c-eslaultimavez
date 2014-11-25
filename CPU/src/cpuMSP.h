@@ -50,6 +50,6 @@ void cpuRealizarHandshakeConMSP(t_CPU* self);
 int cpuCrearSegmento(t_CPU *self, int pid, int tamanio);
 int cpuDestruirSegmento(t_CPU* self);
 int cpuEscribirMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *programaBeso, int tamanioBeso, t_socket* socketNuevoCliente);
-int cpuLeerMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *programa, int tamanio, t_socket* socketNuevoCliente);
+int cpuLeerMemoria(t_CPU* self, uint32_t direccionVirtual, char *programa, int tamanio);
 
 #endif /* CPUMPS_H_ */

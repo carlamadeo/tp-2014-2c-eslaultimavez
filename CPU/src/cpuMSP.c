@@ -7,7 +7,7 @@ t_socket_client* cpuConectarConMPS(t_CPU* self) {
 	self->socketMSP = socket_createClient();
 
 	if (self->socketMSP  == NULL)
-		log_error(logger, "CPU: Error al crear socket con la MSP!");
+		log_error(self->loggerCPU, "CPU: Error al crear socket con la MSP!");
 
 	if (socket_connect(self->socketMSP, self->ipMsp, self->puertoMSP) == 0)
 		log_error(self->loggerCPU, "CPU: Error al hacer el connect con la MSP!");
@@ -106,14 +106,14 @@ int cpuDestruirSegmento(t_CPU* self){
 	return SIN_ERRORES;
 }
 
-int cpuEscribirMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *programa, int tamanio, t_socket* socketNuevoCliente){
+int cpuEscribirMemoria(t_CPU* self, uint32_t direccionVirtual, char *programa, int tamanio){
 
 	t_escribirSegmentoBeso* escrituraDeCodigo = malloc(sizeof(t_escribirSegmentoBeso));
 	t_socket_paquete *paqueteConfirmacionEscritura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 	t_confirmacion *unaConfirmacionEscritura = (t_confirmacion *)malloc(sizeof(t_confirmacion));
 
 	escrituraDeCodigo->direccionVirtual = direccionVirtual;
-	escrituraDeCodigo->pid = pid;
+	escrituraDeCodigo->pid = self->tcb->pid;
 	escrituraDeCodigo->tamanio = tamanio;
 	strcpy(escrituraDeCodigo->bufferCodigoBeso, programa);
 
@@ -121,7 +121,7 @@ int cpuEscribirMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *pr
 
 	socket_sendPaquete(self->socketMSP->socket, ESCRIBIR_MEMORIA, sizeof(t_escribirSegmentoBeso), escrituraDeCodigo);
 
-	socket_recvPaquete(socketNuevoCliente, paqueteConfirmacionEscritura);
+	socket_recvPaquete(self->socketMSP->socket, paqueteConfirmacionEscritura);
 
 	unaConfirmacionEscritura = (t_confirmacion *) paqueteConfirmacionEscritura->data;
 
@@ -139,27 +139,27 @@ int cpuEscribirMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *pr
 	return unaConfirmacionEscritura->estado;
 }
 
-int cpuLeerMemoria(t_CPU* self, int pid, uint32_t direccionVirtual, char *programa, int tamanio, t_socket* socketNuevoCliente){
+int cpuLeerMemoria(t_CPU* self, uint32_t direccionVirtual, char *programa, int tamanio){
 
 	t_datos_aMSPLectura *datosAMSP = malloc(sizeof(t_datos_aMSPLectura));
 	t_socket_paquete *paqueteLectura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 	t_datos_deMSPLectura *unaLectura = (t_datos_deMSPLectura *)malloc(sizeof(t_datos_deMSPLectura));
 
 	datosAMSP->direccionVirtual = direccionVirtual;
-	datosAMSP->pid = pid;
+	datosAMSP->pid = self->tcb->pid;
 	datosAMSP->tamanio = tamanio;
 
 	log_info(self->loggerCPU, "CPU: Solicitud de lectura de memoria para PID: %d, Direccion Virtual: %0.8p, Tamaño: %d.", datosAMSP->pid, datosAMSP->direccionVirtual, datosAMSP->tamanio);
 
 	socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, sizeof(t_datos_aMSPLectura), datosAMSP);
 
-	socket_recvPaquete(socketNuevoCliente, paqueteLectura);
+	socket_recvPaquete(self->socketMSP->socket, paqueteLectura);
 
 	unaLectura = (t_datos_deMSPLectura *) paqueteLectura->data;
 	strcpy(programa, unaLectura->lectura);
 
 	if (unaLectura->estado == ERROR_POR_SEGMENTATION_FAULT){
-		//loguear
+		log_error(self->loggerCPU, "CPU: error por Segmentation Fault");
 	}
 
 	return unaLectura->estado;

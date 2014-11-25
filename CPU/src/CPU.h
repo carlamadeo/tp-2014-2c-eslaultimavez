@@ -69,6 +69,16 @@ typedef struct {
  * Estucturas para usar en CPU!
  * Estas son las primeras que tiene que cambiar y decidir si van o no van en el tp
  */
+typedef struct {
+	int32_t registros_programacion[5]; //A, B, C, D y E
+	uint32_t M; //Base de segmento de código
+	uint32_t P; //Puntero de instrucción
+	uint32_t X; //Base del segmento de Stack
+	uint32_t S; //Cursor de stack
+	uint32_t K; //Kernel Mode
+	uint32_t I; //PID
+} t_registros_cpu;
+
 
 typedef struct {
 	t_TCB_CPU* tcb;
@@ -82,6 +92,7 @@ typedef struct {
 	int quantum;
 	int retardo;
 }t_CPU;
+
 
 typedef struct{
 	int tamanio;
@@ -112,17 +123,15 @@ typedef struct{
  */
 
 t_CPU* self;
-t_TCB_CPU* tcb;
-t_list* lista;
-t_socket* socketDelKernel;
-t_socket* socketDelMSP;
+t_registros_cpu* registros_cpu;
+t_hilo_log* hilo_log;
 
 /*
- * Aqui se declaran las funciones
+ * FUNCIONES:
  */
 
 void verificar_argumentosCPU(int argc, char* argv[]);
-void ejecutar_instruccion(int linea, t_CPU* self);
+int ejecutar_instruccion(int linea, t_CPU* self);
 int cpuProcesar_tcb(t_CPU* self);
 //void cpuProcesar_tcb(int pid, t_TCB_CPU* nuevo);
 void cambioContexto(t_CPU* self);
@@ -134,7 +143,7 @@ int determinar_registro(char registro);
 
 void LOAD_ESO (int registro, int32_t numero, t_TCB_CPU* tcb); //Carga en el registro, el número dado.
 
-void GETM_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb);	//Obtiene el valor de memoria apuntado por el segundo registro.
+int GETM_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb);	//Obtiene el valor de memoria apuntado por el segundo registro.
 //El valor obtenido lo asigna en el primer registro.
 
 void SETM_ESO (int numero, int primer_registro, int segundo_registro, t_TCB_CPU* tcb); //Pone tantos bytes desde el segundo registro,
@@ -199,7 +208,7 @@ void INTE_ESO(uint32_t direccion, t_TCB_CPU* tcb); 	//Interrumpe la ejecución d
 
 /*void FLCL(); //Limpia el registro de flags.*/
 
-void INNN_ESO (t_TCB_CPU* tcb);
+int INNN_ESO (t_TCB_CPU* tcb);
 
 void SHIF_ESO (int numero, int registro, t_TCB_CPU* tcb); //Desplaza los bits del registro, tantas veces como se indique en el Número.
 //De ser desplazamiento positivo, se considera hacia la derecha.
