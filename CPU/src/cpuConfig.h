@@ -8,10 +8,7 @@
 #ifndef CPUCONFIG_H_
 #define CPUCONFIG_H_
 
-#include "CPU.h"
-#include "commons/config.h"
-#include <stdbool.h>
-
+#include "CPU_Proceso.h"
 
 bool cargarConfiguracionCPU(char *config_file, t_CPU* self, t_config *configCPU);
 bool validarConfiguracionCPU(t_config* configCPU);

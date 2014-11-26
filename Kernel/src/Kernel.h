@@ -28,6 +28,12 @@ typedef struct {
 } t_TCB_Kernel;
 
 typedef struct {
+	t_TCB_Kernel* unTCB;
+	int quamtum;
+} t_TCB_Mas_QUAMTUM;
+
+
+typedef struct {
 	t_socket_client* socketMSP;
 	t_socket* socketCPU;
 	t_socket* socketConsola;
@@ -47,7 +53,8 @@ typedef struct {
 
 //es la que comparte el loader y el planificador, con los programas cargados
 t_list* cola_new;
-sem_t mutex_new;         // Mutex cola New
+sem_t mutex_new;
+sem_t mutex_BloqueoPlanificador;// Mutex cola New
 t_list* listaDeProgramasDisponibles;
 
 //La necesita el Boot

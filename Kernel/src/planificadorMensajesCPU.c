@@ -5,8 +5,10 @@ void agregarEnListaDeCPU(){
 
 }
 
-void ejecutar_CPU_TERMINE_UNA_LINEA (){
-
+void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente){
+	log_info(self->loggerPlanificador, "Planificador: recibe CPU_TERMINE_UNA_LINEA");
+	socket_sendPaquete(socketNuevoCliente, CPU_SEGUI_EJECUTANDO, 0, NULL);
+	log_info(self->loggerPlanificador, "Planificador: envia CPU_SEGUI_EJECUTANDO");
 }
 
 void ejecutar_UNA_INTERRUPCION(){

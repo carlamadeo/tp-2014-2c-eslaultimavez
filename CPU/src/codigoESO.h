@@ -1,12 +1,7 @@
 #ifndef CODIGO_ESO_H_
 #define CODIGO_ESO_H_
 
-#include "CPU.h"
-
-
-
-
-
+#include "CPU_Proceso.h"
 
 
 //Instrucciones Protegidas, KM=1   (ninguna de estas operaciones tiene operadores)

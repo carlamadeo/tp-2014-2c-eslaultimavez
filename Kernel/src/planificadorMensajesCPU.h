@@ -3,7 +3,7 @@
 
 #include "Planificador.h"
 void agregarEnListaDeCPU();
-void ejecutar_CPU_TERMINE_UNA_LINEA ();
+void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente);
 void ejecutar_UNA_INTERRUPCION();
 void ejecutar_UNA_ENTRADA_STANDAR();
 void ejecutar_UNA_SALIDA_ESTANDAR();

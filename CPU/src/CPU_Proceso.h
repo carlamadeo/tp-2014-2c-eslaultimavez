@@ -1,17 +1,19 @@
 #ifndef CPU_H_
 #define CPU_H_
 
+#include <unistd.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "commons/socketInBigBang.h"
 #include "commons/protocolStructInBigBang.h"
-#include "codigoESO.h"
-#include "commons/log.h"
 #include "commons/collections/list.h"
+#include "commons/log.h"
 #include "commons/panel.h"
 #include "commons/cpu.h"
-#include <unistd.h>
+#include "commons/config.h"
+#include "codigoESO.h"
 
-t_log *logger;
+//t_log *logger;
 //linea para hacer push
 //#include <commons/threadInBigBang.h>
 
@@ -30,45 +32,46 @@ typedef struct {
 
 //Codigos ESO
 
-#define LOAD 1001
-#define GETM 1002
-#define SETM 1003
-#define MOVR 1004
-#define ADDR 1005
-#define SUBR 1006
-#define MULR 1007
-#define MODR 1008
-#define DIVR 1009
-#define INCR 1010
-#define DECR 1011
-#define COMP 1012
-#define CGEQ 1013
-#define CLEQ 1014
-#define GOTO 1015
-#define JMPZ 1016
-#define JPNZ 1017
-#define INTE 1018
-#define SHIF 1019
-#define NOPP 1020
-#define PUSH 1021
-#define TAKE 1022
-#define XXXX 1023
-#define MALC 1024
-#define FREE 1025
-#define INNN 1026
-#define INNC 1027
-#define OUTN 1028
-#define OUTC 1029
-#define CREA 1030
-#define JOIN 1031
-#define BLOK 1032
-#define WAKE 1033
+#define LOAD 0
+#define GETM 1
+#define SETM 2
+#define MOVR 3
+#define ADDR 4
+#define SUBR 5
+#define MULR 6
+#define MODR 7
+#define DIVR 8
+#define INCR 9
+#define DECR 10
+#define COMP 11
+#define CGEQ 12
+#define CLEQ 13
+#define GOTO 14
+#define JMPZ 15
+#define JPNZ 16
+#define INTE 17
+#define SHIF 18
+#define NOPP 19
+#define PUSH 20
+#define TAKE 21
+#define XXXX 22
+#define MALC 23
+#define FREE 24
+#define INNN 25
+#define INNC 26
+#define OUTN 27
+#define OUTC 28
+#define CREA 29
+#define JOIN 30
+#define BLOK 31
+#define WAKE 32
 #define CANTIDAD_INSTRUCCIONES 33
 
 /*
  * Estucturas para usar en CPU!
  * Estas son las primeras que tiene que cambiar y decidir si van o no van en el tp
- */
+
+ //Soy jorge comento esto porque ya esta definido en cpu.c
 typedef struct {
 	int32_t registros_programacion[5]; //A, B, C, D y E
 	uint32_t M; //Base de segmento de código
@@ -77,7 +80,7 @@ typedef struct {
 	uint32_t S; //Cursor de stack
 	uint32_t K; //Kernel Mode
 	uint32_t I; //PID
-} t_registros_cpu;
+} t_registros_cpu;*/
 
 
 typedef struct {
@@ -123,8 +126,8 @@ typedef struct{
  */
 
 t_CPU* self;
-t_registros_cpu* registros_cpu;
-t_hilo_log* hilo_log;
+//t_registros_cpu* registros_cpu;
+t_hilo* hilo_log;
 
 /*
  * FUNCIONES:
@@ -141,7 +144,7 @@ int determinar_registro(char registro);
 //Instrucciones de usuario
 
 
-void LOAD_ESO (int registro, int32_t numero, t_TCB_CPU* tcb); //Carga en el registro, el número dado.
+void LOAD_ESO (int registro, int32_t numero, t_CPU* self); //Carga en el registro, el número dado.
 
 int GETM_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb);	//Obtiene el valor de memoria apuntado por el segundo registro.
 //El valor obtenido lo asigna en el primer registro.

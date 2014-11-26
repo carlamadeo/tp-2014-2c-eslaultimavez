@@ -1,7 +1,7 @@
 #ifndef CPUKERNEL_H_
 #define CPUKERNEL_H_
 
-#include "CPU.h"
+#include "CPU_Proceso.h"
 
 typedef struct {
 	t_TCB_CPU* tcb;

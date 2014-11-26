@@ -6,7 +6,7 @@ t_socket_client* cpuConectarConMPS(t_CPU* self) {
 
 	self->socketMSP = socket_createClient();
 
-	if (self->socketMSP  == NULL)
+	if (self->socketMSP == NULL)
 		log_error(self->loggerCPU, "CPU: Error al crear socket con la MSP!");
 
 	if (socket_connect(self->socketMSP, self->ipMsp, self->puertoMSP) == 0)

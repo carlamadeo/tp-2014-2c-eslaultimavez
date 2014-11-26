@@ -11,7 +11,7 @@ void kernel_comenzar_Planificador(t_kernel* self){
 
 
 void planificadorEscuchaCPU(t_kernel* self){
-	t_socket *socketEscucha, *socketNuevaConexion;
+	t_socket *socketNuevaConexionCPU;
 	listaCpu = list_create();
 	fd_set master;   //conjunto maestro de descriptores de fichero
 	fd_set read_fds; //conjunto temporal de descriptores de fichero para select()
@@ -20,20 +20,20 @@ void planificadorEscuchaCPU(t_kernel* self){
 	FD_ZERO(&master); /* borra los conjuntos maestro y temporal*/
 	FD_ZERO(&read_fds);
 
-	if (!(socketEscucha = socket_createServer(self->puertoPlanificador))){
+	if (!(self->socketCPU = socket_createServer(self->puertoPlanificador))){
 		log_error(self->loggerPlanificador, "Planificador: Error al crear un socket para escuchar CPUs. %s", strerror(errno));
 	}
 
-	if(!socket_listen(socketEscucha)){
+	if(!socket_listen(self->socketCPU)){
 		log_error(self->loggerPlanificador, "Planificador:Error al poner a escuchar al Planificador: %s", strerror(errno));
 	}
 
 	log_info(self->loggerPlanificador, "Planificador: Ya se esta escuchando conexiones entrantes en el puerto: %d",self->puertoPlanificador);
 
-	FD_SET(socketEscucha->descriptor, &master);
-	fdmax = socketEscucha->descriptor; /* seguir la pista del descriptor de fichero mayor*/
+	FD_SET(self->socketCPU->descriptor, &master);
+	fdmax = self->socketCPU->descriptor; /* seguir la pista del descriptor de fichero mayor*/
 
-	int idCPU=0;
+
 	/* bucle principal*/
 	while(1){
 		read_fds = master;
@@ -50,15 +50,15 @@ void planificadorEscuchaCPU(t_kernel* self){
 			for(i = 0; i <= fdmax; i++){ //explorar conexiones existentes en busca de datos que leer
 				if (FD_ISSET(i, &read_fds)){ //¡¡tenemos datos!!
 
-					log_info(self->loggerPlanificador," Planificador:Se encontraron datos en el elemento de la lista i=%d, descriptorEscucha=%d",i,socketEscucha->descriptor);
+					log_info(self->loggerPlanificador," Planificador:Se encontraron datos en el elemento de la lista i=%d, descriptorEscucha=%d",i,self->socketCPU->descriptor);
 
 
-					if(i == socketEscucha->descriptor){  //gestionar nuevas conexiones
-						if((socketNuevaConexion = socket_acceptClient(socketEscucha))==0) {
+					if(i == self->socketCPU->descriptor){  //gestionar nuevas conexiones
+						if((socketNuevaConexionCPU = socket_acceptClient(self->socketCPU))==0) {
 							log_error(self->loggerPlanificador, "Planificador: Error en el accep  Planificador");
 						}else  {
 							log_debug(self->loggerPlanificador, "Planificador: Accept completo! ");
-							atenderNuevaConexionCPU(self, socketNuevaConexion, &master, &fdmax);
+							atenderNuevaConexionCPU(self, socketNuevaConexionCPU, &master, &fdmax);
 						}
 
 					}else{ //sino no es una nueva conexion busca un programa en la lista
@@ -92,7 +92,6 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 			sem_post(&mutex_cpuLibre);
 
 		}
-
 		else
 			log_error(self->loggerPlanificador, "Planificador: Error en el HANDSHAKE_PLANIFICADOR con la CPU.");
 	}
@@ -112,11 +111,12 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 	t_programaEnKernel* unTCBCOLA = obtenerTCBdeReady(self);
 
 	if (unTCBCOLA!= NULL){
-		t_TCB_Kernel* unTCB = malloc(sizeof(t_TCB_Kernel));
-		unTCB = unTCBCOLA->programaTCB;
+		t_TCB_Mas_QUAMTUM* unTCBaCPU = malloc(sizeof(t_TCB_Mas_QUAMTUM));
+		unTCBaCPU->unTCB = unTCBCOLA->programaTCB;
+		unTCBaCPU->quamtum = self->quamtum;
 
-		socket_sendPaquete(socketNuevoCliente, TCB_NUEVO,sizeof(t_TCB_Kernel), unTCB);
-		log_info(self->loggerPlanificador, "Planificador: envia TCB_NUEVO.");
+		socket_sendPaquete(socketNuevoCliente, TCB_NUEVO,sizeof(t_TCB_Kernel), unTCBaCPU->unTCB);
+		log_debug(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID %d", unTCBaCPU->unTCB->pid );
 
 	}
 	free(paquete);
@@ -135,7 +135,7 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 
 		switch(paqueteCPU->header.type){
 		case CPU_TERMINE_UNA_LINEA:
-			ejecutar_CPU_TERMINE_UNA_LINEA();
+			ejecutar_CPU_TERMINE_UNA_LINEA(self,socketNuevoCliente);
 			break;
 		case INTERRUPCION:
 			ejecutar_UNA_INTERRUPCION();
@@ -162,6 +162,7 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 			log_error(self->loggerPlanificador, "Planificador:Conexión cerrada con CPU.");
 			FD_CLR(socketNuevoCliente->descriptor, master);
 			close(socketNuevoCliente->descriptor);
+			self->quamtum =0; //para salir del while
 			break;
 
 		}//fin switch(paqueteCPU->header.type)
@@ -169,10 +170,10 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 
 	//Cuando sale del while(self->quamtum>0) se tiene que hacer un cambio de Contexto
 
-	t_socket_paquete *paqueteCambioDeContexto = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-	socket_recvPaquete(socketNuevoCliente, paqueteCambioDeContexto);
-	log_info(self->loggerPlanificador, "Planificador: recibe de  CPU: CAMBIO_DE_CONTEXTO.");
-	free(paqueteCambioDeContexto);
+//	t_socket_paquete *paqueteCambioDeContexto = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+//	socket_recvPaquete(socketNuevoCliente, paqueteCambioDeContexto);
+//	log_info(self->loggerPlanificador, "Planificador: recibe de  CPU: CAMBIO_DE_CONTEXTO.");
+//	free(paqueteCambioDeContexto);
 }
 
 void atienderCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set* master){
@@ -196,6 +197,8 @@ t_cpu* obtenerCPUSegunDescriptor(t_kernel* self,int descriptor){
 
 
 t_programaEnKernel* obtenerTCBdeReady(t_kernel* self){
+
+	sem_wait(&mutex_BloqueoPlanificador);
 
 	log_info(self->loggerPlanificador," Cantidad de elemento en la cola New: %d" ,list_size(cola_new));
 	if (list_size(cola_new)>0){

@@ -195,6 +195,8 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 		list_add(cola_new,unPrograma);
 		sem_post(&mutex_new);
 		log_info(self->loggerLoader,"Loader: Agrego un elemento a la Cola New con el PID:%d  TID:%d ", unTCBenLoader->pid, unTCBenLoader->tid);
+		sem_post(&mutex_BloqueoPlanificador);
+
 
 		//Luego se tiene que actualizar las lista que se usan en el select
 		FD_SET(socketNuevoCliente->descriptor, master); /*añadir al conjunto maestro*/
