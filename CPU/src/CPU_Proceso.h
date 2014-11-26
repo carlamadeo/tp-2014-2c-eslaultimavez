@@ -30,6 +30,9 @@ typedef struct {
 	int32_t registro_de_programacion[5];
 } t_TCB_CPU;
 
+typedef struct{
+	int quantumCPU;
+}t_quantumCPU;
 //Codigos ESO
 
 #define LOAD 0

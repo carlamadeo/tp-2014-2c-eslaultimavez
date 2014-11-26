@@ -28,9 +28,8 @@ typedef struct {
 } t_TCB_Kernel;
 
 typedef struct {
-	t_TCB_Kernel* unTCB;
 	int quamtum;
-} t_TCB_Mas_QUAMTUM;
+} t_QUAMTUM;
 
 
 typedef struct {

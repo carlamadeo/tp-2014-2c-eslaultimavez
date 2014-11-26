@@ -40,17 +40,31 @@ int main(int argc, char** argv) {
 	self->socketPlanificador = conectarCPUConKernel(self);
 
 
-	t_socket_paquete *paquetePlanificador = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+	t_socket_paquete *paquetePlanificadorTCB = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+	t_socket_paquete *paquetePlanificadorQuantum = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_TCB_CPU* unTCBNuevo = (t_TCB_CPU *)malloc(sizeof(t_TCB_CPU));
-
-
 	//		t_registros_cpu* registros_cpu=malloc(sizeof(t_registros_cpu));
 
-	if(socket_recvPaquete(self->socketPlanificador->socket, paquetePlanificador) >= 0){
+
+	//1) Paso, recibir Quamtum
+
+	if(socket_recvPaquete(self->socketPlanificador->socket, paquetePlanificadorQuantum) >= 0){
+
+		t_quantumCPU* unQuantum= (t_quantumCPU*) paquetePlanificadorQuantum->data;
+		self->tcb = unQuantum->quantumCPU;
+		log_info(self->loggerCPU, "CPU: recibe un quamtum: %d",self->tcb);
+	}else
+		log_error(self->loggerCPU, "CPU: error al recibir un quamtum");
+
+	free(paquetePlanificadorQuantum);
+
+
+	//2) Paso, recibir TCB
+	if(socket_recvPaquete(self->socketPlanificador->socket, paquetePlanificadorTCB) >= 0){
 
 		//printf("TCB_NUEVO %d \n", paquetePlanificador->header.type);   //no Borrar sirve para como debug Jorge
-		if(paquetePlanificador->header.type == TCB_NUEVO){
-			unTCBNuevo= (t_TCB_CPU *) paquetePlanificador->data;
+		if(paquetePlanificadorTCB->header.type == TCB_NUEVO){
+			unTCBNuevo= (t_TCB_CPU *) paquetePlanificadorTCB->data;
 			self->tcb = unTCBNuevo;
 
 			//printf("TCB_NUEVO TID %d \n", self->tcb->tid );  //no Borrar sirve para como debug Jorge
@@ -68,26 +82,35 @@ int main(int argc, char** argv) {
 			//				}
 			//hilo_log = (t_hilo_log *) nuevo_tcb->tcb;
 			//comienzo_ejecucion(hilo_log, self->quantum);
-			//manda a ejecutar el tcb
-			int estado_ejecucion = cpuProcesar_tcb(self);
-			//controlo el estado de la ejecucion
-			switch(estado_ejecucion){
-			case SIN_ERRORES:
-				log_info(self->loggerCPU, "CPU: finalizo ejecucion de TID: %d", self->tcb->tid);
-				break;
-			case MENSAJE_DE_ERROR:
-				log_error(self->loggerCPU, "CPU: finalizacion erronea de TID: %d", self->tcb->tid);
-				break;
-			}
 
-		}else{
-			log_error(self->loggerCPU, "Se recibio un codigo inesperado de KERNEL en main de cpu: %d", paquetePlanificador->header.type);
-		}
-	}else {
+
+
+		}else// fin del if NUEVO_TCB
+			log_error(self->loggerCPU, "CPU: error al recibir de planificador TCB_NUEVO");
+
+	}else //fin del if paquetePlanificadorTCB
 		log_error(self->loggerCPU, "CPU: Error al recibir un paquete del planificador.");
+
+	free(paquetePlanificadorTCB);
+
+	//3) Paso, Procesa TCB
+	while(self->quantum>0){
+		//manda a ejecutar el tcb
+		int estado_ejecucion = cpuProcesar_tcb(self);
+		//controlo el estado de la ejecucion
+		switch(estado_ejecucion){
+		case SIN_ERRORES:
+			log_info(self->loggerCPU, "CPU: finalizo ejecucion de TID: %d", self->tcb->tid);
+			break;
+		case MENSAJE_DE_ERROR:
+			log_error(self->loggerCPU, "CPU: finalizacion erronea de TID: %d", self->tcb->tid);
+			break;
+		}
+
+		self->quantum = self->quantum-1;
 	}
 
-	free(paquetePlanificador);
+
 	//free(registros_cpu);
 	usleep(100);
 
@@ -110,86 +133,85 @@ int cpuProcesar_tcb(t_CPU* self){
 	//ejecucion_hilo(hilo_log, self->quantum);
 	log_info(self->loggerCPU, "CPU: Comienzo a procesar el TCB de pid: %d", self->tcb->pid);
 
-	while(1){
-		//pido los primeros 4 bytes especificados por PID+Puntero_Instruccion
-		t_lectura_MSP * lecturaDeMSP = malloc(sizeof(t_lectura_MSP));
-		t_CPU_LEER_MEMORIA* unCPU_LEER_MEMORIA = malloc(sizeof(t_CPU_LEER_MEMORIA));
-		//se hace el control para saber a donde apuntar dependiendo de si se trata un tcb usuario o kernel...
-		int pid_proceso = 0;
-		if (self->tcb->km == 0){
-			pid_proceso = self->tcb->pid;
-		}
-		unCPU_LEER_MEMORIA->pid = pid_proceso;
-		unCPU_LEER_MEMORIA->tamanio = sizeof(char)*4;
-		unCPU_LEER_MEMORIA->direccionVirtual = self->tcb->puntero_instruccion;
+	//pido los primeros 4 bytes especificados por PID+Puntero_Instruccion
+	t_lectura_MSP * lecturaDeMSP = malloc(sizeof(t_lectura_MSP));
+	t_CPU_LEER_MEMORIA* unCPU_LEER_MEMORIA = malloc(sizeof(t_CPU_LEER_MEMORIA));
+	//se hace el control para saber a donde apuntar dependiendo de si se trata un tcb usuario o kernel...
+	int pid_proceso = 0;
+	if (self->tcb->km == 0){
+		pid_proceso = self->tcb->pid;
+	}
+	unCPU_LEER_MEMORIA->pid = pid_proceso;
+	unCPU_LEER_MEMORIA->tamanio = sizeof(char)*4;
+	unCPU_LEER_MEMORIA->direccionVirtual = self->tcb->puntero_instruccion;
 
-		int estado_lectura = cpuLeerMemoria(self, unCPU_LEER_MEMORIA->direccionVirtual, lecturaDeMSP->data, unCPU_LEER_MEMORIA->tamanio);
-		if (!(estado_lectura==SIN_ERRORES)){
-			return MENSAJE_DE_ERROR;
-		}
-		log_info(self->loggerCPU,"CPU: cpuLeerMemoria Correctamente");
-		//Esto es para darse cuenta de que instruccion se trata
-		int encontrado = 0;
-		int indice = 0;
-		while (!encontrado && indice < CANTIDAD_INSTRUCCIONES){
-			if(strncmp(instrucciones_eso[indice], lecturaDeMSP->data, 4) == 0){
-				int estado_ejecucion_instruccion = ejecutar_instruccion(indice, self);
-				switch(estado_ejecucion_instruccion){
-				case SIN_ERRORES:
-					log_info(self->loggerCPU, "CPU: instruccion ejecutada SIN_ERRORES");
-					break;
-				case ERROR_POR_EJECUCION_ILICITA:
-					return ERROR_POR_EJECUCION_ILICITA;
-				case MENSAJE_DE_ERROR:
-					return MENSAJE_DE_ERROR;
-				default:
-					return ERROR_POR_CODIGO_INESPERADO;
-				}
-				encontrado = 1;
+	int estado_lectura = cpuLeerMemoria(self, unCPU_LEER_MEMORIA->direccionVirtual, lecturaDeMSP->data, unCPU_LEER_MEMORIA->tamanio);
+	if (!(estado_lectura==SIN_ERRORES)){
+		return MENSAJE_DE_ERROR;
+	}
+	log_info(self->loggerCPU,"CPU: cpuLeerMemoria Correctamente");
+	//Esto es para darse cuenta de que instruccion se trata
+	int encontrado = 0;
+	int indice = 0;
+	while (!encontrado && indice < CANTIDAD_INSTRUCCIONES){
+		if(strncmp(instrucciones_eso[indice], lecturaDeMSP->data, 4) == 0){
+			int estado_ejecucion_instruccion = ejecutar_instruccion(indice, self);
+			switch(estado_ejecucion_instruccion){
+			case SIN_ERRORES:
+				log_info(self->loggerCPU, "CPU: instruccion ejecutada SIN_ERRORES");
+				break;
+			case ERROR_POR_EJECUCION_ILICITA:
+				return ERROR_POR_EJECUCION_ILICITA;
+			case MENSAJE_DE_ERROR:
+				return MENSAJE_DE_ERROR;
+			default:
+				return ERROR_POR_CODIGO_INESPERADO;
 			}
-			indice++;
+			encontrado = 1;
 		}
+		indice++;
+	}
 
-		if(!encontrado){
-			log_error(self->loggerCPU, "CPU: Recibio un codigo inesperado de la MSP");
-			return ERROR_POR_CODIGO_INESPERADO;
-		}
+	if(!encontrado){
+		log_error(self->loggerCPU, "CPU: Recibio un codigo inesperado de la MSP");
+		return ERROR_POR_CODIGO_INESPERADO;
+	}
 
 
-		free(lecturaDeMSP);
-		free(unCPU_LEER_MEMORIA);
-		usleep(100);
+	free(lecturaDeMSP);
+	free(unCPU_LEER_MEMORIA);
+	usleep(100);
 
-		if (socket_sendPaquete(self->socketPlanificador->socket, CPU_TERMINE_UNA_LINEA, 0, NULL) <= 0){
-			log_info(self->loggerCPU, "CPU: fallo envio de CPU_TERMINE_UNA_LINEA, PID: %d", self->tcb->pid);
-		}else{
+	if (socket_sendPaquete(self->socketPlanificador->socket, CPU_TERMINE_UNA_LINEA, 0, NULL) <= 0){
+		log_info(self->loggerCPU, "CPU: fallo envio de CPU_TERMINE_UNA_LINEA, PID: %d", self->tcb->pid);
+	}else{
 
-			log_info(self->loggerCPU, "CPU: Envia al Planificador CPU_TERMINE_UNA_LINEA.");
-			t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-			if(socket_recvPaquete(self->socketPlanificador->socket, paquete) >= 0){
+		log_info(self->loggerCPU, "CPU: Envia al Planificador CPU_TERMINE_UNA_LINEA.");
+		t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+		if(socket_recvPaquete(self->socketPlanificador->socket, paquete) >= 0){
 
-				switch(paquete->header.type){
+			switch(paquete->header.type){
 
-				case CPU_SEGUI_EJECUTANDO:
-					log_info(self->loggerCPU, "CPU: recibe un CPU_SEGUI_EJECUTANDO");
+			case CPU_SEGUI_EJECUTANDO:
+				log_info(self->loggerCPU, "CPU: recibe un CPU_SEGUI_EJECUTANDO");
 
-					break;
-				case KERNEL_FIN_TCB_QUANTUM:
-					cambioContexto(self);
-					return SIN_ERRORES;
-				case ERROR_POR_DESCONEXION_DE_CONSOLA:
-					log_info(self->loggerCPU, "CPU: Recibe un ERROR_POR_DESCONEXION_DE_CONSOLA.");
-					return ERROR_POR_DESCONEXION_DE_CONSOLA;
-				default:
-					log_info(self->loggerCPU, "CPU: Recibe un codigo inesperado al mandar un CPU_TERMINE_UNA_LINEA.");
-					return MENSAJE_DE_ERROR;
-				}
-			}else{
-				log_info(self->loggerCPU, "CPU: Error al esperar un paquete del planificador.");
+				break;
+			case KERNEL_FIN_TCB_QUANTUM:
+				cambioContexto(self);
+				return SIN_ERRORES;
+			case ERROR_POR_DESCONEXION_DE_CONSOLA:
+				log_info(self->loggerCPU, "CPU: Recibe un ERROR_POR_DESCONEXION_DE_CONSOLA.");
+				return ERROR_POR_DESCONEXION_DE_CONSOLA;
+			default:
+				log_info(self->loggerCPU, "CPU: Recibe un codigo inesperado al mandar un CPU_TERMINE_UNA_LINEA.");
 				return MENSAJE_DE_ERROR;
 			}
+		}else{
+			log_info(self->loggerCPU, "CPU: Error al esperar un paquete del planificador.");
+			return MENSAJE_DE_ERROR;
 		}
-	}//fin while(1)
+	}
+
 
 	return SIN_ERRORES;
 }

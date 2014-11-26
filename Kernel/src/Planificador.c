@@ -111,12 +111,21 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 	t_programaEnKernel* unTCBCOLA = obtenerTCBdeReady(self);
 
 	if (unTCBCOLA!= NULL){
-		t_TCB_Mas_QUAMTUM* unTCBaCPU = malloc(sizeof(t_TCB_Mas_QUAMTUM));
-		unTCBaCPU->unTCB = unTCBCOLA->programaTCB;
-		unTCBaCPU->quamtum = self->quamtum;
+		t_TCB_Kernel* unTCBaCPU = malloc(sizeof(t_TCB_Kernel));
+		unTCBaCPU = unTCBCOLA->programaTCB;
 
-		socket_sendPaquete(socketNuevoCliente, TCB_NUEVO,sizeof(t_TCB_Kernel), unTCBaCPU->unTCB);
-		log_debug(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID %d", unTCBaCPU->unTCB->pid );
+		t_QUAMTUM* unQuamtum = malloc(sizeof(t_QUAMTUM));
+		unQuamtum->quamtum = self->quamtum;
+
+		//se manda un QUAMTUM a CPU
+		socket_sendPaquete(socketNuevoCliente, QUAMTUM,sizeof(t_QUAMTUM), unQuamtum);
+		log_debug(self->loggerPlanificador, "Planificador: envia un quamtum: %d", unQuamtum->quamtum);
+
+		//se mande un TCB a CPU
+		socket_sendPaquete(socketNuevoCliente, TCB_NUEVO,sizeof(t_TCB_Kernel), unTCBaCPU);
+		log_debug(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID: %d TID:%d KM:%d", unTCBaCPU->pid,unTCBaCPU->tid,unTCBaCPU->km );
+
+
 
 	}
 	free(paquete);
@@ -170,10 +179,10 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 
 	//Cuando sale del while(self->quamtum>0) se tiene que hacer un cambio de Contexto
 
-//	t_socket_paquete *paqueteCambioDeContexto = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-//	socket_recvPaquete(socketNuevoCliente, paqueteCambioDeContexto);
-//	log_info(self->loggerPlanificador, "Planificador: recibe de  CPU: CAMBIO_DE_CONTEXTO.");
-//	free(paqueteCambioDeContexto);
+	//	t_socket_paquete *paqueteCambioDeContexto = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+	//	socket_recvPaquete(socketNuevoCliente, paqueteCambioDeContexto);
+	//	log_info(self->loggerPlanificador, "Planificador: recibe de  CPU: CAMBIO_DE_CONTEXTO.");
+	//	free(paqueteCambioDeContexto);
 }
 
 void atienderCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set* master){

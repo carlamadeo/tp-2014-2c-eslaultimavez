@@ -45,7 +45,7 @@
 #define JOIN_HILO 33
 #define WAKE_HILO 34
 #define CREAR_STACK 35 // le pasa al KERNEL el PID y TID del TCB creado y el KERNEL devuelve la Base del Segmento.
-
+#define QUAMTUM 36
 
 //ERRORES POR MSP
 #define ERROR_POR_TAMANIO_EXCEDIDO -1
