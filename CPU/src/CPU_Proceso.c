@@ -51,8 +51,8 @@ int main(int argc, char** argv) {
 	if(socket_recvPaquete(self->socketPlanificador->socket, paquetePlanificadorQuantum) >= 0){
 
 		t_quantumCPU* unQuantum= (t_quantumCPU*) paquetePlanificadorQuantum->data;
-		self->tcb = unQuantum->quantumCPU;
-		log_info(self->loggerCPU, "CPU: recibe un quamtum: %d",self->tcb);
+		self->quantum = unQuantum->quantumCPU;
+		log_debug(self->loggerCPU, "CPU: recibe un quamtum: %d",self->quantum);
 	}else
 		log_error(self->loggerCPU, "CPU: error al recibir un quamtum");
 
@@ -67,6 +67,7 @@ int main(int argc, char** argv) {
 			unTCBNuevo= (t_TCB_CPU *) paquetePlanificadorTCB->data;
 			self->tcb = unTCBNuevo;
 
+			log_debug(self->loggerCPU, "CPU: recibio un TCB_NUEVO con PID: %d TID:%d KM:%d",self->tcb->pid,self->tcb->tid,self->tcb->km );
 			//printf("TCB_NUEVO TID %d \n", self->tcb->tid );  //no Borrar sirve para como debug Jorge
 			//printf("TCB_NUEVO PID %d \n", self->tcb->pid);   //no Borrar sirve para como debug Jorge
 
