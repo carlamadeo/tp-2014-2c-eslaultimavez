@@ -4,7 +4,7 @@
 #include "cpuKernel.h"
 #include "commons/protocolStructInBigBang.h"
 #include "cpu.h"
-
+t_CPU *self = malloc(sizeof(t_CPU));
 
 void LOAD_ESO (int registro, int32_t numero, t_TCB_CPU* tcb){
 	if(registro!=-1){
@@ -21,17 +21,25 @@ int GETM_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 
 
 		t_lectura_MSP * lecturaDeMSP = malloc(sizeof(t_lectura_MSP));
-		t_CPU_LEER_MEMORIA* unCPU_LEER_MEMORIA = malloc(sizeof(t_CPU_LEER_MEMORIA));
+		t_datos_aMSPLectura* unCPU_LEER_MEMORIA = malloc(sizeof(t_datos_aMSPLectura));
 		//se hace el control para saber a donde apuntar dependiendo de si se trata un tcb usuario o kernel...
 		unCPU_LEER_MEMORIA->pid = tcb->pid;
 		unCPU_LEER_MEMORIA->tamanio = sizeof(int32_t);
-		unCPU_LEER_MEMORIA->direccionVirtual = (uint32_t)tcb->registro_de_programacion[1];
+		unCPU_LEER_MEMORIA->direccionVirtual = (uint32_t)tcb->registro_de_programacion[segundo_registro];
 
-		int estado_lectura = cpuLeerMemoria(self, unCPU_LEER_MEMORIA->pid, unCPU_LEER_MEMORIA->direccionVirtual, lecturaDeMSP->data, unCPU_LEER_MEMORIA->tamanio, self->socketMSP->socket);
+		int estado_lectura = cpuLeerMemoria(self, unCPU_LEER_MEMORIA->direccionVirtual, lecturaDeMSP->data, unCPU_LEER_MEMORIA->tamanio);
+		free(lecturaDeMSP);
+		free(unCPU_LEER_MEMORIA);
 
-		if (estado_lectura == ERROR_POR_SEGMENTATION_FAULT) return ERROR_POR_SEGMENTATION_FAULT;
+		if (estado_lectura == ERROR_POR_SEGMENTATION_FAULT){
+			log_error(self->loggerCPU, "CPU: Error ERROR_POR_SEGMENTATION_FAULT %d", tcb->pid);
+			return ERROR_POR_SEGMENTATION_FAULT;
+		  }
 
 
+	}
+
+	return SIN_ERRORES;
 
 
 		/*
@@ -77,40 +85,48 @@ int GETM_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 		free(paquete_MSP);
 
 		*/
-	}
 
-	log_error(self->loggerCPU, "CPU: Error registro de programacion no encontrado %d", tcb->pid);
-	return SIN_ERRORES;
 }
 
 
 
-void SETM_ESO (int numero, int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
+int SETM_ESO (int numero, int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
 
 	if(numero<=sizeof(uint32_t)){
 
-		char *data=malloc(sizeof(int)+sizeof(uint32_t)+sizeof(int)); /*pid+direccion_logica*/
-		t_paquete_MSP *grabar_byte = malloc(sizeof(t_paquete_MSP));
-		int soffset=0, stmp_size=0;
-		memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
-		soffset=stmp_size;
-		memcpy(data + soffset, &(tcb->registro_de_programacion[segundo_registro]), stmp_size=sizeof(uint32_t));
-		soffset+=stmp_size;
-		memcpy(data + soffset, &(tcb->registro_de_programacion[primer_registro]), stmp_size=numero);
-		soffset+=stmp_size;
+		//char *data=malloc(sizeof(int)+sizeof(uint32_t)+sizeof(int)); /*pid+direccion_logica*/
+		//t_paquete_MSP *grabar_byte = malloc(sizeof(t_paquete_MSP));
+		//int soffset=0, stmp_size=0;
+		//memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
+		//soffset=stmp_size;
+		//memcpy(data + soffset, &(tcb->registro_de_programacion[segundo_registro]), stmp_size=sizeof(uint32_t));
+		//soffset+=stmp_size;
+		//memcpy(data + soffset, &(tcb->registro_de_programacion[primer_registro]), stmp_size=numero);
+		//soffset+=stmp_size;
 
-		grabar_byte->tamanio = soffset;
-		grabar_byte->data = data;
+		//grabar_byte->tamanio = soffset;
+		//grabar_byte->data = data;
+		t_lectura_MSP * escrituraDeMSP = malloc(sizeof(t_lectura_MSP));
+		t_datos_aMSPLectura* unCPU_ESCRIBIR_MEMORIA = malloc(sizeof(t_CPU_LEER_MEMORIA));
+				//se hace el control para saber a donde apuntar dependiendo de si se trata un tcb usuario o kernel...
+				unCPU_ESCRIBIR_MEMORIA->pid = tcb->pid;
+				unCPU_ESCRIBIR_MEMORIA->tamanio = sizeof(int32_t);
+				unCPU_ESCRIBIR_MEMORIA->direccionVirtual = (uint32_t)tcb->registro_de_programacion[primer_registro];
+				escrituraDeMSP->data=(int)tcb->registro_de_programacion[segundo_registro];
+				int estado_lectura = cpuEscribirMemoria(self,unCPU_ESCRIBIR_MEMORIA->direccionVirtual,escrituraDeMSP->data, unCPU_ESCRIBIR_MEMORIA->tamanio);
+
+				if (estado_lectura == ERROR_POR_SEGMENTATION_FAULT) return ERROR_POR_SEGMENTATION_FAULT;
 
 		cambio_registros(registros_cpu);
 
-		if (socket_sendPaquete(self->socketMSP->socket, ESCRIBIR_MEMORIA, grabar_byte->tamanio, grabar_byte->data)<=0){
-			log_info(self->loggerCPU, "CPU: fallo: ESCRIBIR_MEMORIA\n %d", tcb->pid);
+		//if (socket_sendPaquete(self->socketMSP->socket, ESCRIBIR_MEMORIA, grabar_byte->tamanio, grabar_byte->data)<=0){
+			//log_info(self->loggerCPU, "CPU: fallo: ESCRIBIR_MEMORIA\n %d", tcb->pid);
 
 		}
+	return SIN_ERRORES;
 	}
 
-}
+
 
 
 void MOVR_ESO (int primer_registro, int segundo_registro, t_TCB_CPU* tcb){
@@ -265,13 +281,13 @@ void NOPP_ESO (){
 }
 
 
-void PUSH_ESO (int numero, int registro, t_TCB_CPU* tcb){
+int PUSH_ESO (int numero, int registro, t_TCB_CPU* tcb){
 
 	if(numero<=sizeof(uint32_t)){
-		char *datos_a_grabar=malloc(sizeof(uint32_t));
+		/*char *datos_a_grabar=malloc(sizeof(uint32_t));
 		memcpy(datos_a_grabar, &(tcb->registro_de_programacion[registro]), numero);
 
-		char *grabar_byte=malloc(sizeof(int)+sizeof(uint32_t)*2); /*pid+direccion_logica+datos_a_grabar*/
+		char *grabar_byte=malloc(sizeof(int)+sizeof(uint32_t)*2); //pid+direccion_logica+datos_a_grabar
 		t_paquete_MSP *paquete_send = malloc(sizeof(t_paquete_MSP));
 		int soffset=0, stmp_size=0;
 		memcpy(grabar_byte, &(tcb->pid), stmp_size=(sizeof(int)));
@@ -290,15 +306,37 @@ void PUSH_ESO (int numero, int registro, t_TCB_CPU* tcb){
 		free(grabar_byte);
 		free(paquete_send);
 		tcb->cursor_stack+=numero; //actualizo el cursor de stack
+*/		char *datos_a_grabar=malloc(sizeof(uint32_t));
+		memcpy(datos_a_grabar, &(tcb->registro_de_programacion[registro]), numero);
+		t_lectura_MSP * escrituraDeMSP = malloc(sizeof(t_lectura_MSP));
+			t_datos_aMSPLectura* unCPU_ESCRIBIR_MEMORIA = malloc(sizeof(t_CPU_LEER_MEMORIA));
+					//se hace el control para saber a donde apuntar dependiendo de si se trata un tcb usuario o kernel...
+					escrituraDeMSP->data=datos_a_grabar;
+					unCPU_ESCRIBIR_MEMORIA->pid = tcb->pid;
+					unCPU_ESCRIBIR_MEMORIA->tamanio = numero;
+					unCPU_ESCRIBIR_MEMORIA->direccionVirtual = (uint32_t)tcb->cursor_stack;
 
+					int estado_lectura = cpuEscribirMemoria(self,unCPU_ESCRIBIR_MEMORIA->direccionVirtual,escrituraDeMSP->data, unCPU_ESCRIBIR_MEMORIA->tamanio);
+					free(escrituraDeMSP);
+					free(unCPU_ESCRIBIR_MEMORIA);
+					free(datos_a_grabar);
+					if (estado_lectura == ERROR_POR_SEGMENTATION_FAULT) return ERROR_POR_SEGMENTATION_FAULT;
+
+			cambio_registros(registros_cpu);
+
+			//if (socket_sendPaquete(self->socketMSP->socket, ESCRIBIR_MEMORIA, grabar_byte->tamanio, grabar_byte->data)<=0){
+				//log_info(self->loggerCPU, "CPU: fallo: ESCRIBIR_MEMORIA\n %d", tcb->pid);
+
+			}
+		return SIN_ERRORES;
 	}
-}
 
-void TAKE_ESO (int numero, int registro, t_TCB_CPU* tcb){
+
+int TAKE_ESO (int numero, int registro, t_TCB_CPU* tcb){
 
 	if(numero<=sizeof(uint32_t)){
 
-		char *data = malloc(sizeof(int)+sizeof(uint32_t)+sizeof(int)); /*pid+direccion_logica*/
+	/*	char *data = malloc(sizeof(int)+sizeof(uint32_t)+sizeof(int)); //pid+direccion_logica
 		t_paquete_MSP *leer_bytes = malloc(sizeof(t_paquete_MSP));
 		int soffset=0, stmp_size=0;
 		memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
@@ -319,10 +357,30 @@ void TAKE_ESO (int numero, int registro, t_TCB_CPU* tcb){
 
 		free(data);
 		free(leer_bytes);
-		tcb->cursor_stack-=numero; //actualizo el cursor de stack
+		tcb->cursor_stack-=numero; //actualizo el cursor de stack*/
 
+		t_lectura_MSP * lecturaDeMSP = malloc(sizeof(t_lectura_MSP));
+				t_datos_aMSPLectura* unCPU_LEER_MEMORIA = malloc(sizeof(t_datos_aMSPLectura));
+				//se hace el control para saber a donde apuntar dependiendo de si se trata un tcb usuario o kernel...
+				unCPU_LEER_MEMORIA->pid = tcb->pid;
+				unCPU_LEER_MEMORIA->tamanio = numero;
+				unCPU_LEER_MEMORIA->direccionVirtual = (uint32_t)tcb->cursor_stack;
+
+				int estado_lectura = cpuLeerMemoria(self, unCPU_LEER_MEMORIA->direccionVirtual, lecturaDeMSP->data, unCPU_LEER_MEMORIA->tamanio);
+				free(lecturaDeMSP);
+				free(unCPU_LEER_MEMORIA);
+
+				if (estado_lectura == ERROR_POR_SEGMENTATION_FAULT){
+					log_error(self->loggerCPU, "CPU: Error ERROR_POR_SEGMENTATION_FAULT %d", tcb->pid);
+					return ERROR_POR_SEGMENTATION_FAULT;
+				  }
+
+
+			}
+
+			return SIN_ERRORES;
 	}
-}
+
 
 void XXXX_ESO (t_TCB_CPU* tcb){
 
@@ -345,7 +403,7 @@ void XXXX_ESO (t_TCB_CPU* tcb){
 
 int MALC_ESO (t_TCB_CPU* tcb){
 	//CREAR_SEGMENTO
-	char *data=malloc(sizeof(int)+sizeof(int32_t)); /*pid+(tamanio)registro_de_programacion['A']*/
+	/*char *data=malloc(sizeof(int)+sizeof(int32_t)); //pid+(tamanio)registro_de_programacion['A']
 	t_paquete_MSP *alocar_bytes = malloc(sizeof(t_paquete_MSP));
 
 	int soffset=0, stmp_size=0;
@@ -366,7 +424,7 @@ int MALC_ESO (t_TCB_CPU* tcb){
 			log_info(self->loggerCPU, "CPU: recibiendo direccion virtual...\n %d ", tcb->pid);
 			char *contenido = malloc(sizeof(uint32_t));
 			memcpy(contenido, paquete_MSP->data, sizeof(char)*4);
-			/*resguardo la direccion virtual en el registro A*/
+			//resguardo la direccion virtual en el registro A
 			tcb->registro_de_programacion[0]=*contenido;
 			free(paquete_MSP);
 			free(contenido);
@@ -380,58 +438,53 @@ int MALC_ESO (t_TCB_CPU* tcb){
 	}
 	free(alocar_bytes);
 	free(data);
+*/   t_crearSegmentoBeso* crea_segmento=malloc(sizeof(t_crearSegmentoBeso));
+    crea_segmento->pid=tcb->pid;
+    crea_segmento->tamanio=(int)tcb->registro_de_programacion[0];
+	int estado_crear=cpuCrearSegmento(self->tcb, crea_segmento->pid, crea_segmento->tamanio);
+	return estado_crear;
 }
 
 
 int FREE_ESO(t_TCB_CPU* tcb){
+	int estado_destruir;
 
-	char *data=malloc(sizeof(int)+sizeof(uint32_t)); /*pid+tamaño segun registro*/
-	t_paquete_MSP *leer_byte = malloc(sizeof(t_paquete_MSP));
+	estado_destruir=cpuDestruirSegmento(self) ;
 
-	int soffset=0, stmp_size=0;
-	memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
-	soffset=stmp_size;
-	memcpy(data + soffset, &(tcb->registro_de_programacion[0]), stmp_size=sizeof(uint32_t));
-	soffset+=stmp_size;
-
-	leer_byte->tamanio = soffset;
-	leer_byte->data = data;
-
-	if (socket_sendPaquete(self->socketMSP->socket, DESTRUIR_SEGMENTO, leer_byte->tamanio, leer_byte->data)<=0){
-		log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", tcb->pid);
-
-	}
-	free(data);
-	free(leer_byte);
-
+		return estado_destruir;
 }
 
 int INNN_ESO(t_TCB_CPU* tcb){
 
 
-	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR,sizeof(int), &(tcb->pid))<=0){
-		log_info(self->loggerCPU, "CPU: Error de ENTRADA_ESTANDAR\n %d", tcb->pid);
+	int estado_innc;
+	t_entrada_estandar* pedir_numero = malloc(sizeof(t_entrada_estandar));
+
+	pedir_numero->pid = tcb->pid;
+	pedir_numero->tamanio = sizeof(int);
+	pedir_numero->tipo  = 1; //1 es un numero
+
+	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR,sizeof(t_entrada_estandar), pedir_numero)<=0){
+		log_info(self->loggerCPU, "CPU: Error de ENTRADA_ESTANDAR_NUMERO\n %d", tcb->pid);
 	}
+	free(pedir_numero);
 
 	t_socket_paquete *paquete_KERNEL = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	if(socket_recvPaquete(self->socketPlanificador->socket, paquete_KERNEL) > 0){
-		if(paquete_KERNEL->header.type == ENTRADA_ESTANDAR){
-			log_info(self->loggerCPU, "CPU: recibiendo numero ingresado por consola\n %d", tcb->pid);
-			tcb->registro_de_programacion[0]=(int)paquete_KERNEL;
-		} else {
-			log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado de MSP:\n %d", paquete_KERNEL->header.type);
+	if(paquete_KERNEL->header.type == ENTRADA_ESTANDAR){
+			log_info(self->loggerCPU, "CPU: recibiendo NUMERO ingresado por consola ", tcb->pid);
+			tcb->registro_de_programacion[0]=(int)paquete_KERNEL->data;
 
-		}
 	}else{
-		log_info(self->loggerCPU, "CPU: MSP ha cerrado su conexion\n");
-		printf("CPU: MSP ha cerrado su conexion\n");
-
-	}
-
+		log_info(self->loggerCPU, "CPU: codigo inesperado de kernel");
+		printf("CPU: codigo inesperado de kernel\n");
+		estado_innc = MENSAJE_DE_ERROR;
+		}
 	free(paquete_KERNEL);
-
+	}
+	return estado_innc;
 }
-void INNC_ESO(t_TCB_CPU* tcb){
+
 
 int INNC_ESO(t_TCB_CPU* tcb){
 	int estado_innc;
@@ -472,7 +525,7 @@ int INNC_ESO(t_TCB_CPU* tcb){
 	return estado_innc;
 }
 
-int OUTN_ESO(t_TCB_CPU* tcb){
+void OUTN_ESO(t_TCB_CPU* tcb){
 
 	t_paquete_MSP *mostrar_numero = malloc(sizeof(t_paquete_MSP));
 
@@ -493,7 +546,7 @@ int OUTN_ESO(t_TCB_CPU* tcb){
 	free(mostrar_numero);
 
 }
-int OUTC_ESO(t_TCB_CPU* tcb){
+void OUTC_ESO(t_TCB_CPU* tcb){
 
 	t_CPU_LEER_MEMORIA* unCPU_LEER_MEMORIA = malloc(sizeof(t_CPU_LEER_MEMORIA));
 	unCPU_LEER_MEMORIA->pid = self->tcb->pid;
@@ -527,7 +580,7 @@ int OUTC_ESO(t_TCB_CPU* tcb){
 
 
 }
-int CREA_ESO(t_TCB_CPU* tcb){ 	// CREA un hilo hijo de TCB
+void CREA_ESO(t_TCB_CPU* tcb){ 	// CREA un hilo hijo de TCB
 	t_TCB_CPU* tcb_hijo=malloc(sizeof(t_TCB_CPU));
 	tcb_hijo->pid=tcb->registro_de_programacion[0];
 	tcb_hijo->tid=(tcb->tid)+1;
@@ -616,7 +669,7 @@ int CREA_ESO(t_TCB_CPU* tcb){ 	// CREA un hilo hijo de TCB
 	free(tcb_hijo);
 
 }
-int JOIN_ESO(t_TCB_CPU* tcb){
+void JOIN_ESO(t_TCB_CPU* tcb){
 	t_paquete_MSP *envio_join = malloc(sizeof(t_paquete_MSP));
 	char *data=malloc((sizeof(int))+sizeof(int32_t)); /*pid+tid llamador+(tid a esperar)registro_de_programacion['B']*/
 		int soffset=0, stmp_size=0;
@@ -636,7 +689,7 @@ int JOIN_ESO(t_TCB_CPU* tcb){
 
 }
 
-int BLOK_ESO(t_TCB_CPU* tcb){
+void BLOK_ESO(t_TCB_CPU* tcb){
 
 	t_paquete_MSP *envio_bytes = malloc(sizeof(t_paquete_MSP));
 
@@ -657,7 +710,7 @@ int BLOK_ESO(t_TCB_CPU* tcb){
 
 }
 
-int WAKE_ESO(t_TCB_CPU* tcb){
+void WAKE_ESO(t_TCB_CPU* tcb){
 
 	if (socket_sendPaquete(self->socketPlanificador->socket, /*WAKE_HILO*/33,sizeof(int32_t), &(tcb->registro_de_programacion[1]))<=0){
 		log_info(self->loggerCPU, "CPU: Error de DESPERTAR\n %d", tcb->pid);
