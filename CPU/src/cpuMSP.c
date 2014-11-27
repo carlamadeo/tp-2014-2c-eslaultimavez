@@ -1,8 +1,13 @@
-
+#include "commons/socketInBigBang.h"
 #include "cpuMSP.h"
+#include "cpuConfig.h"
+#include "CPU_Proceso.h"
+#include "commons/protocolStructInBigBang.h"
+#include <stdlib.h>
 
+t_CPU *self;
 
-t_socket_client* cpuConectarConMPS(t_CPU* self) {
+void cpuConectarConMPS() {
 
 	self->socketMSP = socket_createClient();
 
@@ -14,13 +19,11 @@ t_socket_client* cpuConectarConMPS(t_CPU* self) {
 
 	else{
 		log_info(self->loggerCPU, "CPU: Conectado con la MSP (IP: %s/Puerto: %d)!", self->ipMsp, self->puertoMSP);
-		cpuRealizarHandshakeConMSP(self);
+		cpuRealizarHandshakeConMSP();
 	}
-
-	return self->socketMSP;
 }
 
-void cpuRealizarHandshakeConMSP(t_CPU* self) {
+void cpuRealizarHandshakeConMSP() {
 
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
@@ -40,7 +43,7 @@ void cpuRealizarHandshakeConMSP(t_CPU* self) {
 
 }
 
-int cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
+int cpuCrearSegmento(int pid, int tamanio){
 
 	t_datos_aMSP* datosAEnviar = malloc(sizeof(t_datos_aMSP));
 	t_datos_deMSP *datosRecibidos = malloc(sizeof(t_datos_deMSP));
@@ -80,7 +83,7 @@ int cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
 	return datosRecibidos->direccionBase;
 }
 
-int cpuDestruirSegmento(t_CPU* self){
+int cpuDestruirSegmento(){
 
 	t_destruirSegmento* destruir_segmento = malloc(sizeof(t_destruirSegmento));
 	t_socket_paquete *paqueteConfirmacionDestruccionSegmento = malloc(sizeof(t_socket_paquete));
@@ -106,14 +109,14 @@ int cpuDestruirSegmento(t_CPU* self){
 	return SIN_ERRORES;
 }
 
-int cpuEscribirMemoria(t_CPU* self, uint32_t direccionVirtual, char *programa, int tamanio){
+int cpuEscribirMemoria(int pid, uint32_t direccionVirtual, char *programa, int tamanio){
 
 	t_escribirSegmentoBeso* escrituraDeCodigo = malloc(sizeof(t_escribirSegmentoBeso));
 	t_socket_paquete *paqueteConfirmacionEscritura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 	t_confirmacion *unaConfirmacionEscritura = (t_confirmacion *)malloc(sizeof(t_confirmacion));
 
 	escrituraDeCodigo->direccionVirtual = direccionVirtual;
-	escrituraDeCodigo->pid = self->tcb->pid;
+	escrituraDeCodigo->pid = pid;
 	escrituraDeCodigo->tamanio = tamanio;
 	strcpy(escrituraDeCodigo->bufferCodigoBeso, programa);
 
@@ -139,14 +142,14 @@ int cpuEscribirMemoria(t_CPU* self, uint32_t direccionVirtual, char *programa, i
 	return unaConfirmacionEscritura->estado;
 }
 
-int cpuLeerMemoria(t_CPU* self, uint32_t direccionVirtual, char *programa, int tamanio){
+int cpuLeerMemoria(int pid, uint32_t direccionVirtual, char *programa, int tamanio){
 
 	t_datos_aMSPLectura *datosAMSP = malloc(sizeof(t_datos_aMSPLectura));
 	t_socket_paquete *paqueteLectura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 	t_datos_deMSPLectura *unaLectura = (t_datos_deMSPLectura *)malloc(sizeof(t_datos_deMSPLectura));
 
 	datosAMSP->direccionVirtual = direccionVirtual;
-	datosAMSP->pid = self->tcb->pid;
+	datosAMSP->pid = pid;
 	datosAMSP->tamanio = tamanio;
 
 	log_info(self->loggerCPU, "CPU: Solicitud de lectura de memoria para PID: %d, Direccion Virtual: %0.8p, Tamaño: %d.", datosAMSP->pid, datosAMSP->direccionVirtual, datosAMSP->tamanio);

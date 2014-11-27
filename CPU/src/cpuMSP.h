@@ -1,7 +1,7 @@
 #ifndef CPUMPS_H_
 #define CPUMPS_H_
 
-#include "CPU_Proceso.h"
+#include <stdint.h>
 
 typedef struct{
 	int pid;
@@ -45,11 +45,11 @@ typedef struct{
 } t_destruirSegmento;
 
 
-t_socket_client* cpuConectarConMPS(t_CPU* self);
-void cpuRealizarHandshakeConMSP(t_CPU* self);
-int cpuCrearSegmento(t_CPU *self, int pid, int tamanio);
-int cpuDestruirSegmento(t_CPU* self);
-int cpuEscribirMemoria(t_CPU* self, uint32_t direccionVirtual, char *programa, int tamanio);
-int cpuLeerMemoria(t_CPU* self, uint32_t direccionVirtual, char *programa, int tamanio);
+void cpuConectarConMPS();
+void cpuRealizarHandshakeConMSP();
+int cpuCrearSegmento(int pid, int tamanio);
+int cpuDestruirSegmento();
+int cpuEscribirMemoria(int pid, uint32_t direccionVirtual, char *programa, int tamanio);
+int cpuLeerMemoria(int pid, uint32_t direccionVirtual, char *programa, int tamanio);
 
 #endif /* CPUMPS_H_ */
