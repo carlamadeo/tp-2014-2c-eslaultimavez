@@ -42,8 +42,6 @@ int main(int argc, char* argv[]) {
 	consolaHacerConexionconLoader(self);
 	consolaComunicacionLoader(self, argv[1]);
 
-	log_destroy(self->loggerProgramaBESO);
-	free(self->ipLoader);
 	free(self);
 
 	return EXIT_SUCCESS;

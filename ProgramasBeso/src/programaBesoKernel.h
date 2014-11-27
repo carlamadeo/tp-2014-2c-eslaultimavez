@@ -13,9 +13,7 @@ typedef struct{
 }t_datosMostrarConsola;
 
 void consolaHacerConexionconLoader(t_programaBESO* self);
-
 void realizarHandshakeConLoader(t_programaBESO* self);
-
 void consolaComunicacionLoader(t_programaBESO* self, char *parametro);
 
 #endif /* PROGRAMABESOKERNEL_H_ */

@@ -9,14 +9,12 @@ typedef struct {
 	t_log *loggerProgramaBESO;
 	int puertoLoader;
 	char *ipLoader;
-	char *codigo;
+	char codigo[1000];
 } t_programaBESO;
 
 
 void verificar_argumentosProgramaBeso(int argc, char* argv[]);
-
 t_programaBESO* consolaCargarConfiguracion(char* config_file);
-
 void consolaExtraer_programaBeso (t_programaBESO* self,char *parametro);
 
 #endif /* PROGRAMABESO_H_ */

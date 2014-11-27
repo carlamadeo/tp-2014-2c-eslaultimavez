@@ -1,14 +1,14 @@
 #include "codigoESO.h"
+#include "CPU_Proceso.h"
 #include "commons/cpu.h"
 #include "CPU_Proceso.h"
 #include "cpuMSP.h"
 #include "cpuKernel.h"
 #include "ejecucion.h"
 
-//t_CPU* self;
 t_list* parametros;
 
-int LOAD_ESO(){
+int LOAD_ESO(t_CPU *self){
 
 	char registro;
 	int reg;
@@ -16,16 +16,17 @@ int LOAD_ESO(){
 	int tamanio = 5;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 
-	int estado_lectura = cpuLeerMemoria(self, lecturaDeMSP, tamanio);
-	//int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
 
+		self->tcb->puntero_instruccion += tamanio;
+
 		log_info(self->loggerCPU,"CPU: Recibiendo parametros de instruccion LOAD");
 
-		memcpy(&(registro), self->lecturaMSP, sizeof(char));            // antes decia lecturaDeMSP
-		memcpy(&(numero), self->lecturaMSP + sizeof(char), sizeof(int));// estaba mal
+		memcpy(&(registro), lecturaDeMSP, sizeof(char));
+		memcpy(&(numero), lecturaDeMSP + sizeof(char), sizeof(int));
 
 		printf("un registro de MSP %c : Jorge Ok\n", registro);
 		printf("un Numero de MSP   %d : Jorge estan seguro que este numero va?\n", numero);
@@ -42,7 +43,7 @@ int LOAD_ESO(){
 
 		self->tcb->registro_de_programacion[reg] = numero;
 		//cambio_registros(registros_cpu);
-		log_info(self->loggerCPU, "CPU: ejecuto LOAD_ESO en PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		log_info(self->loggerCPU, "CPU: LOAD ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 	}
 
 	else{
@@ -53,18 +54,20 @@ int LOAD_ESO(){
 	return estado_bloque;
 }
 
-/*
-int GETM_ESO(){
+
+int GETM_ESO(t_CPU *self){
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
 	int regA, regB;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion GETM");
 
@@ -85,9 +88,11 @@ int GETM_ESO(){
 			int tamanioMSP = sizeof(int32_t);
 			char *lecturaMSP = malloc(sizeof(char)*tamanioMSP);
 
-			estado_lectura = cpuLeerMemoria(self->tcb->pid, (uint32_t)self->tcb->registro_de_programacion[regB], lecturaMSP, tamanioMSP);
+			estado_lectura = cpuLeerMemoria(self, (uint32_t)self->tcb->registro_de_programacion[regB], lecturaMSP, tamanioMSP);
 
 			estado_bloque = estado_lectura;
+
+			log_info(self->loggerCPU, "CPU: GETM ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
 			free(lecturaMSP);
 
@@ -103,17 +108,19 @@ int GETM_ESO(){
 }
 
 
-int SETM_ESO(){
+int SETM_ESO(t_CPU *self){
 
 	int tamanio = 6;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
 	int numero, regA, regB;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion SETM");
 
@@ -136,7 +143,11 @@ int SETM_ESO(){
 				char* byte_a_escribir = malloc(sizeof(int32_t));
 				memcpy(byte_a_escribir, &(self->tcb->registro_de_programacion[regB]), numero);
 				estado_bloque = cpuEscribirMemoria(self, (uint32_t)self->tcb->registro_de_programacion[regA], byte_a_escribir, numero);
+
+				log_info(self->loggerCPU, "CPU: SETM ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+
 				free(byte_a_escribir);
+
 			}
 
 		}
@@ -153,17 +164,19 @@ int SETM_ESO(){
 }
 
 
-int MOVR_ESO(){
+int MOVR_ESO(t_CPU *self){
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
 	int regA, regB;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion MOVR");
 
@@ -181,6 +194,8 @@ int MOVR_ESO(){
 			//ejecucion_instruccion("MOVR", parametros);
 
 			self->tcb->registro_de_programacion[regA] = self->tcb->registro_de_programacion[regB];
+
+			log_info(self->loggerCPU, "CPU: MOVR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			//cambio_registros(registros_cpu);
 		}
 
@@ -195,22 +210,24 @@ int MOVR_ESO(){
 }
 
 
-int ADDR_ESO(){
+int ADDR_ESO(t_CPU *self){
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
 	int regA, regB;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
 
+		self->tcb->puntero_instruccion += tamanio;
+
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion ADDR");
 
 		memcpy(&(registroA), (lecturaDeMSP), sizeof(char));
-		memcpy(&(registroB), (lecturaDeMSP) + sizeof(char),sizeof(char));
+		memcpy(&(registroB), (lecturaDeMSP) + sizeof(char), sizeof(char));
 		regA = determinar_registro(registroA);
 		regB = determinar_registro(registroB);
 
@@ -221,6 +238,8 @@ int ADDR_ESO(){
 			//ejecucion_instruccion("ADDR", parametros);
 
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] + self->tcb->registro_de_programacion[regB];
+
+			log_info(self->loggerCPU, "CPU: ADDR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			//cambio_registros(registros_cpu);
 		}
 
@@ -236,17 +255,19 @@ int ADDR_ESO(){
 }
 
 
-int SUBR_ESO(){
+int SUBR_ESO(t_CPU *self){
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
 	int regA, regB;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion SUBR");
 
@@ -263,6 +284,8 @@ int SUBR_ESO(){
 			//ejecucion_instruccion("SUBR", parametros);
 
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] - self->tcb->registro_de_programacion[regB];
+
+			log_info(self->loggerCPU, "CPU: SUBR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			//cambio_registros(registros_cpu);
 		}
 
@@ -278,17 +301,19 @@ int SUBR_ESO(){
 
 }
 
-int MULR_ESO(){
+int MULR_ESO(t_CPU *self){
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
 	int regA, regB;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion MULR");
 
@@ -305,6 +330,8 @@ int MULR_ESO(){
 			//ejecucion_instruccion("MULR", parametros);
 
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] * self->tcb->registro_de_programacion[regB];
+
+			log_info(self->loggerCPU, "CPU: MULR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			//cambio_registros(registros_cpu);
 		}
 
@@ -321,17 +348,19 @@ int MULR_ESO(){
 }
 
 
-int MODR_ESO(){
+int MODR_ESO(t_CPU *self){
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
 	int regA, regB;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion MODR");
 
@@ -348,6 +377,8 @@ int MODR_ESO(){
 			//ejecucion_instruccion("MODR", parametros);
 
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] % self->tcb->registro_de_programacion[regB];
+
+			log_info(self->loggerCPU, "CPU: MODR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			//cambio_registros(registros_cpu);
 		}
 
@@ -364,17 +395,19 @@ int MODR_ESO(){
 }
 
 
-int DIVR_ESO(){
+int DIVR_ESO(t_CPU *self){
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
 	int regA, regB;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion DIVR");
 
@@ -392,9 +425,10 @@ int DIVR_ESO(){
 
 			int32_t auxiliar = self->tcb->registro_de_programacion[regB];
 
-			if (self->tcb->registro_de_programacion[regB] != 0)
+			if (self->tcb->registro_de_programacion[regB] != 0){
 				self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] / self->tcb->registro_de_programacion[regB];
-
+				log_info(self->loggerCPU, "CPU: DIVR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			}
 
 			else{
 				log_error(self->loggerCPU, "CPU: error de intento de division por cero");
@@ -415,17 +449,19 @@ int DIVR_ESO(){
 }
 
 
-int INCR_ESO(){
+int INCR_ESO(t_CPU *self){
 
 	int tamanio = 1;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registro;
 	int reg;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "Recibiendo parametros de instruccion INCR");
 
@@ -439,6 +475,8 @@ int INCR_ESO(){
 			//ejecucion_instruccion("INCR", parametros);
 
 			self->tcb->registro_de_programacion[registro]++;
+
+			log_info(self->loggerCPU, "CPU: INCR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 		}
 
 		else{
@@ -454,17 +492,19 @@ int INCR_ESO(){
 }
 
 
-int DECR_ESO(){
+int DECR_ESO(t_CPU *self){
 
 	int tamanio = 1;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registro;
 	int reg;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "Recibiendo parametros de instruccion DECR");
 
@@ -478,6 +518,8 @@ int DECR_ESO(){
 			//ejecucion_instruccion("DECR", parametros);
 
 			self->tcb->registro_de_programacion[registro]--;
+
+			log_info(self->loggerCPU, "CPU: DECR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 		}
 
 		else{
@@ -493,17 +535,19 @@ int DECR_ESO(){
 }
 
 
-int COMP_ESO(){
+int COMP_ESO(t_CPU *self){
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
 	int regA, regB;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "Recibiendo parametros de instruccion COMP");
 
@@ -525,6 +569,8 @@ int COMP_ESO(){
 			else
 				self->tcb->registro_de_programacion[0] = 0;
 
+			log_info(self->loggerCPU, "CPU: COMPR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+
 		}
 
 		else{
@@ -540,17 +586,19 @@ int COMP_ESO(){
 }
 
 
-int CGEQ_ESO(){
+int CGEQ_ESO(t_CPU *self){
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
 	int regA, regB;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion CGEQ");
 
@@ -572,6 +620,7 @@ int CGEQ_ESO(){
 			else
 				self->tcb->registro_de_programacion[0] = 0;
 
+			log_info(self->loggerCPU, "CPU: CGEQ ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
 		}
 
@@ -588,17 +637,19 @@ int CGEQ_ESO(){
 }
 
 
-int CLEQ_ESO(){
+int CLEQ_ESO(t_CPU *self){
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
 	int regA, regB;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion CLEQ");
 
@@ -619,6 +670,8 @@ int CLEQ_ESO(){
 
 			else
 				self->tcb->registro_de_programacion[0] = 0;
+
+			log_info(self->loggerCPU, "CPU: CLEQ ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 		}
 
 		else{
@@ -634,17 +687,19 @@ int CLEQ_ESO(){
 }
 
 
-int GOTO_ESO(){
+int GOTO_ESO(t_CPU *self){
 
 	int tamanio = 1;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registro;
 	int reg;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "Recibiendo parametros de instruccion GOTO");
 
@@ -657,8 +712,11 @@ int GOTO_ESO(){
 			//list_add(parametros, (void *)registro);
 			//ejecucion_instruccion("GOTO", parametros);
 
-			if((self->tcb->base_segmento_codigo + self->tcb->registro_de_programacion[reg]) <= self->tcb->tamanio_segmento_codigo)
+			if((self->tcb->base_segmento_codigo + self->tcb->registro_de_programacion[reg]) <= self->tcb->tamanio_segmento_codigo){
 				self->tcb->puntero_instruccion = self->tcb->registro_de_programacion[registro];
+				log_info(self->loggerCPU, "CPU: GOTO ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			}
+
 			else
 				estado_bloque = ERROR_POR_SEGMENTATION_FAULT;
 		}
@@ -675,16 +733,18 @@ int GOTO_ESO(){
 
 }
 
-int JMPZ_ESO(){
+int JMPZ_ESO(t_CPU *self){
 
 	int tamanio = 4;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	uint32_t direccion;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion JMPZ");
 
@@ -695,8 +755,11 @@ int JMPZ_ESO(){
 
 		if(self->tcb->registro_de_programacion[0] == 0){
 
-			if((self->tcb->base_segmento_codigo + direccion) <= self->tcb->tamanio_segmento_codigo)
+			if((self->tcb->base_segmento_codigo + direccion) <= self->tcb->tamanio_segmento_codigo){
 				self->tcb->puntero_instruccion = direccion;
+				log_info(self->loggerCPU, "CPU: JMPZ ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			}
+
 			else
 				estado_bloque = ERROR_POR_SEGMENTATION_FAULT;
 
@@ -710,16 +773,18 @@ int JMPZ_ESO(){
 }
 
 
-int JPNZ_ESO(){
+int JPNZ_ESO(t_CPU *self){
 
 	int tamanio = 4;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	uint32_t direccion;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion JPNZ");
 
@@ -730,8 +795,10 @@ int JPNZ_ESO(){
 
 		if(self->tcb->registro_de_programacion[0] != 0){
 
-			if((self->tcb->base_segmento_codigo + direccion) <= self->tcb->tamanio_segmento_codigo)
+			if((self->tcb->base_segmento_codigo + direccion) <= self->tcb->tamanio_segmento_codigo){
 				self->tcb->puntero_instruccion = direccion;
+				log_info(self->loggerCPU, "CPU: JPNZ ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			}
 
 			else
 				estado_bloque = ERROR_POR_SEGMENTATION_FAULT;
@@ -746,16 +813,18 @@ int JPNZ_ESO(){
 }
 
 
-int INTE_ESO(){
+int INTE_ESO(t_CPU *self){
 
 	int tamanio = 4;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	uint32_t direccion;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion INTE");
 
@@ -763,7 +832,9 @@ int INTE_ESO(){
 		//list_add(parametros, (void *)direccion);
 		//ejecucion_instruccion("INTE", parametros);
 
-		cpuEnviaInterrupcion(direccion);
+		cpuEnviaInterrupcion(self, direccion);
+
+		log_info(self->loggerCPU, "CPU: INTE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
 	}
 
@@ -774,21 +845,23 @@ int INTE_ESO(){
 
 }
 
-//void FLCL(){
+//void FLCL(t_CPU *self){
 //
 //}
 
-int SHIF_ESO(){
+int SHIF_ESO(t_CPU *self){
 
 	int tamanio = 5;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registro;
 	int numero, reg;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion SHIF");
 
@@ -808,6 +881,8 @@ int SHIF_ESO(){
 			else
 				self->tcb->registro_de_programacion[reg]<<=numero;
 
+			log_info(self->loggerCPU, "CPU: SHIF ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+
 		}
 
 	}
@@ -818,23 +893,27 @@ int SHIF_ESO(){
 }
 
 
-int NOPP_ESO(){
+int NOPP_ESO(t_CPU *self){
 	//no hace nada
+
+	log_info(self->loggerCPU, "CPU: NOPP ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 	return 1;
 }
 
 
-int PUSH_ESO(){
+int PUSH_ESO(t_CPU *self){
 
 	int tamanio = 5;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registro;
 	int numero, reg;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion PUSH");
 
@@ -858,8 +937,10 @@ int PUSH_ESO(){
 
 				free(byte_a_escribir);
 
-				if (estado_bloque == SIN_ERRORES)
+				if (estado_bloque == SIN_ERRORES){
 					self->tcb->cursor_stack += numero;
+					log_info(self->loggerCPU, "CPU: PUSH ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+				}
 			}
 		}
 	}
@@ -869,17 +950,19 @@ int PUSH_ESO(){
 }
 
 
-int TAKE_ESO(){
+int TAKE_ESO(t_CPU *self){
 
 	int tamanio = 5;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registro;
 	int numero, reg;
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
 
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion TAKE");
 
@@ -905,6 +988,7 @@ int TAKE_ESO(){
 				if (estado_lectura == SIN_ERRORES){
 					self->tcb->registro_de_programacion[reg] = (int32_t)lecturaDeMSP2;
 					self->tcb->cursor_stack -= numero;
+					log_info(self->loggerCPU, "CPU: TAKE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 				}
 
 				free(lecturaDeMSP2);
@@ -920,18 +1004,19 @@ int TAKE_ESO(){
 }
 
 
-int XXXX_ESO(){
+int XXXX_ESO(t_CPU *self){
 
 	fin_ejecucion();
 
 	char *data = malloc(sizeof(t_TCB_CPU));
 	memcpy(data, self->tcb, sizeof(t_TCB_CPU));
-	int estado = cpuFinalizarProgramaExitoso(data);
+	int estado = cpuFinalizarProgramaExitoso(self, data);
 
+	log_info(self->loggerCPU, "CPU: TAKE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 	free(data);
 
 }
-*/
+
 
 //Instrucciones Protegidas, KM=1   (ninguna de estas operaciones tiene operadores)
 

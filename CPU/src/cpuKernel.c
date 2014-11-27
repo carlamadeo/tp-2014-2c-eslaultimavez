@@ -2,9 +2,8 @@
 #include "CPU_Proceso.h"
 #include <stdlib.h>
 
-//t_CPU *self;
 
-void cpuConectarConKernel(){
+void cpuConectarConKernel(t_CPU *self){
 
 	log_info(self->loggerCPU, "CPU: Conectando con el Planificador...");
 
@@ -21,7 +20,8 @@ void cpuConectarConKernel(){
 
 }
 
-void cpuRealizarHandshakeConKernel(){
+
+void cpuRealizarHandshakeConKernel(t_CPU *self){
 
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
@@ -45,7 +45,7 @@ void cpuRealizarHandshakeConKernel(){
 }
 
 
-void cpuRecibirTCB(){
+void cpuRecibirTCB(t_CPU *self){
 
 	t_socket_paquete *paquetePlanificadorTCB = (t_socket_paquete*) malloc(sizeof(t_socket_paquete));
 	t_TCB_CPU* unTCBNuevo = (t_TCB_CPU*) malloc(sizeof(t_TCB_CPU));
@@ -88,7 +88,7 @@ void cpuRecibirTCB(){
 }
 
 
-void cpuRecibirQuantum(){
+void cpuRecibirQuantum(t_CPU *self){
 
 	t_socket_paquete *paquetePlanificadorQuantum = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_quantumCPU* unQuantum =  (t_quantumCPU*) malloc(sizeof(t_quantumCPU));
@@ -107,7 +107,8 @@ void cpuRecibirQuantum(){
 	free(paquetePlanificadorQuantum);
 }
 
-int cpuEnviaTermineUnaLinea(){
+
+int cpuEnviaTermineUnaLinea(t_CPU *self){
 
 	if (socket_sendPaquete(self->socketPlanificador->socket, CPU_TERMINE_UNA_LINEA, 0, NULL) <= 0){
 		log_info(self->loggerCPU, "CPU: Fallo envio de CPU_TERMINE_UNA_LINEA, PID: %d", self->tcb->pid);
@@ -133,7 +134,7 @@ int cpuEnviaTermineUnaLinea(){
 }
 
 
-void cpuCambioContexto(){
+void cpuCambioContexto(t_CPU *self){
 
 	//antes de hacer el send, deberia actualizarce el STACK
 	//el stack sufre modificaciones cuando se ejecutan las instrucciones ESO, no se actualiza, lo que se actualiza es el TCB.
@@ -145,7 +146,8 @@ void cpuCambioContexto(){
 
 }
 
-void cpuEnviaInterrupcion(uint32_t direccion){
+
+void cpuEnviaInterrupcion(t_CPU *self, uint32_t direccion){
 
 	t_interrupcion *interrupcion = malloc(sizeof(t_interrupcion));
 	interrupcion->tcb = self->tcb;
@@ -161,7 +163,8 @@ void cpuEnviaInterrupcion(uint32_t direccion){
 
 }
 
-int cpuFinalizarProgramaExitoso(char *algo){
+
+int cpuFinalizarProgramaExitoso(t_CPU *self, char *algo){
 
 	log_info(self->loggerCPU, "CPU: Envia FINALIZAR_PROGRAMA_EXITO al Kernel");
 

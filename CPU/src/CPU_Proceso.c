@@ -16,12 +16,11 @@
 #include <sys/types.h>
 #include <stdlib.h>
 
-//t_CPU *self;
 
 int main(int argc, char** argv) {
 
 	verificar_argumentosCPU(argc, argv);
-	self = malloc(sizeof(t_CPU));
+	t_CPU *self = malloc(sizeof(t_CPU));
 
 	t_config *configCPU;
 
@@ -30,21 +29,21 @@ int main(int argc, char** argv) {
 	self->loggerCPU = log_create(nombreLog, "CPU", 1, LOG_LEVEL_DEBUG); //Creo el archivo Log
 	free(nombreLog);
 
-	if(!cargarConfiguracionCPU(argv[1], configCPU)){
+	if(!cargarConfiguracionCPU(self, argv[1], configCPU)){
 		printf("Archivo de configuracion invalido\n");
 		return EXIT_SUCCESS;
 	}
 
-	cpuConectarConMPS();
-	cpuConectarConKernel();
+	cpuConectarConMPS(self);
+	cpuConectarConKernel(self);
 
 	while(1){
 		//1) Paso, recibir Quantum
-		cpuRecibirQuantum();
+		cpuRecibirQuantum(self);
 		//2) Paso, recibir TCB
-		cpuRecibirTCB();
+		cpuRecibirTCB(self);
 		//3) Paso, Procesa TCB
-		cpuProcesarTCB();
+		cpuProcesarTCB(self);
 	}
 
 	log_info(self->loggerCPU, "Se desconecto la CPU. Elimino todo");
@@ -52,7 +51,7 @@ int main(int argc, char** argv) {
 	close(self->socketPlanificador->socket->descriptor);
 	close(self->socketMSP->socket->descriptor);
 
-	destruirConfiguracionCPU(configCPU);
+	free(self);
 	return EXIT_SUCCESS;
 }
 

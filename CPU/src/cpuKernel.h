@@ -96,14 +96,14 @@ typedef struct {
 } t_crea_hilo;
 
 
-void cpuConectarConKernel();
-void cpuRealizarHandshakeConKernel();
-void cpuRecibirTCB();
-void cpuRecibirQuantum();
-int cpuEnviaTermineUnaLinea();
-void cpuCambioContexto();
-void cpuEnviaInterrupcion(uint32_t direccion);
-int cpuFinalizarProgramaExitoso(char *algo);
+void cpuConectarConKernel(t_CPU *self);
+void cpuRealizarHandshakeConKernel(t_CPU *self);
+void cpuRecibirTCB(t_CPU *self);
+void cpuRecibirQuantum(t_CPU *self);
+int cpuEnviaTermineUnaLinea(t_CPU *self);
+void cpuCambioContexto(t_CPU *self);
+void cpuEnviaInterrupcion(t_CPU *self, uint32_t direccion);
+int cpuFinalizarProgramaExitoso(t_CPU *self, char *algo);
 
 
 #endif /* CPUKERNEL_H_ */

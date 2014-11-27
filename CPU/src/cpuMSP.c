@@ -1,13 +1,11 @@
 #include "commons/socketInBigBang.h"
 #include "cpuMSP.h"
 #include "cpuConfig.h"
-#include "CPU_Proceso.h"
 #include "commons/protocolStructInBigBang.h"
 #include <stdlib.h>
 
-//t_CPU *self;
 
-void cpuConectarConMPS() {
+void cpuConectarConMPS(t_CPU *self) {
 
 	self->socketMSP = socket_createClient();
 
@@ -20,11 +18,11 @@ void cpuConectarConMPS() {
 	else{
 		//printf("IP: %s y Puerto:  %d\n", self->ipMsp,self->puertoMSP);
 		log_info(self->loggerCPU, "CPU: Conectado con la MSP (IP: %s/Puerto: %d)!", self->ipMsp, self->puertoMSP);
-		cpuRealizarHandshakeConMSP();
+		cpuRealizarHandshakeConMSP(self);
 	}
 }
 
-void cpuRealizarHandshakeConMSP() {
+void cpuRealizarHandshakeConMSP(t_CPU *self) {
 
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
@@ -44,7 +42,7 @@ void cpuRealizarHandshakeConMSP() {
 
 }
 
-int cpuCrearSegmento(int pid, int tamanio){
+int cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
 
 	t_datos_aMSP* datosAEnviar = malloc(sizeof(t_datos_aMSP));
 	t_datos_deMSP *datosRecibidos = malloc(sizeof(t_datos_deMSP));
@@ -84,7 +82,7 @@ int cpuCrearSegmento(int pid, int tamanio){
 	return datosRecibidos->direccionBase;
 }
 
-int cpuDestruirSegmento(){
+int cpuDestruirSegmento(t_CPU *self){
 
 	t_destruirSegmento* destruir_segmento = malloc(sizeof(t_destruirSegmento));
 	t_socket_paquete *paqueteConfirmacionDestruccionSegmento = malloc(sizeof(t_socket_paquete));
@@ -110,14 +108,14 @@ int cpuDestruirSegmento(){
 	return SIN_ERRORES;
 }
 
-int cpuEscribirMemoria(int pid, uint32_t direccionVirtual, char *programa, int tamanio){
+int cpuEscribirMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int tamanio){
 
 	t_escribirSegmentoBeso* escrituraDeCodigo = malloc(sizeof(t_escribirSegmentoBeso));
 	t_socket_paquete *paqueteConfirmacionEscritura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 	t_confirmacion *unaConfirmacionEscritura = (t_confirmacion *)malloc(sizeof(t_confirmacion));
 
 	escrituraDeCodigo->direccionVirtual = direccionVirtual;
-	escrituraDeCodigo->pid = pid;
+	escrituraDeCodigo->pid = self->tcb->pid;
 	escrituraDeCodigo->tamanio = tamanio;
 	strcpy(escrituraDeCodigo->bufferCodigoBeso, programa);
 
@@ -143,14 +141,14 @@ int cpuEscribirMemoria(int pid, uint32_t direccionVirtual, char *programa, int t
 	free(escrituraDeCodigo);
 	return unaConfirmacionEscritura->estado;
 }
-int cpuLeerMemoria(t_CPU *self, char *programa, int tamanio){
-//int cpuLeerMemoria(int pid, uint32_t direccionVirtual, char *programa, int tamanio){
+
+int cpuLeerMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int tamanio){
 
 	t_datos_aMSPLectura *datosAMSP = malloc(sizeof(t_datos_aMSPLectura));
 	t_socket_paquete *paqueteLectura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 	t_datos_deMSPLectura *unaLectura = (t_datos_deMSPLectura *)malloc(sizeof(t_datos_deMSPLectura));
 
-	datosAMSP->direccionVirtual = self->tcb->puntero_instruccion;
+	datosAMSP->direccionVirtual = direccionVirtual;
 	datosAMSP->pid = self->tcb->pid; //esto devuelve un CERO, me parece que es un error!!!!
 	datosAMSP->tamanio = tamanio;
 
@@ -161,18 +159,13 @@ int cpuLeerMemoria(t_CPU *self, char *programa, int tamanio){
 	socket_recvPaquete(self->socketMSP->socket, paqueteLectura);
 
 	unaLectura = (t_datos_deMSPLectura *) paqueteLectura->data;
-	printf("Una lectura MSP: %c\n", unaLectura->lectura);
+	printf("Una lectura MSP: %s\n", unaLectura->lectura);
 	printf("Un estado MSP: %d\n", unaLectura->estado);
-
-	self->lecturaMSP = malloc(sizeof(1)); //esto cambiar puede ser uno porque es una caracter aunque no se!!! ERROR
-	strcpy(self->lecturaMSP, unaLectura->lectura);  //en esta linea rompe Para que se usa un programa y como se carga
-	printf("Una lectura MSP LOCAL en self->lecturaMSP: %c\n",self->lecturaMSP);
-
+	strcpy(programa, unaLectura->lectura);  //en esta linea rompe Para que se usa un programa y como se carga
 
 	if (unaLectura->estado == ERROR_POR_SEGMENTATION_FAULT){
 		log_error(self->loggerCPU, "CPU: error por Segmentation Fault");
 	}
 
 	return unaLectura->estado;
-	//return 1;
 }

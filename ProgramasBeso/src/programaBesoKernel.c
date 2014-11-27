@@ -51,7 +51,7 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 	fseek(archivoBeso, 0, SEEK_SET);	//Me coloco al principio del fichero para leerlo
 
 	off_t offset = 0;
-
+	int i;
 	t_socket_header header;
 	header.length = sizeof(header) + sizeArchivoBeso;
 
@@ -63,7 +63,6 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 		exit(-1);
 	}
 
-
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_datosKernel* datosAKernel = malloc(sizeof(t_datosKernel));
 	t_datosMostrarConsola* datosDeKernel = (t_datosMostrarConsola*) (paquete->data);
@@ -71,6 +70,7 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 	datosAKernel->codigoBeso = self->codigo;
 
 	log_info(self->loggerProgramaBESO, "Consola: Espera respuesta del kernel");
+
 	while(1){
 		if (socket_recvPaquete(self->socketKernel->socket, paquete) >= 0){
 
@@ -109,9 +109,4 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 	free(datosAKernel);
 	socket_freePaquete(paquete);
 }
-
-
-
-
-
 

@@ -7,11 +7,9 @@
 
 #include "cpuConfig.h"
 
-t_CPU *self;
-
 const char configProperties[][25] = {"PUERTO_KERNEL", "PUERTO_MSP", "IP_KERNEL", "IP_MSP", "RETARDO"};
 
-bool cargarConfiguracionCPU(char *config_file, t_config *configCPU){
+bool cargarConfiguracionCPU(t_CPU *self, char *config_file, t_config *configCPU){
 
 	configCPU = config_create(config_file);
 
@@ -43,8 +41,3 @@ bool validarConfiguracionCPU(t_config* configCPU){
 
 	return existen;
 }
-
-void destruirConfiguracionCPU(t_config *configCPU){
-	free(self);
-}
-

@@ -97,10 +97,9 @@ int kernelEscribirMemoria(t_kernel* self, int pid, uint32_t direccionVirtual, ch
 	escrituraDeCodigo->direccionVirtual = direccionVirtual;
 	escrituraDeCodigo->pid = pid;
 	escrituraDeCodigo->tamanio = tamanioBeso;
-	strcpy(escrituraDeCodigo->bufferCodigoBeso, programaBeso);
+	memmove(escrituraDeCodigo->bufferCodigoBeso, programaBeso, tamanioBeso);
 
 	log_info(self->loggerKernel, "Kernel: Solicitud de escritura de %s en memoria para PID: %d, Direccion Virtual: %0.8p, Tamaño: %d.", escrituraDeCodigo->bufferCodigoBeso, escrituraDeCodigo->pid, escrituraDeCodigo->direccionVirtual, escrituraDeCodigo->tamanio);
-	//memcpy(escrituraDeCodigo->bufferCodigoBeso, programaBeso, strlen(programaBeso)); //importante, ver si tiene o no el /0
 
 	socket_sendPaquete(self->socketMSP->socket, ESCRIBIR_MEMORIA, sizeof(t_escribirSegmentoBeso), escrituraDeCodigo);
 

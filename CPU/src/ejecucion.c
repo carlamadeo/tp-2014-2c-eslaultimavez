@@ -5,17 +5,18 @@
  *      Author: utnso
  */
 
+
 #include "cpuKernel.h"
 #include "ejecucion.h"
+#include "codigoESO.h"
 
-//t_CPU *self;
 t_list* parametros;
 
 char *instrucciones_eso[] = {"LOAD", "GETM", "SETM", "MOVR", "ADDR", "SUBR", "MULR", "MODR", "DIVR", "INCR", "DECR",
 		"COMP", "CGEQ", "CLEQ", "GOTO", "JMPZ", "JPNZ", "INTE", "SHIF", "NOPP", "PUSH", "TAKE", "XXXX", "MALC", "FREE", "INNN",
 		"INNC", "OUTN", "OUTC", "CREA", "JOIN", "BLOK", "WAKE"};
 
-int cpuProcesarTCB(){
+int cpuProcesarTCB(t_CPU *self){
 
 	int estado;
 	int tamanio = sizeof(char) * 4;
@@ -27,11 +28,7 @@ int cpuProcesarTCB(){
 
 	while(self->quantum > 0){
 
-		//TODO Rompe en este while por el tema del malloc!!!
-		//TODO Ver si es necesario pasarle la direccion virtual o siempre es self->tcb->puntero_instruccion
-
-		estado = cpuLeerMemoria(self,datosDeMSP, tamanio);
-		//estado = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, datosDeMSP, tamanio);
+		estado = cpuLeerMemoria(self, self->tcb->puntero_instruccion, datosDeMSP, tamanio);
 
 		//estado puede ser SIN_ERRORES o ERROR_POR_SEGMENTATION_FAULT
 		//TODO Ver manejo de errores con el Kernel!!!
@@ -39,11 +36,11 @@ int cpuProcesarTCB(){
 		int encontrado = 0;
 		int indice = 0;
 		while (!encontrado && indice <= CANTIDAD_INSTRUCCIONES){
-			printf("Una lectura MSP en self->lecturaMSP: %c\n",self->lecturaMSP); //error esta aqui!!!
-			if(strncmp(instrucciones_eso[indice], self->lecturaMSP, 4) == 0){
+
+			if(strncmp(instrucciones_eso[indice], datosDeMSP, 4) == 0){
 
 				encontrado = 1;
-				int estado_ejecucion_instruccion = ejecutar_instruccion(indice);
+				int estado_ejecucion_instruccion = ejecutar_instruccion(self, indice);
 				/*
 				switch(estado_ejecucion_instruccion){
 				case SIN_ERRORES:
@@ -63,7 +60,7 @@ int cpuProcesarTCB(){
 
 		usleep(100);
 
-		terminarLinea = cpuEnviaTermineUnaLinea();
+		terminarLinea = cpuEnviaTermineUnaLinea(self);
 
 		switch(terminarLinea){
 
@@ -72,7 +69,7 @@ int cpuProcesarTCB(){
 			break;
 
 		case KERNEL_FIN_TCB_QUANTUM:
-			cpuCambioContexto();
+			cpuCambioContexto(self);
 			return SIN_ERRORES;
 
 		case ERROR_POR_DESCONEXION_DE_CONSOLA:
@@ -105,7 +102,7 @@ int determinar_registro(char registro){
 }
 
 
-int ejecutar_instruccion(int linea){
+int ejecutar_instruccion(t_CPU *self, int linea){
 
 
 	int estado_bloque;
@@ -122,97 +119,97 @@ int ejecutar_instruccion(int linea){
 	switch(linea){
 
 	case LOAD:
-		estado = LOAD_ESO();
+		estado = LOAD_ESO(self);
 		break;
-/*
+
 	case GETM:
-		estado = GETM_ESO();
+		estado = GETM_ESO(self);
 		break;
 
 	case SETM:
-		estado = SETM_ESO();
+		estado = SETM_ESO(self);
 		break;
 
 	case MOVR:
-		estado = MOVR_ESO();
+		estado = MOVR_ESO(self);
 		break;
 
 	case ADDR:
-		estado = ADDR_ESO();
+		estado = ADDR_ESO(self);
 		break;
 
 	case SUBR:
-		estado = SUBR_ESO();
+		estado = SUBR_ESO(self);
 		break;
 
 	case MULR:
-		estado = MULR_ESO();
+		estado = MULR_ESO(self);
 		break;
 
 	case MODR:
-		estado = MODR_ESO();
+		estado = MODR_ESO(self);
 		break;
 
 	case DIVR:
-		estado = DIVR_ESO();
+		estado = DIVR_ESO(self);
 		break;
 
 	case INCR:
-		estado = INCR_ESO();
+		estado = INCR_ESO(self);
 		break;
 
 	case DECR:
-		estado = DECR_ESO();
+		estado = DECR_ESO(self);
 		break;
 
 	case COMP:
-		estado = COMP_ESO();
+		estado = COMP_ESO(self);
 		break;
 
 	case CGEQ:
-		estado = CGEQ_ESO();
+		estado = CGEQ_ESO(self);
 		break;
 
 	case CLEQ:
-		estado = CLEQ_ESO();
+		estado = CLEQ_ESO(self);
 		break;
 
 	case GOTO:
-		estado = GOTO_ESO();
+		estado = GOTO_ESO(self);
 		break;
 
 	case JMPZ:
-		estado = JMPZ_ESO();
+		estado = JMPZ_ESO(self);
 		break;
 
 	case JPNZ:
-		estado = JPNZ_ESO();
+		estado = JPNZ_ESO(self);
 		break;
 
 	case INTE:
-		estado = INTE_ESO();
+		estado = INTE_ESO(self);
 		break;
 
 	case SHIF:
-		estado = SHIF_ESO();
+		estado = SHIF_ESO(self);
 		break;
 
 	case NOPP:
-		estado = NOPP_ESO();
+		estado = NOPP_ESO(self);
 		break;
 
 	case PUSH:
-		estado = PUSH_ESO();
+		estado = PUSH_ESO(self);
 		break;
 
 	case TAKE:
-		estado = TAKE_ESO();
+		estado = TAKE_ESO(self);
 		break;
 
 	case XXXX:
-		estado = XXXX_ESO();
+		estado = XXXX_ESO(self);
 		break;
-*/ //Jorge cambios para ver si funcionan
+
 		/***************************************************************************************************\
 		 *								--Comienzo SYSTEMCALL--									 	 *
 		\***************************************************************************************************/

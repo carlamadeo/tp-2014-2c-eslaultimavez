@@ -10,7 +10,6 @@
 
 #include "CPU_Proceso.h"
 
-bool cargarConfiguracionCPU(char *config_file, t_config *configCPU);
+bool cargarConfiguracionCPU(t_CPU *self, char *config_file, t_config *configCPU);
 bool validarConfiguracionCPU(t_config* configCPU);
-void destruirConfiguracionCPU(t_config *configCPU);
 #endif /* CPUCONFIG_H_ */

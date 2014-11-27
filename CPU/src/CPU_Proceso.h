@@ -11,7 +11,6 @@
 #include "commons/panel.h"
 #include "commons/cpu.h"
 #include "commons/config.h"
-#include "codigoESO.h"
 
 //t_log *logger;
 //linea para hacer push
@@ -63,7 +62,6 @@ typedef struct {
 	char* ipMsp;
 	int quantum;
 	int retardo;
-	char* lecturaMSP;
 }t_CPU;
 
 
@@ -77,8 +75,6 @@ typedef struct{
 	int tid;
 }t_CPU_TERMINE_UNA_LINEA;
 
-
-t_CPU* self;
 //t_registros_cpu* registros_cpu;
 t_hilo* hilo_log;
 

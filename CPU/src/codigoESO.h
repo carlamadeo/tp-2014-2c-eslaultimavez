@@ -5,63 +5,63 @@
 
 //Instrucciones de usuario
 
-int LOAD_ESO(); //Carga en el registro, el número dado.
+int LOAD_ESO(t_CPU *self); //Carga en el registro, el número dado.
 
-int GETM_ESO();	//Obtiene el valor de memoria apuntado por el segundo registro.
+int GETM_ESO(t_CPU *self);	//Obtiene el valor de memoria apuntado por el segundo registro.
 //El valor obtenido lo asigna en el primer registro.
 
-int SETM_ESO(); //Pone tantos bytes desde el segundo registro,
+int SETM_ESO(t_CPU *self); //Pone tantos bytes desde el segundo registro,
 //hacia la memoria apuntada por el primer registro.
 
-int MOVR_ESO();//Copia el valor del segundo registro hacia el primero.
+int MOVR_ESO(t_CPU *self);//Copia el valor del segundo registro hacia el primero.
 
-int ADDR_ESO();//Suma el primer registro con el segundo registro.
+int ADDR_ESO(t_CPU *self);//Suma el primer registro con el segundo registro.
 //El resultado de la operación se almacena en el registro A.
 
-int SUBR_ESO(); //Resta el primer registro con el segundo registro.
+int SUBR_ESO(t_CPU *self); //Resta el primer registro con el segundo registro.
 //El resultado de la operación se almacena en el registro A.
 
-int MULR_ESO();//Multiplica el primer registro con el segundo registro.
+int MULR_ESO(t_CPU *self);//Multiplica el primer registro con el segundo registro.
 //El resultado de la operación se almacena en el registro A.
 
-int MODR_ESO(); //Obtiene el resto de la división del primer registro con el segundo registro.
+int MODR_ESO(t_CPU *self); //Obtiene el resto de la división del primer registro con el segundo registro.
 //El resultado de la operación se almacena en el registro A.
 
-int DIVR_ESO(); //Divide el primer registro con el segundo registro.
+int DIVR_ESO(t_CPU *self); //Divide el primer registro con el segundo registro.
 //El resultado de la operación se almacena en el
 //registro A; a menos que el segundo operando sea 0, en cuyo caso se asigna el flag de ZERO_DIV
 //y no se hace la operación.
 
-int INCR_ESO();//Incrementar una unidad al registro.
+int INCR_ESO(t_CPU *self);//Incrementar una unidad al registro.
 
-int DECR_ESO(); //Decrementa una unidad al registro.
+int DECR_ESO(t_CPU *self); //Decrementa una unidad al registro.
 
-int COMP_ESO(); //Compara si el primer registro es igual al segundo.
+int COMP_ESO(t_CPU *self); //Compara si el primer registro es igual al segundo.
 //De ser verdadero, se almacena el valor 1.
 //De lo contrario el valor 0.
 //El resultado de la operación se almacena en el registro A.
 
-int CGEQ_ESO(); //Compara si el primer registro es mayor o igual al segundo.
+int CGEQ_ESO(t_CPU *self); //Compara si el primer registro es mayor o igual al segundo.
 //De ser verdadero, se almacena el valor 1. De lo contrario el valor 0.
 //El resultado de la operación se almacena en el registro A.
 
 
-int CLEQ_ESO(); //Compara si el primer registro es menor o igual al segundo.
+int CLEQ_ESO(t_CPU *self); //Compara si el primer registro es menor o igual al segundo.
 //De ser verdadero, se almacena el valor 1.De lo contrario el valor 0.
 //El resultado de la operación se almacena en el registro A.
 
-int GOTO_ESO(); //Altera el flujo de ejecución para ejecutar la instrucción apuntada por el registro.
+int GOTO_ESO(t_CPU *self); //Altera el flujo de ejecución para ejecutar la instrucción apuntada por el registro.
 //El valor es el desplazamiento desde el inicio del programa.
 
-int JMPZ_ESO(); //Altera el flujo de ejecución, solo si el valor del registro A es cero,
+int JMPZ_ESO(t_CPU *self); //Altera el flujo de ejecución, solo si el valor del registro A es cero,
 //para ejecutar la instrucción apuntada por el registro.
 //El valor es el desplazamiento desde el inicio del programa.
 
-int JPNZ_ESO(); //Altera el flujo de ejecución, solo si el valor del registro A no es cero,
+int JPNZ_ESO(t_CPU *self); //Altera el flujo de ejecución, solo si el valor del registro A no es cero,
 //para ejecutar la instrucción apuntada por el registro.
 //El valor es el desplazamiento desde el inicio del programa.
 
-int INTE_ESO(); 	//Interrumpe la ejecución del programa para ejecutar la rutina del kernel
+int INTE_ESO(t_CPU *self); 	//Interrumpe la ejecución del programa para ejecutar la rutina del kernel
 //que se encuentra en la posición apuntada por la direccion.
 //El ensamblador admite ingresar una cadena indicando el nombre,
 //que luego transformará en el número correspondiente. Los posibles valores son:
@@ -69,23 +69,23 @@ int INTE_ESO(); 	//Interrumpe la ejecución del programa para ejecutar la rutina
 //Invoca al servicio correspondiente en el proceso Kernel.
 //Notar que el hilo en cuestión debe bloquearse tras una interrupción.
 
-/*void FLCL(); //Limpia el registro de flags.*/
+/*void FLCL(t_CPU *self); //Limpia el registro de flags.*/
 
-int INNN_ESO ();
+int INNN_ESO (t_CPU *self);
 
-int SHIF_ESO(); //Desplaza los bits del registro, tantas veces como se indique en el Número.
+int SHIF_ESO(t_CPU *self); //Desplaza los bits del registro, tantas veces como se indique en el Número.
 //De ser desplazamiento positivo, se considera hacia la derecha.
 //De lo contrario hacia la izquierda.
 
-int NOPP_ESO(); //Consume un ciclo del CPU sin hacer nada.
+int NOPP_ESO(t_CPU *self); //Consume un ciclo del CPU sin hacer nada.
 
-int PUSH_ESO(); //Apila los primeros bytes, indicado por el número, del registro hacia el stack.
+int PUSH_ESO(t_CPU *self); //Apila los primeros bytes, indicado por el número, del registro hacia el stack.
 //Modifica el valor del registro cursor de stack de forma acorde.
 
-int TAKE_ESO(); //Desapila los primeros bytes, indicado por el número, del stack hacia el registro.
+int TAKE_ESO(t_CPU *self); //Desapila los primeros bytes, indicado por el número, del stack hacia el registro.
 //Modifica el valor del registro de stack de forma acorde.
 
-int XXXX_ESO(); //Finaliza la ejecución.
+int XXXX_ESO(t_CPU *self); //Finaliza la ejecución.
 
 //fin de instrucciones de usuario
 
