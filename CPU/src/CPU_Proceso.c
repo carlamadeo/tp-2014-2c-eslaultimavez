@@ -38,13 +38,14 @@ int main(int argc, char** argv) {
 	cpuConectarConMPS();
 	cpuConectarConKernel();
 
-	//1) Paso, recibir Quantum
-	cpuRecibirQuantum();
-	//2) Paso, recibir TCB
-	cpuRecibirTCB();
-	//3) Paso, Procesa TCB
-
-	cpuProcesarTCB();
+	while(1){
+		//1) Paso, recibir Quantum
+		cpuRecibirQuantum();
+		//2) Paso, recibir TCB
+		cpuRecibirTCB();
+		//3) Paso, Procesa TCB
+		cpuProcesarTCB();
+	}
 
 	log_info(self->loggerCPU, "Se desconecto la CPU. Elimino todo");
 

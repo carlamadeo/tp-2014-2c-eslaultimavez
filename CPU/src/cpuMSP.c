@@ -140,6 +140,7 @@ int cpuEscribirMemoria(int pid, uint32_t direccionVirtual, char *programa, int t
 
 	}
 
+	free(escrituraDeCodigo);
 	return unaConfirmacionEscritura->estado;
 }
 
@@ -162,7 +163,7 @@ int cpuLeerMemoria(int pid, uint32_t direccionVirtual, char *programa, int taman
 	unaLectura = (t_datos_deMSPLectura *) paqueteLectura->data;
 	printf("Una lectuea MSP: %c\n", unaLectura->lectura);
 	printf("Un estado MSP: %c\n", unaLectura->estado);
-	//strcpy(programa, unaLectura->lectura);  //en esta linea rompe Para que se usa un programa y como se carga
+	strcpy(programa, unaLectura->lectura);  //en esta linea rompe Para que se usa un programa y como se carga
 
 	if (unaLectura->estado == ERROR_POR_SEGMENTATION_FAULT){
 		log_error(self->loggerCPU, "CPU: error por Segmentation Fault");

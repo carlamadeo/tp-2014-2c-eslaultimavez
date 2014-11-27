@@ -45,9 +45,6 @@ bool validarConfiguracionCPU(t_config* configCPU){
 }
 
 void destruirConfiguracionCPU(t_config *configCPU){
-	free(self->ipMsp);
-	free(self->ipPlanificador);
 	free(self);
-	config_destroy(configCPU);
 }
 

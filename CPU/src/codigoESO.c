@@ -1,10 +1,11 @@
 #include "codigoESO.h"
+#include "commons/cpu.h"
 #include "CPU_Proceso.h"
 #include "cpuMSP.h"
 #include "cpuKernel.h"
 #include "ejecucion.h"
 
-t_CPU* self;
+//t_CPU* self;
 t_list* parametros;
 
 int LOAD_ESO(){
@@ -32,16 +33,15 @@ int LOAD_ESO(){
 
 	}
 
-	if(registro != -1){
+	if(reg != -1){
 
-		list_add(parametros, (void *)registro);
-		list_add(parametros, (void *)numero);
-		ejecucion_instruccion("LOAD", (void *)parametros);
+		//list_add(parametros, (void *)registro);
+		//list_add(parametros, (void *)numero);
+		//ejecucion_instruccion("LOAD", parametros);
 
-		self->tcb->registro_de_programacion[registro] = numero;
+		self->tcb->registro_de_programacion[reg] = numero;
 		//cambio_registros(registros_cpu);
-		log_info(self->loggerCPU, "CPU: ejecuto LOAD_ESO en PID:%d TID:%d", self->tcb->pid,self->tcb->tid);
-
+		log_info(self->loggerCPU, "CPU: ejecuto LOAD_ESO en PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 	}
 
 	else{
@@ -77,9 +77,9 @@ int GETM_ESO(){
 
 		if((regA != -1) || (regB != -1)){
 
-			list_add(parametros, (void *)registroA);
-			list_add(parametros, (void *)registroB);
-			ejecucion_instruccion("GETM", parametros);
+			//list_add(parametros, (void *)registroA);
+			//list_add(parametros, (void *)registroB);
+			//ejecucion_instruccion("GETM", parametros);
 
 			int tamanioMSP = sizeof(int32_t);
 			char *lecturaMSP = malloc(sizeof(char)*tamanioMSP);
@@ -167,10 +167,10 @@ int SETM_ESO(){
 
 			if(numero <= sizeof(uint32_t)){
 
-				list_add(parametros, (void *)registroA);
-				list_add(parametros, (void *)registroB);
-				list_add(parametros, (void *)numero);
-				ejecucion_instruccion("SETM", parametros);
+				//list_add(parametros, (void *)registroA);
+				//list_add(parametros, (void *)registroB);
+				//list_add(parametros, (void *)numero);
+				//ejecucion_instruccion("SETM", parametros);
 
 				char *data = malloc(sizeof(int) + sizeof(uint32_t) + sizeof(int)); /*pid+direccion_logica*/
 				int soffset = 0, stmp_size = 0;
@@ -231,10 +231,10 @@ int MOVR_ESO(){
 
 		if((regA != -1) || (regB != -1)){
 
-			list_add(parametros, (void *)registroA);
-			list_add(parametros, (void *)registroB);
+			//list_add(parametros, (void *)registroA);
+			//list_add(parametros, (void *)registroB);
 
-			ejecucion_instruccion("MOVR", parametros);
+			//ejecucion_instruccion("MOVR", parametros);
 
 			self->tcb->registro_de_programacion[regA] = self->tcb->registro_de_programacion[regB];
 			//cambio_registros(registros_cpu);
@@ -272,9 +272,9 @@ int ADDR_ESO(){
 
 		if((regA != -1) || (regB != -1)){
 
-			list_add(parametros, (void *)registroA);
-			list_add(parametros, (void *)registroB);
-			ejecucion_instruccion("ADDR", parametros);
+			//list_add(parametros, (void *)registroA);
+			//list_add(parametros, (void *)registroB);
+			//ejecucion_instruccion("ADDR", parametros);
 
 			int32_t auxiliar = self->tcb->registro_de_programacion[regB];
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] + auxiliar;
@@ -315,9 +315,9 @@ int SUBR_ESO(){
 
 		if((regA != -1) || (regB != -1)){
 
-			list_add(parametros, (void *)registroA);
-			list_add(parametros, (void *)registroB);
-			ejecucion_instruccion("SUBR", parametros);
+			//list_add(parametros, (void *)registroA);
+			//list_add(parametros, (void *)registroB);
+			//ejecucion_instruccion("SUBR", parametros);
 
 			int32_t auxiliar = self->tcb->registro_de_programacion[regB];
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] - auxiliar;
@@ -358,9 +358,9 @@ int MULR_ESO(){
 
 		if((regA != -1) || (regB != -1)){
 
-			list_add(parametros, (void *)registroA);
-			list_add(parametros, (void *)registroB);
-			ejecucion_instruccion("MULR", parametros);
+			//list_add(parametros, (void *)registroA);
+			//list_add(parametros, (void *)registroB);
+			//ejecucion_instruccion("MULR", parametros);
 
 			int32_t auxiliar = self->tcb->registro_de_programacion[regB];
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] * auxiliar;
@@ -402,9 +402,9 @@ int MODR_ESO(){
 
 		if((regA != -1) || (regB != -1)){
 
-			list_add(parametros, (void *)registroA);
-			list_add(parametros, (void *)registroB);
-			ejecucion_instruccion("MODR", parametros);
+			//list_add(parametros, (void *)registroA);
+			//list_add(parametros, (void *)registroB);
+			//ejecucion_instruccion("MODR", parametros);
 
 			int32_t auxiliar = self->tcb->registro_de_programacion[regB];
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] % auxiliar;
@@ -446,9 +446,9 @@ int DIVR_ESO(){
 
 		if((regA != -1) || (regB != -1)){
 
-			list_add(parametros, (void *)registroA);
-			list_add(parametros, (void *)registroB);
-			ejecucion_instruccion("DIVR", parametros);
+			//list_add(parametros, (void *)registroA);
+			//list_add(parametros, (void *)registroB);
+			//ejecucion_instruccion("DIVR", parametros);
 
 			int32_t auxiliar = self->tcb->registro_de_programacion[regB];
 
@@ -494,8 +494,8 @@ int INCR_ESO(){
 
 		if((reg != -1)){
 
-			list_add(parametros, (void *)registro);
-			ejecucion_instruccion("INCR", parametros);
+			//list_add(parametros, (void *)registro);
+			//ejecucion_instruccion("INCR", parametros);
 
 			self->tcb->registro_de_programacion[registro]++;
 		}
@@ -533,8 +533,8 @@ int DECR_ESO(){
 
 		if((reg != -1)){
 
-			list_add(parametros, (void *)registro);
-			ejecucion_instruccion("DECR", parametros);
+			//list_add(parametros, (void *)registro);
+			//ejecucion_instruccion("DECR", parametros);
 
 			self->tcb->registro_de_programacion[registro]--;
 		}
@@ -574,9 +574,9 @@ int COMP_ESO(){
 
 		if((regA != -1) || (regB != -1)){
 
-			list_add(parametros, (void *)registroA);
-			list_add(parametros, (void *)registroB);
-			ejecucion_instruccion("COMP", parametros);
+			//list_add(parametros, (void *)registroA);
+			//list_add(parametros, (void *)registroB);
+			//ejecucion_instruccion("COMP", parametros);
 
 			if (self->tcb->registro_de_programacion[regA] == self->tcb->registro_de_programacion[regB])
 				self->tcb->registro_de_programacion[0] = 1;
@@ -621,9 +621,9 @@ int CGEQ_ESO(){
 
 		if((regA != -1) || (regB != -1)){
 
-			list_add(parametros, (void *)registroA);
-			list_add(parametros, (void *)registroB);
-			ejecucion_instruccion("CGEQ", parametros);
+			//list_add(parametros, (void *)registroA);
+			//list_add(parametros, (void *)registroB);
+			//ejecucion_instruccion("CGEQ", parametros);
 
 			if (self->tcb->registro_de_programacion[regA] >= self->tcb->registro_de_programacion[regB])
 				self->tcb->registro_de_programacion[0] = 1;
@@ -669,9 +669,9 @@ int CLEQ_ESO(){
 
 		if((regA != -1) || (regB != -1)){
 
-			list_add(parametros, (void *)registroA);
-			list_add(parametros, (void *)registroB);
-			ejecucion_instruccion("CLEQ", parametros);
+			//list_add(parametros, (void *)registroA);
+			//list_add(parametros, (void *)registroB);
+			//ejecucion_instruccion("CLEQ", parametros);
 
 			if (self->tcb->registro_de_programacion[regA] <= self->tcb->registro_de_programacion[regB])
 				self->tcb->registro_de_programacion[0] = 1;
@@ -713,11 +713,11 @@ int GOTO_ESO(){
 
 		if((reg != -1)){
 
-			list_add(parametros, (void *)registro);
-			ejecucion_instruccion("GOTO", parametros);
+			//list_add(parametros, (void *)registro);
+			//ejecucion_instruccion("GOTO", parametros);
 
 			uint32_t auxiliar = self->tcb->base_segmento_codigo;
-			auxiliar += (uint32_t)self->tcb->registro_de_programacion[registro];
+			auxiliar += (uint32_t)self->tcb->registro_de_programacion[reg];
 			self->tcb->puntero_instruccion = auxiliar;
 		}
 
@@ -748,8 +748,8 @@ int JMPZ_ESO(){
 
 		memcpy(&(direccion), lecturaDeMSP, sizeof(uint32_t));
 
-		list_add(parametros, (void *)direccion);
-		ejecucion_instruccion("JMPZ", parametros);
+		//list_add(parametros, (void *)direccion);
+		//ejecucion_instruccion("JMPZ", parametros);
 
 		if(self->tcb->registro_de_programacion[0] == 0){
 			uint32_t auxiliar = direccion;
@@ -780,8 +780,8 @@ int JPNZ_ESO(){
 
 		memcpy(&(direccion), lecturaDeMSP, sizeof(uint32_t));
 
-		list_add(parametros, (void *)direccion);
-		ejecucion_instruccion("JPNZ", parametros);
+		//list_add(parametros, (void *)direccion);
+		//ejecucion_instruccion("JPNZ", parametros);
 
 		if(self->tcb->registro_de_programacion[0] != 0){
 			uint32_t auxiliar = direccion;
@@ -811,8 +811,8 @@ int INTE_ESO(){
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion INTE");
 
 		memcpy(&(direccion), lecturaDeMSP, sizeof(uint32_t));
-		list_add(parametros, (void *)direccion);
-		ejecucion_instruccion("INTE", parametros);
+		//list_add(parametros, (void *)direccion);
+		//ejecucion_instruccion("INTE", parametros);
 
 		self->tcb->puntero_instruccion += 1; //incremento el puntero de instruccion, porque hago cambio de conexto
 		char *direccion_send = malloc(sizeof(char));
@@ -863,22 +863,22 @@ int SHIF_ESO(){
 
 		if((reg != -1)){
 
-			list_add(parametros, (void *)numero);
-			list_add(parametros, (void *)registro);
-			ejecucion_instruccion("SHIF", parametros);
+			//list_add(parametros, (void *)numero);
+			//list_add(parametros, (void *)registro);
+			//ejecucion_instruccion("SHIF", parametros);
 
 			if(numero > 0){
-				int32_t auxiliar = self->tcb->registro_de_programacion[registro];
+				int32_t auxiliar = self->tcb->registro_de_programacion[reg];
 				int32_t resultado;
 				resultado = auxiliar>>numero;
-				self->tcb->registro_de_programacion[registro] = resultado;
+				self->tcb->registro_de_programacion[reg] = resultado;
 			}
 
 			else{
-				int32_t auxiliar = self->tcb->registro_de_programacion[registro];
+				int32_t auxiliar = self->tcb->registro_de_programacion[reg];
 				int32_t resultado;
 				resultado = auxiliar<<numero;
-				self->tcb->registro_de_programacion[registro] = resultado;
+				self->tcb->registro_de_programacion[reg] = resultado;
 			}
 		}
 
@@ -917,14 +917,14 @@ int PUSH_ESO(){
 
 		if((reg != -1)){
 
-			list_add(parametros, (void *)numero);
-			list_add(parametros, (void *)registro);
-			ejecucion_instruccion("PUSH", parametros);
+			//list_add(parametros, (void *)numero);
+			//list_add(parametros, (void *)registro);
+			//ejecucion_instruccion("PUSH", parametros);
 
 			if(numero <= sizeof(uint32_t)){
 
 				char *datos_a_grabar = malloc(sizeof(uint32_t));
-				memcpy(datos_a_grabar, &(self->tcb->registro_de_programacion[registro]), numero);
+				memcpy(datos_a_grabar, &(self->tcb->registro_de_programacion[reg]), numero);
 
 				char *grabar_byte = malloc(sizeof(int) + sizeof(uint32_t) * 2); /*pid+direccion_logica+datos_a_grabar*/
 
@@ -973,13 +973,13 @@ int TAKE_ESO(){
 
 		if((reg != -1)){
 
-			list_add(parametros, (void *)numero);
-			list_add(parametros, (void *)registro);
-			ejecucion_instruccion("TAKE", parametros);
+			//list_add(parametros, (void *)numero);
+			//list_add(parametros, (void *)registro);
+			//ejecucion_instruccion("TAKE", parametros);
 
 			if(numero <= sizeof(uint32_t)){
 
-				char *data = malloc(sizeof(int)+sizeof(uint32_t)+sizeof(int)); /*pid+direccion_logica*/
+				char *data = malloc(sizeof(int) + sizeof(uint32_t) + sizeof(int)); /*pid+direccion_logica*/
 				t_paquete_MSP *leer_bytes = malloc(sizeof(t_paquete_MSP));
 				int soffset = 0, stmp_size = 0;
 
