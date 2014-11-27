@@ -2,6 +2,7 @@
 #define CPUMPS_H_
 
 #include <stdint.h>
+#include "CPU_Proceso.h"
 
 typedef struct{
 	int pid;
@@ -50,6 +51,7 @@ void cpuRealizarHandshakeConMSP();
 int cpuCrearSegmento(int pid, int tamanio);
 int cpuDestruirSegmento();
 int cpuEscribirMemoria(int pid, uint32_t direccionVirtual, char *programa, int tamanio);
-int cpuLeerMemoria(int pid, uint32_t direccionVirtual, char *programa, int tamanio);
+//int cpuLeerMemoria(int pid, uint32_t direccionVirtual, char *programa, int tamanio);
+int cpuLeerMemoria(t_CPU *self, char *programa, int tamanio);
 
 #endif /* CPUMPS_H_ */

@@ -16,15 +16,16 @@ int LOAD_ESO(){
 	int tamanio = 5;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 
-	int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
+	int estado_lectura = cpuLeerMemoria(self, lecturaDeMSP, tamanio);
+	//int estado_lectura = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
 
 		log_info(self->loggerCPU,"CPU: Recibiendo parametros de instruccion LOAD");
 
-		memcpy(&(registro), lecturaDeMSP, sizeof(char));
-		memcpy(&(numero), lecturaDeMSP + sizeof(char), sizeof(int));
+		memcpy(&(registro), self->lecturaMSP, sizeof(char));            // antes decia lecturaDeMSP
+		memcpy(&(numero), self->lecturaMSP + sizeof(char), sizeof(int));// estaba mal
 
 		printf("un registro de MSP %c : Jorge Ok\n", registro);
 		printf("un Numero de MSP   %d : Jorge estan seguro que este numero va?\n", numero);
@@ -52,7 +53,7 @@ int LOAD_ESO(){
 	return estado_bloque;
 }
 
-
+/*
 int GETM_ESO(){
 
 	int tamanio = 2;
@@ -772,10 +773,10 @@ int INTE_ESO(){
 	//tengo que tomar esa direccion y pasarcela al Kernel con el TCB
 
 }
-/*
-void FLCL(){
 
-}*/
+//void FLCL(){
+//
+//}
 
 int SHIF_ESO(){
 
@@ -818,7 +819,7 @@ int SHIF_ESO(){
 
 
 int NOPP_ESO(){
-	/*no hace nada*/
+	//no hace nada
 	return 1;
 }
 
@@ -930,13 +931,13 @@ int XXXX_ESO(){
 	free(data);
 
 }
-
+*/
 
 //Instrucciones Protegidas, KM=1   (ninguna de estas operaciones tiene operadores)
 
 //int MALC_ESO (t_TCB_CPU* tcb){
 //	//CREAR_SEGMENTO
-//	char *data=malloc(sizeof(int)+sizeof(int32_t)); /*pid+(tamanio)registro_de_programacion['A']*/
+//	char *data=malloc(sizeof(int)+sizeof(int32_t)); //pid+(tamanio)registro_de_programacion['A']
 //	t_paquete_MSP *alocar_bytes = malloc(sizeof(t_paquete_MSP));
 //
 //	int soffset=0, stmp_size=0;
@@ -957,7 +958,7 @@ int XXXX_ESO(){
 //			log_info(self->loggerCPU, "CPU: Recibiendo direccion virtual...\n %d ", tcb->pid);
 //			char *contenido = malloc(sizeof(uint32_t));
 //			memcpy(contenido, paquete_MSP->data, sizeof(char)*4);
-//			/*resguardo la direccion virtual en el registro A*/
+//			//resguardo la direccion virtual en el registro A
 //			tcb->registro_de_programacion[0]=*contenido;
 //			free(paquete_MSP);
 //			free(contenido);
@@ -976,7 +977,7 @@ int XXXX_ESO(){
 //
 //int FREE_ESO(t_TCB_CPU* tcb){
 //
-//	char *data=malloc(sizeof(int)+sizeof(uint32_t)); /*pid+tamaño segun registro*/
+//	char *data=malloc(sizeof(int)+sizeof(uint32_t)); //pid+tamaño segun registro
 //	t_paquete_MSP *leer_byte = malloc(sizeof(t_paquete_MSP));
 //
 //	int soffset=0, stmp_size=0;
@@ -1067,7 +1068,7 @@ int XXXX_ESO(){
 //
 //	t_paquete_MSP *mostrar_numero = malloc(sizeof(t_paquete_MSP));
 //
-//	char *data=malloc(sizeof(int)+sizeof(int32_t)); /*pid+(tamanio)registro_de_programacion['B']*/
+//	char *data=malloc(sizeof(int)+sizeof(int32_t)); //pid+(tamanio)registro_de_programacion['B']
 //	int soffset=0, stmp_size=0;
 //	memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
 //	memcpy(data + soffset, &(tcb->registro_de_programacion[0]), stmp_size=sizeof(int32_t));
@@ -1101,7 +1102,7 @@ int XXXX_ESO(){
 //			char *mostrar_cadena=malloc(tcb->registro_de_programacion[1]);
 //			memcpy(mostrar_cadena, cadena->data, tcb->registro_de_programacion[1]);
 //
-//			char *data=malloc(sizeof(int)+tcb->registro_de_programacion[1]); /*pid+(tamanio)registro_de_programacion['B']*/
+//			char *data=malloc(sizeof(int)+tcb->registro_de_programacion[1]); //pid+(tamanio)registro_de_programacion['B']
 //			int soffset=0, stmp_size=0;
 //			memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
 //			memcpy(data + soffset, mostrar_cadena, stmp_size=tcb->registro_de_programacion[1]);
@@ -1129,15 +1130,15 @@ int XXXX_ESO(){
 //	// tengo que pedirle al kernel que me cree el segmento de stack y luego recibir la base, despues duplicar el contenido del stack del padre y actualizar el cursor (cursor-base del padre)
 //
 //	//CPU->KERNEL : pidiendo al Kernel que cree el STACK del TCB hijo
-//	char *pedir_stack=malloc(sizeof(int)); /*pid+(tamanio)registro_de_programacion['A']*/
+//	char *pedir_stack=malloc(sizeof(int)); //pid+(tamanio)registro_de_programacion['A']
 //	memcpy(pedir_stack, &(tcb_hijo->pid), sizeof(int));
 //	log_info(self->loggerCPU, "CPU: solicitando a Kernel creacion de stack PID:\n %s", tcb_hijo->pid);
-//	if (socket_sendPaquete(self->socketPlanificador->socket, /*CREAR_STACK*/35, sizeof(int), pedir_stack)<=0){
+//	if (socket_sendPaquete(self->socketPlanificador->socket, //CREAR_STACK, sizeof(int), pedir_stack)<=0){
 //		log_info(self->loggerCPU, "CPU: Error al pedir stack\n %d", tcb->pid);
 //	}
 //	t_socket_paquete *base_stack = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 //	if(socket_recvPaquete(self->socketPlanificador->socket, base_stack) > 0){
-//		if(base_stack->header.type == /*CREAR_STACK*/35){
+//		if(base_stack->header.type == CREAR_STACK){
 //			log_info(self->loggerCPU, "CPU: Recibiendo base de stack...\n %d ", tcb->pid);
 //			tcb_hijo->base_stack = (int32_t)(base_stack->data);
 //			free(base_stack);
@@ -1171,7 +1172,7 @@ int XXXX_ESO(){
 //			char *stack_tcb = malloc(1024);
 //			memcpy(stack_tcb, datos_memoria->data, 1024);
 //			//segundo: copiar el contenido del stack recibido en el stack del tcb_hijo: ESCRIBIR_MEMORIA
-//			char *data=malloc(sizeof(int)+sizeof(uint32_t)+ tcb->registro_de_programacion[1]);  /*pid+direccion_logica+datos_a_grabar*/
+//			char *data=malloc(sizeof(int)+sizeof(uint32_t)+ tcb->registro_de_programacion[1]);  //pid+direccion_logica+datos_a_grabar
 //			t_paquete_MSP *grabar_byte = malloc(sizeof(t_paquete_MSP));
 //			int soffset=0, stmp_size=0;
 //			memcpy(grabar_byte, &(tcb_hijo->pid), stmp_size=(sizeof(int)));
@@ -1209,7 +1210,7 @@ int XXXX_ESO(){
 //}
 //int JOIN_ESO(t_TCB_CPU* tcb){
 //	t_paquete_MSP *envio_join = malloc(sizeof(t_paquete_MSP));
-//	char *data=malloc((sizeof(int))+sizeof(int32_t)); /*pid+tid llamador+(tid a esperar)registro_de_programacion['B']*/
+//	char *data=malloc((sizeof(int))+sizeof(int32_t)); //pid+tid llamador+(tid a esperar)registro_de_programacion['B']
 //	int soffset=0, stmp_size=0;
 //	memcpy(data, &(tcb->tid), stmp_size=(sizeof(int)));
 //	memcpy(data + soffset, &(tcb->registro_de_programacion[0]), stmp_size=sizeof(int32_t));
@@ -1217,7 +1218,7 @@ int XXXX_ESO(){
 //	envio_join->tamanio=soffset;
 //	envio_join->data=data;
 //
-//	if (socket_sendPaquete(self->socketPlanificador->socket, /* JOIN_HILO*/ 33,envio_join->tamanio, envio_join->data)<=0){
+//	if (socket_sendPaquete(self->socketPlanificador->socket, //JOIN_HILO,envio_join->tamanio, envio_join->data)<=0){
 //		log_info(self->loggerCPU, "CPU: Error de JOIN\n %d", tcb->pid);
 //
 //
@@ -1231,7 +1232,7 @@ int XXXX_ESO(){
 //
 //	t_paquete_MSP *envio_bytes = malloc(sizeof(t_paquete_MSP));
 //
-//	char *data=malloc(sizeof(int)+sizeof(uint32_t)); /*pid+(tamanio)registro_de_programacion['B']*/
+//	char *data=malloc(sizeof(int)+sizeof(uint32_t)); //pid+(tamanio)registro_de_programacion['B']
 //	int soffset=0, stmp_size=0;
 //	memcpy(data, tcb, stmp_size=(sizeof(t_TCB_CPU)));
 //	memcpy(data + soffset, &(tcb->registro_de_programacion[1]), stmp_size=sizeof(int32_t));
@@ -1239,7 +1240,7 @@ int XXXX_ESO(){
 //	envio_bytes->tamanio=soffset;
 //	envio_bytes->data=data;
 //
-//	if (socket_sendPaquete(self->socketPlanificador->socket, /*BLOK_HILO*/ 32,envio_bytes->tamanio, envio_bytes->data)<=0){
+//	if (socket_sendPaquete(self->socketPlanificador->socket, //BLOK_HILO,envio_bytes->tamanio, envio_bytes->data)<=0){
 //		log_info(self->loggerCPU, "CPU: Error de BLOQUEO\n %d", tcb->pid);
 //	}
 //	free(data);
@@ -1250,7 +1251,7 @@ int XXXX_ESO(){
 //
 //int WAKE_ESO(t_TCB_CPU* tcb){
 //
-//	if (socket_sendPaquete(self->socketPlanificador->socket, /*WAKE_HILO*/33,sizeof(int32_t), &(tcb->registro_de_programacion[1]))<=0){
+//	if (socket_sendPaquete(self->socketPlanificador->socket, //WAKE_HILO,sizeof(int32_t), &(tcb->registro_de_programacion[1]))<=0){
 //		log_info(self->loggerCPU, "CPU: Error de DESPERTAR\n %d", tcb->pid);
 //
 //
@@ -1260,7 +1261,7 @@ int XXXX_ESO(){
 //
 //
 ////funciones de la system calls
-///*void systemCallsMALLOC(){
+//void systemCallsMALLOC(){
 //
 //}
 //void systemCallsFREE(){

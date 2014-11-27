@@ -16,7 +16,7 @@
 #include <sys/types.h>
 #include <stdlib.h>
 
-t_CPU *self;
+//t_CPU *self;
 
 int main(int argc, char** argv) {
 

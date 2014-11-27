@@ -29,7 +29,9 @@ int cpuProcesarTCB(){
 
 		//TODO Rompe en este while por el tema del malloc!!!
 		//TODO Ver si es necesario pasarle la direccion virtual o siempre es self->tcb->puntero_instruccion
-		estado = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, datosDeMSP, tamanio);
+
+		estado = cpuLeerMemoria(self,datosDeMSP, tamanio);
+		//estado = cpuLeerMemoria(self->tcb->pid, self->tcb->puntero_instruccion, datosDeMSP, tamanio);
 
 		//estado puede ser SIN_ERRORES o ERROR_POR_SEGMENTATION_FAULT
 		//TODO Ver manejo de errores con el Kernel!!!
@@ -37,8 +39,8 @@ int cpuProcesarTCB(){
 		int encontrado = 0;
 		int indice = 0;
 		while (!encontrado && indice <= CANTIDAD_INSTRUCCIONES){
-
-			if(strncmp(instrucciones_eso[indice], datosDeMSP, 4) == 0){
+			printf("Una lectura MSP en self->lecturaMSP: %c\n",self->lecturaMSP); //error esta aqui!!!
+			if(strncmp(instrucciones_eso[indice], self->lecturaMSP, 4) == 0){
 
 				encontrado = 1;
 				int estado_ejecucion_instruccion = ejecutar_instruccion(indice);
@@ -122,7 +124,7 @@ int ejecutar_instruccion(int linea){
 	case LOAD:
 		estado = LOAD_ESO();
 		break;
-
+/*
 	case GETM:
 		estado = GETM_ESO();
 		break;
@@ -210,7 +212,7 @@ int ejecutar_instruccion(int linea){
 	case XXXX:
 		estado = XXXX_ESO();
 		break;
-
+*/ //Jorge cambios para ver si funcionan
 		/***************************************************************************************************\
 		 *								--Comienzo SYSTEMCALL--									 	 *
 		\***************************************************************************************************/

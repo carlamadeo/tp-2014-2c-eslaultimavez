@@ -143,15 +143,15 @@ int cpuEscribirMemoria(int pid, uint32_t direccionVirtual, char *programa, int t
 	free(escrituraDeCodigo);
 	return unaConfirmacionEscritura->estado;
 }
-
-int cpuLeerMemoria(int pid, uint32_t direccionVirtual, char *programa, int tamanio){
+int cpuLeerMemoria(t_CPU *self, char *programa, int tamanio){
+//int cpuLeerMemoria(int pid, uint32_t direccionVirtual, char *programa, int tamanio){
 
 	t_datos_aMSPLectura *datosAMSP = malloc(sizeof(t_datos_aMSPLectura));
 	t_socket_paquete *paqueteLectura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 	t_datos_deMSPLectura *unaLectura = (t_datos_deMSPLectura *)malloc(sizeof(t_datos_deMSPLectura));
 
-	datosAMSP->direccionVirtual = direccionVirtual;
-	datosAMSP->pid = pid; //esto devuelve un CERO, me parece que es un error!!!!
+	datosAMSP->direccionVirtual = self->tcb->puntero_instruccion;
+	datosAMSP->pid = self->tcb->pid; //esto devuelve un CERO, me parece que es un error!!!!
 	datosAMSP->tamanio = tamanio;
 
 	log_info(self->loggerCPU, "CPU: Solicitud de lectura de memoria para PID: %d, Direccion Virtual: %0.8p, Tamaño: %d.", datosAMSP->pid, datosAMSP->direccionVirtual, datosAMSP->tamanio);
@@ -161,13 +161,18 @@ int cpuLeerMemoria(int pid, uint32_t direccionVirtual, char *programa, int taman
 	socket_recvPaquete(self->socketMSP->socket, paqueteLectura);
 
 	unaLectura = (t_datos_deMSPLectura *) paqueteLectura->data;
-	printf("Una lectuea MSP: %c\n", unaLectura->lectura);
-	printf("Un estado MSP: %c\n", unaLectura->estado);
-	strcpy(programa, unaLectura->lectura);  //en esta linea rompe Para que se usa un programa y como se carga
+	printf("Una lectura MSP: %c\n", unaLectura->lectura);
+	printf("Un estado MSP: %d\n", unaLectura->estado);
+
+	self->lecturaMSP = malloc(sizeof(1)); //esto cambiar puede ser uno porque es una caracter aunque no se!!! ERROR
+	strcpy(self->lecturaMSP, unaLectura->lectura);  //en esta linea rompe Para que se usa un programa y como se carga
+	printf("Una lectura MSP LOCAL en self->lecturaMSP: %c\n",self->lecturaMSP);
+
 
 	if (unaLectura->estado == ERROR_POR_SEGMENTATION_FAULT){
 		log_error(self->loggerCPU, "CPU: error por Segmentation Fault");
 	}
 
 	return unaLectura->estado;
+	//return 1;
 }
