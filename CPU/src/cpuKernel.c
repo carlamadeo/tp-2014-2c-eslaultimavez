@@ -2,7 +2,7 @@
 #include "CPU_Proceso.h"
 #include <stdlib.h>
 
-t_CPU *self;
+//t_CPU *self;
 
 void cpuConectarConKernel(){
 
@@ -52,7 +52,7 @@ void cpuRecibirTCB(){
 
 	if(socket_recvPaquete(self->socketPlanificador->socket, paquetePlanificadorTCB) >= 0){
 
-		printf("TCB_NUEVO %d \n", paquetePlanificadorTCB->header.type);   //no Borrar sirve para como debug Jorge
+		//printf("TCB_NUEVO %d \n", paquetePlanificadorTCB->header.type);   //no Borrar sirve para como debug Jorge
 
 		if(paquetePlanificadorTCB->header.type == TCB_NUEVO){
 

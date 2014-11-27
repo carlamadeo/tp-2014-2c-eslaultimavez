@@ -8,7 +8,7 @@
 #include "cpuKernel.h"
 #include "ejecucion.h"
 
-t_CPU *self;
+//t_CPU *self;
 t_list* parametros;
 
 char *instrucciones_eso[] = {"LOAD", "GETM", "SETM", "MOVR", "ADDR", "SUBR", "MULR", "MODR", "DIVR", "INCR", "DECR",
@@ -313,7 +313,7 @@ int ejecutar_instruccion(int linea){
 		break;
 	}
 
-	/****************************\
+										/****************************\
 										  	  FIN SWITCH - CASE
 										\****************************/
 

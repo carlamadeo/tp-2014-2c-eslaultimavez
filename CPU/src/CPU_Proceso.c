@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
 
 	char *nombreLog = malloc(strlen("logCPU_.log") + sizeof(int) + 1);
 	sprintf(nombreLog, "%s%d%s", "logCPU_", getpid(), ".log");
-	log_create(nombreLog, "CPU", 1, LOG_LEVEL_DEBUG); //Creo el archivo Log
+	self->loggerCPU = log_create(nombreLog, "CPU", 1, LOG_LEVEL_DEBUG); //Creo el archivo Log
 	free(nombreLog);
 
 	if(!cargarConfiguracionCPU(argv[1], configCPU)){

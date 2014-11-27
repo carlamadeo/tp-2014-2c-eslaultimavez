@@ -5,7 +5,7 @@
 #include "commons/protocolStructInBigBang.h"
 #include <stdlib.h>
 
-t_CPU *self;
+//t_CPU *self;
 
 void cpuConectarConMPS() {
 
@@ -18,6 +18,7 @@ void cpuConectarConMPS() {
 		log_error(self->loggerCPU, "CPU: Error al hacer el connect con la MSP!");
 
 	else{
+		//printf("IP: %s y Puerto:  %d\n", self->ipMsp,self->puertoMSP);
 		log_info(self->loggerCPU, "CPU: Conectado con la MSP (IP: %s/Puerto: %d)!", self->ipMsp, self->puertoMSP);
 		cpuRealizarHandshakeConMSP();
 	}
@@ -149,7 +150,7 @@ int cpuLeerMemoria(int pid, uint32_t direccionVirtual, char *programa, int taman
 	t_datos_deMSPLectura *unaLectura = (t_datos_deMSPLectura *)malloc(sizeof(t_datos_deMSPLectura));
 
 	datosAMSP->direccionVirtual = direccionVirtual;
-	datosAMSP->pid = pid;
+	datosAMSP->pid = pid; //esto devuelve un CERO, me parece que es un error!!!!
 	datosAMSP->tamanio = tamanio;
 
 	log_info(self->loggerCPU, "CPU: Solicitud de lectura de memoria para PID: %d, Direccion Virtual: %0.8p, Tamaño: %d.", datosAMSP->pid, datosAMSP->direccionVirtual, datosAMSP->tamanio);
@@ -159,7 +160,9 @@ int cpuLeerMemoria(int pid, uint32_t direccionVirtual, char *programa, int taman
 	socket_recvPaquete(self->socketMSP->socket, paqueteLectura);
 
 	unaLectura = (t_datos_deMSPLectura *) paqueteLectura->data;
-	strcpy(programa, unaLectura->lectura);
+	printf("Una lectuea MSP: %c\n", unaLectura->lectura);
+	printf("Un estado MSP: %c\n", unaLectura->estado);
+	//strcpy(programa, unaLectura->lectura);  //en esta linea rompe Para que se usa un programa y como se carga
 
 	if (unaLectura->estado == ERROR_POR_SEGMENTATION_FAULT){
 		log_error(self->loggerCPU, "CPU: error por Segmentation Fault");
