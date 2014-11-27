@@ -145,11 +145,15 @@ void cpuCambioContexto(){
 
 }
 
-void cpuEnviaInterrupcion(int tamanio, char *algo){
+void cpuEnviaInterrupcion(uint32_t direccion){
+
+	t_interrupcion *interrupcion = malloc(sizeof(t_interrupcion));
+	interrupcion->tcb = self->tcb;
+	interrupcion->direccion = direccion;
 
 	log_info(self->loggerCPU, "CPU: Solicitud de Interrupcion al Kernel");
 
-	if (socket_sendPaquete(self->socketPlanificador->socket, INTERRUPCION, tamanio, algo) <= 0)
+	if (socket_sendPaquete(self->socketPlanificador->socket, INTERRUPCION, sizeof(t_interrupcion), interrupcion) <= 0)
 		log_error(self->loggerCPU, "CPU: Error de Interrupcion");
 
 	else
@@ -157,14 +161,18 @@ void cpuEnviaInterrupcion(int tamanio, char *algo){
 
 }
 
-void cpuFinalizarProgramaExitoso(int tamanio, char *algo){
+int cpuFinalizarProgramaExitoso(char *algo){
 
 	log_info(self->loggerCPU, "CPU: Envia FINALIZAR_PROGRAMA_EXITO al Kernel");
 
-	if (socket_sendPaquete(self->socketPlanificador->socket, FINALIZAR_PROGRAMA_EXITO, tamanio, algo) <= 0)
+	if (socket_sendPaquete(self->socketPlanificador->socket, FINALIZAR_PROGRAMA_EXITO, sizeof(t_TCB_CPU), algo) <= 0){
 		log_error(self->loggerCPU, "CPU: Error de finalizacion de proceso %d", self->tcb->pid);
+		return -1; //TODO ver el tema de los errores!!!
+	}
 
-	else
+	else{
 		log_info(self->loggerCPU, "CPU: Finalizacion de proceso correctamente %d", self->tcb->pid);
+		return SIN_ERRORES;
 
+	}
 }

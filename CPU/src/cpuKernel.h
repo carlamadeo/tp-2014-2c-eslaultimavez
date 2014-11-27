@@ -44,10 +44,10 @@ typedef struct{
  * */
 
 typedef struct {
-	t_TCB_CPU* tcb;
-	uint32_t direccionVirtual;
+	t_TCB_CPU *tcb;
+	uint32_t direccion;
 } t_interrupcion;
-t_socket_client* conectarCPUConKernel(t_CPU* self);
+
 
 /*
  * Nombre: t_join
@@ -102,8 +102,8 @@ void cpuRecibirTCB();
 void cpuRecibirQuantum();
 int cpuEnviaTermineUnaLinea();
 void cpuCambioContexto();
-void cpuEnviaInterrupcion(int tamanio, char *algo);
-void cpuFinalizarProgramaExitoso(int tamanio, char *algo);
+void cpuEnviaInterrupcion(uint32_t direccion);
+int cpuFinalizarProgramaExitoso(char *algo);
 
 
 #endif /* CPUKERNEL_H_ */

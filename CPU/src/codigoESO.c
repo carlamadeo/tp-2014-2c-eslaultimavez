@@ -84,49 +84,9 @@ int GETM_ESO(){
 			int tamanioMSP = sizeof(int32_t);
 			char *lecturaMSP = malloc(sizeof(char)*tamanioMSP);
 
-			estado_lectura = cpuLeerMemoria(self->tcb->pid, (uint32_t)self->tcb->registro_de_programacion[1], lecturaMSP, tamanioMSP);
+			estado_lectura = cpuLeerMemoria(self->tcb->pid, (uint32_t)self->tcb->registro_de_programacion[regB], lecturaMSP, tamanioMSP);
 
 			estado_bloque = estado_lectura;
-
-			/*char *data=malloc(sizeof(int)+sizeof(uint32_t)); //pid+direccion_logica
-			t_paquete_MSP *leer_bytes = malloc(sizeof(t_paquete_MSP));
-			int soffset=0, stmp_size=0;
-			memcpy(data, &(tcb->pid), stmp_size=(sizeof(int)));
-			soffset=stmp_size;
-			memcpy(data + soffset, &(tcb->registro_de_programacion[segundo_registro]), stmp_size=(sizeof(uint32_t)));
-			soffset+=stmp_size;
-
-			leer_bytes->tamanio = soffset;
-			leer_bytes->data = data;
-
-
-			if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA,leer_bytes->tamanio, leer_bytes->data)<=0){
-				log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP\n %d", tcb->pid);
-
-			}
-
-			free(data);
-			free(leer_bytes);
-
-			t_socket_paquete *paquete_MSP = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-			if(socket_recvPaquete(self->socketMSP->socket, paquete_MSP) > 0){
-				if(paquete_MSP->header.type == LEER_MEMORIA){
-					log_info(self->loggerCPU, "CPU: Recibiendo contenido de direccion:\n %d", tcb->registro_de_programacion[segundo_registro]);
-					char *contenido = malloc(sizeof(char)*4);
-					memcpy(contenido, paquete_MSP->data, sizeof(char)*4);
-					//resguardo el contenido en primer registro
-					tcb->registro_de_programacion[primer_registro]=*contenido;
-				} else {
-					log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado de MSP:\n %d", paquete_MSP->header.type);
-
-				}
-			}else{
-				log_info(self->loggerCPU, "CPU: MSP ha cerrado su conexion\n");
-				printf("CPU: MSP ha cerrado su conexion\n");
-				exit(-1);
-			}
-
-			free(paquete_MSP); */
 
 			free(lecturaMSP);
 
@@ -172,27 +132,10 @@ int SETM_ESO(){
 				//list_add(parametros, (void *)numero);
 				//ejecucion_instruccion("SETM", parametros);
 
-				char *data = malloc(sizeof(int) + sizeof(uint32_t) + sizeof(int)); /*pid+direccion_logica*/
-				int soffset = 0, stmp_size = 0;
-
-				memcpy(data, &(self->tcb->pid), stmp_size = (sizeof(int)));
-				soffset = stmp_size;
-
-				memcpy(data + soffset, &(self->tcb->registro_de_programacion[regB]), stmp_size = sizeof(uint32_t));
-				soffset += stmp_size;
-
-				memcpy(data + soffset, &(self->tcb->registro_de_programacion[regA]), stmp_size = numero);
-				soffset += stmp_size;
-
-				//cambio_registros(registros_cpu);
-				cpuEscribirMemoria(self->tcb->pid, (uint32_t) stmp_size, data, soffset);
-
-				//TODO No entiendo que hacen aca, falta la direccion virtual!!
-				/*if (socket_sendPaquete(self->socketMSP->socket, ESCRIBIR_MEMORIA, grabar_byte->tamanio, grabar_byte->data)<=0){
-				log_info(self->loggerCPU, "CPU: fallo: ESCRIBIR_MEMORIA\n %d", tcb->pid);
-
-			}*/
-				free(data);
+				char* byte_a_escribir = malloc(sizeof(int32_t));
+				memcpy(byte_a_escribir, &(self->tcb->registro_de_programacion[regB]), numero);
+				estado_bloque = cpuEscribirMemoria(self, (uint32_t)self->tcb->registro_de_programacion[regA], byte_a_escribir, numero);
+				free(byte_a_escribir);
 			}
 
 		}
@@ -276,8 +219,7 @@ int ADDR_ESO(){
 			//list_add(parametros, (void *)registroB);
 			//ejecucion_instruccion("ADDR", parametros);
 
-			int32_t auxiliar = self->tcb->registro_de_programacion[regB];
-			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] + auxiliar;
+			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] + self->tcb->registro_de_programacion[regB];
 			//cambio_registros(registros_cpu);
 		}
 
@@ -319,8 +261,7 @@ int SUBR_ESO(){
 			//list_add(parametros, (void *)registroB);
 			//ejecucion_instruccion("SUBR", parametros);
 
-			int32_t auxiliar = self->tcb->registro_de_programacion[regB];
-			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] - auxiliar;
+			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] - self->tcb->registro_de_programacion[regB];
 			//cambio_registros(registros_cpu);
 		}
 
@@ -362,8 +303,7 @@ int MULR_ESO(){
 			//list_add(parametros, (void *)registroB);
 			//ejecucion_instruccion("MULR", parametros);
 
-			int32_t auxiliar = self->tcb->registro_de_programacion[regB];
-			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] * auxiliar;
+			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] * self->tcb->registro_de_programacion[regB];
 			//cambio_registros(registros_cpu);
 		}
 
@@ -406,8 +346,7 @@ int MODR_ESO(){
 			//list_add(parametros, (void *)registroB);
 			//ejecucion_instruccion("MODR", parametros);
 
-			int32_t auxiliar = self->tcb->registro_de_programacion[regB];
-			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] % auxiliar;
+			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] % self->tcb->registro_de_programacion[regB];
 			//cambio_registros(registros_cpu);
 		}
 
@@ -452,13 +391,14 @@ int DIVR_ESO(){
 
 			int32_t auxiliar = self->tcb->registro_de_programacion[regB];
 
-			if (auxiliar == 0){
-				log_error(self->loggerCPU, "Fallo de division por cero %d", self->tcb->pid);
+			if (self->tcb->registro_de_programacion[regB] != 0)
+				self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] / self->tcb->registro_de_programacion[regB];
+
+
+			else{
+				log_error(self->loggerCPU, "CPU: error de intento de division por cero");
 				estado_bloque = ERROR_POR_EJECUCION_ILICITA; //TODO No se que poner, no podemos poner un error por cada cosa, ver como solucionarlo!!
 			}
-
-			else
-				self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] / auxiliar;
 		}
 
 		else{
@@ -716,9 +656,10 @@ int GOTO_ESO(){
 			//list_add(parametros, (void *)registro);
 			//ejecucion_instruccion("GOTO", parametros);
 
-			uint32_t auxiliar = self->tcb->base_segmento_codigo;
-			auxiliar += (uint32_t)self->tcb->registro_de_programacion[reg];
-			self->tcb->puntero_instruccion = auxiliar;
+			if((self->tcb->base_segmento_codigo + self->tcb->registro_de_programacion[reg]) <= self->tcb->tamanio_segmento_codigo)
+				self->tcb->puntero_instruccion = self->tcb->registro_de_programacion[registro];
+			else
+				estado_bloque = ERROR_POR_SEGMENTATION_FAULT;
 		}
 
 		else{
@@ -752,9 +693,12 @@ int JMPZ_ESO(){
 		//ejecucion_instruccion("JMPZ", parametros);
 
 		if(self->tcb->registro_de_programacion[0] == 0){
-			uint32_t auxiliar = direccion;
-			auxiliar += self->tcb->base_segmento_codigo;
-			self->tcb->puntero_instruccion = auxiliar;
+
+			if((self->tcb->base_segmento_codigo + direccion) <= self->tcb->tamanio_segmento_codigo)
+				self->tcb->puntero_instruccion = direccion;
+			else
+				estado_bloque = ERROR_POR_SEGMENTATION_FAULT;
+
 		}
 
 	}
@@ -784,9 +728,13 @@ int JPNZ_ESO(){
 		//ejecucion_instruccion("JPNZ", parametros);
 
 		if(self->tcb->registro_de_programacion[0] != 0){
-			uint32_t auxiliar = direccion;
-			auxiliar += self->tcb->base_segmento_codigo;
-			self->tcb->puntero_instruccion = auxiliar;
+
+			if((self->tcb->base_segmento_codigo + direccion) <= self->tcb->tamanio_segmento_codigo)
+				self->tcb->puntero_instruccion = direccion;
+
+			else
+				estado_bloque = ERROR_POR_SEGMENTATION_FAULT;
+
 		}
 
 	}
@@ -814,20 +762,7 @@ int INTE_ESO(){
 		//list_add(parametros, (void *)direccion);
 		//ejecucion_instruccion("INTE", parametros);
 
-		self->tcb->puntero_instruccion += 1; //incremento el puntero de instruccion, porque hago cambio de conexto
-		char *direccion_send = malloc(sizeof(char));
-		*direccion_send = direccion;
-		char *data = malloc(sizeof(t_TCB_CPU) + sizeof(uint32_t)); /*TCB+direccion_SysCall*/
-		int soffset = 0, stmp_size = 0;
-		memcpy(data, self->tcb, stmp_size = (sizeof(t_TCB_CPU)));
-		soffset = stmp_size;
-		memcpy(data + soffset, direccion_send, stmp_size = sizeof(uint32_t));
-		soffset += stmp_size;
-
-		cpuEnviaInterrupcion(stmp_size, data);
-
-		free(direccion_send);
-		free(data);
+		cpuEnviaInterrupcion(direccion);
 
 	}
 
@@ -867,19 +802,11 @@ int SHIF_ESO(){
 			//list_add(parametros, (void *)registro);
 			//ejecucion_instruccion("SHIF", parametros);
 
-			if(numero > 0){
-				int32_t auxiliar = self->tcb->registro_de_programacion[reg];
-				int32_t resultado;
-				resultado = auxiliar>>numero;
-				self->tcb->registro_de_programacion[reg] = resultado;
-			}
+			if(numero > 0)
+				self->tcb->registro_de_programacion[reg]>>=numero;
+			else
+				self->tcb->registro_de_programacion[reg]<<=numero;
 
-			else{
-				int32_t auxiliar = self->tcb->registro_de_programacion[reg];
-				int32_t resultado;
-				resultado = auxiliar<<numero;
-				self->tcb->registro_de_programacion[reg] = resultado;
-			}
 		}
 
 	}
@@ -923,34 +850,23 @@ int PUSH_ESO(){
 
 			if(numero <= sizeof(uint32_t)){
 
-				char *datos_a_grabar = malloc(sizeof(uint32_t));
-				memcpy(datos_a_grabar, &(self->tcb->registro_de_programacion[reg]), numero);
+				char* byte_a_escribir = malloc(sizeof(int32_t));
 
-				char *grabar_byte = malloc(sizeof(int) + sizeof(uint32_t) * 2); /*pid+direccion_logica+datos_a_grabar*/
+				memcpy(byte_a_escribir, &(self->tcb->registro_de_programacion[reg]), numero);
+				estado_bloque = cpuEscribirMemoria(self, (uint32_t)self->tcb->cursor_stack, byte_a_escribir, numero);
 
-				int soffset = 0, stmp_size = 0;
-				memcpy(grabar_byte, &(self->tcb->pid), stmp_size = (sizeof(int)));
-				soffset = stmp_size;
-				memcpy(grabar_byte + soffset, &(self->tcb->cursor_stack), stmp_size = sizeof(uint32_t));
-				soffset += stmp_size;
-				memcpy(grabar_byte + soffset, datos_a_grabar, stmp_size = sizeof(uint32_t));
+				free(byte_a_escribir);
 
-				//TODO Faltaba mandar la direccion virtual para escribir memoria!! ahora le puse self->tcb->cursor_stack porque no se que va
-				cpuEscribirMemoria(self->tcb->pid, self->tcb->cursor_stack , grabar_byte, soffset);
-
-				free(grabar_byte);
-				free(datos_a_grabar);
-				self->tcb->cursor_stack += numero; //actualizo el cursor de stack
-
+				if (estado_bloque == SIN_ERRORES)
+					self->tcb->cursor_stack += numero;
 			}
 		}
-
 	}
 
 	free(lecturaDeMSP);
 	return estado_bloque;
-
 }
+
 
 int TAKE_ESO(){
 
@@ -979,41 +895,27 @@ int TAKE_ESO(){
 
 			if(numero <= sizeof(uint32_t)){
 
-				char *data = malloc(sizeof(int) + sizeof(uint32_t) + sizeof(int)); /*pid+direccion_logica*/
-				t_paquete_MSP *leer_bytes = malloc(sizeof(t_paquete_MSP));
-				int soffset = 0, stmp_size = 0;
+				char *lecturaDeMSP2 = malloc(sizeof(char) * numero + 1);
 
-				memcpy(data, &(self->tcb->pid), stmp_size = (sizeof(int)));
-				soffset = stmp_size;
-				memcpy(data + soffset, &(self->tcb->cursor_stack), stmp_size = (sizeof(uint32_t)));
-				soffset += stmp_size;
-				memcpy(data + soffset, &(numero), stmp_size = sizeof(int));
-				soffset += stmp_size;
+				//se hace el control para saber a donde apuntar dependiendo de si se trata un tcb usuario o kernel...
+				int estado_lectura = cpuLeerMemoria(self, self->tcb->cursor_stack, lecturaDeMSP2, numero);
+				estado_bloque = estado_lectura;
 
-				leer_bytes->tamanio = soffset;
-				leer_bytes->data = data;
-
-
-				//TODO Aca estan haciendo un LEER_MEMORIA, por que?? Esta bien esto? o es ESCRIBIR_MEMORIA?
-				//Si es escribir memoria modificarlo pero teniendo en cuenta la funcion cpuEscribirMemoria
-
-				if (socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, leer_bytes->tamanio, leer_bytes->data)<=0){
-					log_info(self->loggerCPU, "CPU: Error en envio de direccion a la MSP %d", self->tcb->pid);
-
+				if (estado_lectura == SIN_ERRORES){
+					self->tcb->registro_de_programacion[reg] = (int32_t)lecturaDeMSP2;
+					self->tcb->cursor_stack -= numero;
 				}
 
-				free(data);
-				free(leer_bytes);
-				self->tcb->cursor_stack -= numero; //actualizo el cursor de stack
-
+				free(lecturaDeMSP2);
 			}
 		}
 
+		else
+			log_error(self->loggerCPU, "CPU: Error registro de programacion no encontrado %d", self->tcb->pid);
 	}
 
 	free(lecturaDeMSP);
 	return estado_bloque;
-
 }
 
 
@@ -1021,14 +923,9 @@ int XXXX_ESO(){
 
 	fin_ejecucion();
 
-	char *data = malloc(sizeof(t_TCB_CPU)); /*TCB*/
-	int stmp_size = 0;
-
-	memcpy(data, self->tcb, stmp_size = (sizeof(t_TCB_CPU)));
-
-	cpuFinalizarProgramaExitoso(stmp_size, data);
-
-	return 0;
+	char *data = malloc(sizeof(t_TCB_CPU));
+	memcpy(data, self->tcb, sizeof(t_TCB_CPU));
+	int estado = cpuFinalizarProgramaExitoso(data);
 
 	free(data);
 
