@@ -21,7 +21,7 @@ bool cargarConfiguracionCPU(t_CPU *self, char *config_file, t_config *configCPU)
 	self->puertoMSP = config_get_int_value(configCPU, "PUERTO_MSP");
 	self->ipPlanificador= string_duplicate(config_get_string_value(configCPU, "IP_KERNEL"));
 	self->ipMsp = string_duplicate(config_get_string_value(configCPU, "IP_MSP"));
-	self->retardo = config_get_int_value(configCPU, "RETARDO");
+	self->retardo = config_get_int_value(configCPU, "RETARDO") * 1000; //Lo guardo en microsegundos para usarlo en la funcion usleep
 
 	config_destroy(configCPU);
 	return true;

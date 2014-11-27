@@ -122,11 +122,6 @@ void escribirMemoriaKernel(t_socket_paquete *paquete){
 	if (socket_sendPaquete(sockets->socketClienteKernel, ESCRIBIR_MEMORIA, sizeof(t_datos_aKernelEscritura), datosAKernel) > 0)
 		log_info(self->logMSP, "MSP: Los datos de escritura de memoria se han enviado al Kernel correctamente");
 
-	int i;
-
-	for(i = 0; i < datosDeKernel->tamanio; i++)
-		printf("El caracter en i %d es: %c\n", i, datosDeKernel->buffer[i]);
-
 	free(datosAKernel);
 	free(datosDeKernel);
 }
