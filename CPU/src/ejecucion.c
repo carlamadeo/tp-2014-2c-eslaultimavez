@@ -16,12 +16,12 @@ char *instrucciones_eso[] = {"LOAD", "GETM", "SETM", "MOVR", "ADDR", "SUBR", "MU
 		"COMP", "CGEQ", "CLEQ", "GOTO", "JMPZ", "JPNZ", "INTE", "SHIF", "NOPP", "PUSH", "TAKE", "XXXX", "MALC", "FREE", "INNN",
 		"INNC", "OUTN", "OUTC", "CREA", "JOIN", "BLOK", "WAKE"};
 
-t_CPU * cpuProcesarTCB(t_CPU *self){
+int cpuProcesarTCB(t_CPU *self){
 
 	int estado_ejecucion_instruccion;
-	//int estado;
+	int estado;
 	int tamanio = sizeof(char) * 4;
-	self->datosDeMSP = malloc(sizeof(tamanio) + 1);
+	char *datosDeMSP = malloc(sizeof(tamanio) + 1);
 	int encontrado;
 	int indice;
 
@@ -34,19 +34,18 @@ t_CPU * cpuProcesarTCB(t_CPU *self){
 		encontrado = 0;
 		indice = 0;
 
-		self = cpuLeerMemoria(self, tamanio);
+		estado = cpuLeerMemoria(self, self->tcb->puntero_instruccion, datosDeMSP, tamanio);
 
-		if ((self->estado < 0) && (self->estado != SIN_ERRORES)){
-			log_error(self->loggerCPU, "CPU: error al intentar cpuLeerMemoria, con N°: %d", self->estado);
-			self->estado_ejecucion_instruccion=self->estado;
-			return self;
+		if ((estado < 0) && (estado != SIN_ERRORES)){
+			log_error(self->loggerCPU, "CPU: error al intentar cpuLeerMemoria, con N°: %d", estado);
+			return estado;
 		}
 		//estado puede ser SIN_ERRORES o ERROR_POR_SEGMENTATION_FAULT
 		//TODO Ver manejo de errores con el Kernel!!!
 
-		while ((encontrado!=1) && (indice <= CANTIDAD_INSTRUCCIONES)){
+		while (!encontrado && indice <= CANTIDAD_INSTRUCCIONES){
 
-			if(strncmp(instrucciones_eso[indice], self->datosDeMSP, 4) == 0){   //Rompe aaqui carla!
+			if(strncmp(instrucciones_eso[indice], datosDeMSP, 4) == 0){
 				encontrado = 1;
 				estado_ejecucion_instruccion = ejecutar_instruccion(self, indice);
 			}
@@ -58,8 +57,7 @@ t_CPU * cpuProcesarTCB(t_CPU *self){
 
 	}
 
-	self->estado_ejecucion_instruccion= estado_ejecucion_instruccion;
-	return self;
+	return estado_ejecucion_instruccion;
 }
 
 
@@ -95,7 +93,7 @@ int ejecutar_instruccion(t_CPU *self, int linea){
 	case LOAD:
 		estado = LOAD_ESO(self);
 		break;
-/*
+
 	case GETM:
 		estado = GETM_ESO(self);
 		break;
@@ -183,7 +181,7 @@ int ejecutar_instruccion(t_CPU *self, int linea){
 	case XXXX:
 		estado = XXXX_ESO(self);
 		break;
-*/
+
 		/***************************************************************************************************\
 		 *								--Comienzo SYSTEMCALL--									 	 *
 		\***************************************************************************************************/
@@ -291,4 +289,3 @@ int ejecutar_instruccion(t_CPU *self, int linea){
 
 	return estado;
 }
-
