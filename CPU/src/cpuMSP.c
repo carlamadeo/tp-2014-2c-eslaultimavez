@@ -161,7 +161,8 @@ int cpuLeerMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int t
 	unaLectura = (t_datos_deMSPLectura *) paqueteLectura->data;
 	printf("Una lectura MSP: %s\n", unaLectura->lectura);
 	printf("Un estado MSP: %d\n", unaLectura->estado);
-	strcpy(programa, unaLectura->lectura);  //en esta linea rompe Para que se usa un programa y como se carga
+	memset(programa, 0, tamanio);
+	memcpy(programa, unaLectura->lectura, tamanio);  //en esta linea rompe Para que se usa un programa y como se carga
 
 	return unaLectura->estado;
 }
