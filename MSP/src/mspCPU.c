@@ -11,14 +11,14 @@
 extern t_MSP *self;
 t_sockets *sockets;
 
-void *mspLanzarHiloCPU(){
+void *mspLanzarHiloCPU(t_socket* socketClienteCPU){
 
 	t_socket_paquete *paquete;
 	int i = 1;
 
 	log_info(self->logMSP,"Hilo CPU creado correctamente.");
 
-	if (socket_sendPaquete(sockets->socketClienteCPU, HANDSHAKE_MSP, 0, NULL) > 0)
+	if (socket_sendPaquete(socketClienteCPU, HANDSHAKE_MSP, 0, NULL) > 0)
 		log_info(self->logMSP, "MSP: Handshake con CPU!");
 
 	else
@@ -28,21 +28,21 @@ void *mspLanzarHiloCPU(){
 
 		paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
-		if (socket_recvPaquete(sockets->socketClienteCPU, paquete) >= 0){
+		if (socket_recvPaquete(socketClienteCPU, paquete) >= 0){
 
 			switch(paquete->header.type){
 
 			case CREAR_SEGMENTO:
-				crearSegmentoCPU(paquete);
+				crearSegmentoCPU(paquete, socketClienteCPU);
 				break;
 			case DESTRUIR_SEGMENTO:
-				destruirSegmentoCPU(paquete);
+				destruirSegmentoCPU(paquete, socketClienteCPU);
 				break;
 			case ESCRIBIR_MEMORIA:
-				escribirMemoriaCPU(paquete);
+				escribirMemoriaCPU(paquete, socketClienteCPU);
 				break;
 			case LEER_MEMORIA:
-				leerMemoriaCPU(paquete);
+				leerMemoriaCPU(paquete, socketClienteCPU);
 				break;
 			default:
 				break;
@@ -51,7 +51,7 @@ void *mspLanzarHiloCPU(){
 
 		else{
 			log_debug(self->logMSP, "MSP: El CPU ha cerrado la conexion.");
-			close(sockets->socketClienteCPU->descriptor);
+			close(socketClienteCPU->descriptor);
 			i = 0;
 		}
 
@@ -62,7 +62,7 @@ void *mspLanzarHiloCPU(){
 }
 
 
-void crearSegmentoCPU(t_socket_paquete *paquete){
+void crearSegmentoCPU(t_socket_paquete *paquete, t_socket* socketClienteCPU){
 
 	t_datos_aCPUSegmento* datosACPU = malloc(sizeof(t_datos_aCPUSegmento));
 	t_datos_deCPUCrearSegmento* datosDeCPU = (t_datos_deCPUCrearSegmento*) (paquete->data);
@@ -77,7 +77,7 @@ void crearSegmentoCPU(t_socket_paquete *paquete){
 	//o ERROR_POR_SEGMENTATION_FAULT o la base del segmento si no hubo ningún problema
 	datosACPU->recibido = mspCrearSegmento(datosDeCPU->pid, datosDeCPU->tamanio);
 
-	if (socket_sendPaquete(sockets->socketClienteCPU, CREAR_SEGMENTO, sizeof(t_datos_aCPUSegmento), datosACPU) > 0)
+	if (socket_sendPaquete(socketClienteCPU, CREAR_SEGMENTO, sizeof(t_datos_aCPUSegmento), datosACPU) > 0)
 		log_info(self->logMSP, "MSP: Los datos de creacion de Segmento se han enviado al CPU correctamente");
 
 	free(datosACPU);
@@ -85,7 +85,7 @@ void crearSegmentoCPU(t_socket_paquete *paquete){
 }
 
 
-void destruirSegmentoCPU(t_socket_paquete *paquete){
+void destruirSegmentoCPU(t_socket_paquete *paquete, t_socket* socketClienteCPU){
 
 	t_datos_aCPUSegmento* datosACPU = malloc(sizeof(t_datos_aCPUSegmento));
 	t_datos_deCPUDestruirSegmento* datosDeCPU = (t_datos_deCPUDestruirSegmento*) (paquete->data);
@@ -98,7 +98,7 @@ void destruirSegmentoCPU(t_socket_paquete *paquete){
 	//o ERROR_POR_SEGMENTO_DESCONOCIDO si el segmento indicado es incorrecto
 	datosACPU->recibido = mspDestruirSegmento(datosDeCPU->pid, datosDeCPU->direccionBase);
 
-	if (socket_sendPaquete(sockets->socketClienteCPU, CREAR_SEGMENTO, sizeof(t_datos_aCPUSegmento), datosACPU) > 0)
+	if (socket_sendPaquete(socketClienteCPU, CREAR_SEGMENTO, sizeof(t_datos_aCPUSegmento), datosACPU) > 0)
 		log_info(self->logMSP, "MSP: Los datos de destruccion de Segmento se han enviado al CPU correctamente");
 
 	free(datosACPU);
@@ -106,7 +106,7 @@ void destruirSegmentoCPU(t_socket_paquete *paquete){
 }
 
 
-void escribirMemoriaCPU(t_socket_paquete *paquete){
+void escribirMemoriaCPU(t_socket_paquete *paquete, t_socket* socketClienteCPU){
 
 	t_datos_aCPUEscritura* datosACPU = malloc(sizeof(t_datos_aCPUEscritura));
 	t_datos_deCPUEscritura* datosDeCPU = (t_datos_deCPUEscritura*) (paquete->data);
@@ -119,7 +119,7 @@ void escribirMemoriaCPU(t_socket_paquete *paquete){
 	//o ERROR_POR_SEGMENTATION_FAULT si se intentó escribir memoria inválida
 	datosACPU->estado = mspEscribirMemoria(datosDeCPU->pid, datosDeCPU->direccionVirtual, datosDeCPU->buffer, datosDeCPU->tamanio);
 
-	if (socket_sendPaquete(sockets->socketClienteCPU, ESCRIBIR_MEMORIA, sizeof(t_datos_aCPUEscritura), datosACPU) > 0)
+	if (socket_sendPaquete(socketClienteCPU, ESCRIBIR_MEMORIA, sizeof(t_datos_aCPUEscritura), datosACPU) > 0)
 		log_info(self->logMSP, "MSP: Los datos de lectura de memoria se han enviado al CPU correctamente");
 
 	free(datosACPU);
@@ -127,7 +127,7 @@ void escribirMemoriaCPU(t_socket_paquete *paquete){
 }
 
 
-void leerMemoriaCPU(t_socket_paquete *paquete){
+void leerMemoriaCPU(t_socket_paquete *paquete, t_socket* socketClienteCPU){
 
 	//TODO ver si es necesario hacer un malloc a datosACPU->lectura!!!
 	//jorge Para mi si es muy importante!
@@ -144,7 +144,7 @@ void leerMemoriaCPU(t_socket_paquete *paquete){
 	//o ERROR_POR_SEGMENTATION_FAULT si se intentó leer memoria inválida
 	datosACPU->estado = mspLeerMemoria(datosDeCPU->pid, datosDeCPU->direccionVirtual, datosDeCPU->tamanio, datosACPU->lectura);
 
-	if (socket_sendPaquete(sockets->socketClienteCPU, LEER_MEMORIA, sizeof(t_datos_aCPULectura), datosACPU) > 0)
+	if (socket_sendPaquete(socketClienteCPU, LEER_MEMORIA, sizeof(t_datos_aCPULectura), datosACPU) > 0)
 		log_info(self->logMSP, "MSP: Los datos de lectura de memoria se han enviado al CPU correctamente");
 
 	//free(datosACPU->lectura);  //jorge comente esto porque tira SEGMENTATION_FAULT

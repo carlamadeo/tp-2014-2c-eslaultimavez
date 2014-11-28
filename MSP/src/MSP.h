@@ -9,7 +9,6 @@
 
 typedef struct{
 	t_socket* socketMSP;
-	t_socket* socketClienteCPU;
 	t_socket* socketClienteKernel;
 }t_sockets;
 
@@ -25,7 +24,7 @@ typedef struct{
 	t_list *marcosOcupados;
 }t_MSP;
 
-pthread_t *mspHiloCpus;
+pthread_t *mspHiloCpus[10];
 pthread_t *mspHiloKernel;
 pthread_t *mspConsolaHilo;
 

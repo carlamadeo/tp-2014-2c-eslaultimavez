@@ -91,21 +91,21 @@ void crearHilosConexiones(){
 
 	while(1){
 
-		sockets->socketClienteCPU = socket_acceptClient(sockets->socketMSP);
-		contadorCpu++;
+		t_socket *socketClienteCPU = socket_acceptClient(sockets->socketMSP);
 
 		t_socket_paquete *paqueteCPU = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-		socket_recvPaquete(sockets->socketClienteCPU, paqueteCPU);
+		socket_recvPaquete(socketClienteCPU, paqueteCPU);
 
 		if(paqueteCPU->header.type == HANDSHAKE_CPU){
-			int mspHiloCPUInt = pthread_create(&mspHiloCpus, NULL, (void *)mspLanzarHiloCPU, NULL);
+			int mspHiloCPUInt = pthread_create(&mspHiloCpus[contadorCpu], NULL, (void *)mspLanzarHiloCPU, socketClienteCPU);
 			if(mspHiloCPUInt){
 				log_error(self->logMSP, "Error - pthread_create() return code: %d\n", mspHiloCPUInt);
 				exit(EXIT_FAILURE);
 			}
 
-			log_debug(self->logMSP, "MSP: cantidad de CPUs conectadas: %d",contadorCpu);
+			log_debug(self->logMSP, "MSP: cantidad de CPUs conectadas: %d", contadorCpu);
 		}
+		contadorCpu++;
 	}//fin del while
 }
 

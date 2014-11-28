@@ -48,14 +48,10 @@ typedef struct{
 	int estado;
 }t_datos_aCPUEscritura;
 
-void* mspLanzarHiloCPU();
-
-void crearSegmentoCPU(t_socket_paquete *paquete);
-
-void destruirSegmentoCPU(t_socket_paquete *paquete);
-
-void escribirMemoriaCPU(t_socket_paquete *paquete);
-
-void leerMemoriaCPU(t_socket_paquete *paquete);
+void* mspLanzarHiloCPU(t_socket* socketClienteCPU);
+void crearSegmentoCPU(t_socket_paquete *paquete, t_socket* socketClienteCPU);
+void destruirSegmentoCPU(t_socket_paquete *paquete, t_socket* socketClienteCPU);
+void escribirMemoriaCPU(t_socket_paquete *paquete, t_socket* socketClienteCPU);
+void leerMemoriaCPU(t_socket_paquete *paquete, t_socket* socketClienteCPU);
 
 #endif /* CPU_H_ */
