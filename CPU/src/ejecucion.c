@@ -7,6 +7,7 @@
 
 
 #include "cpuKernel.h"
+#include "cpuMSP.h"
 #include "ejecucion.h"
 #include "codigoESO.h"
 
@@ -186,56 +187,56 @@ int ejecutar_instruccion(t_CPU *self, int linea){
 		 *								--Comienzo SYSTEMCALL--									 	 *
 		\***************************************************************************************************/
 
-		/*
+
 	case MALC:
 		if(self->tcb->km==1){
 			log_info(self->loggerCPU, "CPU: ejecutando instruccion MALC" );
-			estado_bloque = MALC_ESO(self->tcb);
+			estado = MALC_ESO(self);
 		}else{
-			estado_bloque = ERROR_POR_EJECUCION_ILICITA;
+			estado = ERROR_POR_EJECUCION_ILICITA;
 			break;
 		}
 		break;
 
 	case FREE:
 		if(self->tcb->km==1){
-			estado_bloque = FREE_ESO(self->tcb);
+			estado = FREE_ESO(self);
 		}else{
-			estado_bloque = ERROR_POR_EJECUCION_ILICITA;
+			estado = ERROR_POR_EJECUCION_ILICITA;
 			break;
 		}
 		break;
 
 	case INNN:
 		if(self->tcb->km==1){
-			estado_bloque = INNN_ESO(self->tcb);
+			estado = INNN_ESO(self);
 		}else{
-			estado_bloque = ERROR_POR_EJECUCION_ILICITA;
+			estado = ERROR_POR_EJECUCION_ILICITA;
 			break;
 		}
 		break;
 	case INNC:
 		if(self->tcb->km==1){
-			estado_bloque = INNC_ESO(self->tcb);
+			estado = INNC_ESO(self);
 		}else{
-			estado_bloque = ERROR_POR_EJECUCION_ILICITA;
+			estado = ERROR_POR_EJECUCION_ILICITA;
 			break;
 		}
 		break;
 	case OUTN:
 		if(self->tcb->km==1){
-			estado_bloque = OUTN_ESO(self->tcb);
+			estado = OUTN_ESO(self);
 		}else{
-			estado_bloque = ERROR_POR_EJECUCION_ILICITA;
+			estado = ERROR_POR_EJECUCION_ILICITA;
 			break;
 		}
 		break;
 
 	case OUTC:
 		if(self->tcb->km==1){
-			estado_bloque = OUTC_ESO(self->tcb);
+			estado = OUTC_ESO(self);
 		}else{
-			estado_bloque = ERROR_POR_EJECUCION_ILICITA;
+			estado = ERROR_POR_EJECUCION_ILICITA;
 			break;
 		}
 		break;
@@ -243,18 +244,18 @@ int ejecutar_instruccion(t_CPU *self, int linea){
 	case CREA:
 
 		if(self->tcb->km==1){
-			estado_bloque = CREA_ESO(self->tcb);
+			estado = CREA_ESO(self);
 		}else{
-			estado_bloque = ERROR_POR_EJECUCION_ILICITA;
+			estado = ERROR_POR_EJECUCION_ILICITA;
 			break;
 		}
 		break;
 
 	case JOIN:
 		if(self->tcb->km==1){
-			estado_bloque = JOIN_ESO(self->tcb);
+			estado = JOIN_ESO(self);
 		}else{
-			estado_bloque = ERROR_POR_EJECUCION_ILICITA;
+			estado = ERROR_POR_EJECUCION_ILICITA;
 			break;
 		}
 		break;
@@ -262,12 +263,12 @@ int ejecutar_instruccion(t_CPU *self, int linea){
 	case BLOK:
 
 		if(self->tcb->km==1){
-			estado_bloque = BLOK_ESO(self->tcb);
+			estado = BLOK_ESO(self);
 		}else{
-			estado_bloque = ERROR_POR_EJECUCION_ILICITA;
+			estado = ERROR_POR_EJECUCION_ILICITA;
 			break;
 		}
-		break;*/
+		break;
 
 		/***************************************************************************************************\
 		 *								--FIN SYSTEMCALL--									 	 *

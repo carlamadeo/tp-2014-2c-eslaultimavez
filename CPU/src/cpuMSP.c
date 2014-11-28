@@ -61,8 +61,20 @@ int cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
 				log_info(self->loggerCPU, "CPU: Se recibio de la MSP la direccion base %0.8p ", datosRecibidos->direccionBase);
 
 				if(datosRecibidos->direccionBase < 0){
-
-
+					switch(datosRecibidos->direccionBase){
+					case ERROR_POR_TAMANIO_EXCEDIDO:
+						return ERROR_POR_TAMANIO_EXCEDIDO;
+					case ERROR_POR_MEMORIA_LLENA:
+						return ERROR_POR_MEMORIA_LLENA;
+					case ERROR_POR_NUMERO_NEGATIVO:
+						return ERROR_POR_NUMERO_NEGATIVO;
+					case ERROR_POR_SEGMENTO_INVALIDO:
+						return ERROR_POR_SEGMENTO_INVALIDO;
+					case ERROR_POR_SEGMENTATION_FAULT:
+						return ERROR_POR_SEGMENTATION_FAULT;
+					default:
+						return datosRecibidos->direccionBase;
+					}
 					//ERROR_POR_TAMANIO_EXCEDIDO
 					//ERROR_POR_MEMORIA_LLENA
 					//ERROR_POR_NUMERO_NEGATIVO
