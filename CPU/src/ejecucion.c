@@ -22,39 +22,41 @@ int cpuProcesarTCB(t_CPU *self){
 	int estado;
 	int tamanio = sizeof(char) * 4;
 	char *datosDeMSP = malloc(sizeof(tamanio) + 1);
-	int encontrado = 0;
-	int indice = 0;
+	int encontrado;
+	int indice;
 
 	//int terminarLinea;
 
 	//ejecucion_hilo(hilo_log, self->quantum);
 	log_info(self->loggerCPU, "CPU: Comienzo a procesar el TCB de pid: %d", self->tcb->pid);
+
 	while(self->quantum > 0){
+		encontrado = 0;
+		indice = 0;
 
 		estado = cpuLeerMemoria(self, self->tcb->puntero_instruccion, datosDeMSP, tamanio);
 
-		if ((estado<0) && (estado!= SIN_ERRORES)){
+		if ((estado < 0) && (estado != SIN_ERRORES)){
 			log_error(self->loggerCPU, "CPU: error al intentar cpuLeerMemoria, con N°: %d", estado);
 			return estado;
 		}
 		//estado puede ser SIN_ERRORES o ERROR_POR_SEGMENTATION_FAULT
 		//TODO Ver manejo de errores con el Kernel!!!
 
-
 		while (!encontrado && indice <= CANTIDAD_INSTRUCCIONES){
 
 			if(strncmp(instrucciones_eso[indice], datosDeMSP, 4) == 0){
 				encontrado = 1;
 				estado_ejecucion_instruccion = ejecutar_instruccion(self, indice);
-			}else   //Se deberia validar si hay un error el intentar ejecutar una instruccion
-				log_error(self->loggerCPU, "CPU: error el ejecutar una instruccion con indice=%d", indice);
+			}
 			indice++;
 		}
 
-		//usleep(100);
 		self->quantum = self->quantum - 1;
-		log_info(self->loggerCPU, "CPU: --------------------QUANTUM=%d------------------",self->quantum);
+		log_info(self->loggerCPU, "CPU: --------------------QUANTUM = %d------------------", self->quantum);
+
 	}
+
 	return estado_ejecucion_instruccion;
 }
 
@@ -277,7 +279,6 @@ int ejecutar_instruccion(t_CPU *self, int linea){
 		printf("CPU: error en el switch-case, instruccion no encontrada:\n %d", self->tcb->pid);
 		//free(lectura_en_msp);
 		//free(cpu_leer_memoria);
-		usleep(100);
 		estado = ERROR_POR_CODIGO_INESPERADO;
 		break;
 	}
@@ -286,7 +287,6 @@ int ejecutar_instruccion(t_CPU *self, int linea){
 										  	  FIN SWITCH - CASE
 										\****************************/
 
-	usleep(100);
 	return estado;
 }
 
