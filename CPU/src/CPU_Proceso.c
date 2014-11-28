@@ -21,7 +21,6 @@ int main(int argc, char** argv) {
 
 	verificar_argumentosCPU(argc, argv);
 	t_CPU *self = malloc(sizeof(t_CPU));
-	int valorCPU;
 	t_config *configCPU;
 
 	char *nombreLog = malloc(strlen("logCPU_.log") + sizeof(int) + 1);
@@ -43,14 +42,42 @@ int main(int argc, char** argv) {
 		//2) Paso, recibir TCB
 		cpuRecibirTCB(self);
 		//3) Paso, Procesa TCB
-		valorCPU=cpuProcesarTCB(self);
+		self=cpuProcesarTCB(self);
 
-		log_info(self->loggerCPU, "CPU: valorCPU==%d",valorCPU);
-		switch(valorCPU){
+		log_info(self->loggerCPU, "CPU: valorCPU==%d",self->estado_ejecucion_instruccion);
+		switch(self->estado_ejecucion_instruccion){
 
 		case SIN_ERRORES:
 			cpuEnviarPaqueteAPlanificador(self,CAMBIO_DE_CONTEXTO);
 			log_info(self->loggerCPU, "CPU: envia un CAMBIO_DE_CONTEXTO");
+			break;
+		case INTERRUPCION:
+			cpuEnviarPaqueteAPlanificador(self,INTERRUPCION);
+			log_info(self->loggerCPU, "CPU: envia una INTERRUPCION");
+			break;
+		case ENTRADA_ESTANDAR:
+			cpuEnviarPaqueteAPlanificador(self,ENTRADA_ESTANDAR);
+			log_info(self->loggerCPU, "CPU: envia una ENTRADA_ESTANDAR");
+			break;
+		case SALIDA_ESTANDAR:
+			cpuEnviarPaqueteAPlanificador(self,SALIDA_ESTANDAR);
+			log_info(self->loggerCPU, "CPU: envia una SALIDA_ESTANDAR");
+			break;
+		case CREAR_HILO:
+			cpuEnviarPaqueteAPlanificador(self,CREAR_HILO);
+			log_info(self->loggerCPU, "CPU: envia un CREAR_HILO");
+			break;
+		case JOIN_HILO:
+			cpuEnviarPaqueteAPlanificador(self,JOIN_HILO);
+			log_info(self->loggerCPU, "CPU: envia un JOIN_HILO");
+			break;
+		case BLOK_HILO:
+			cpuEnviarPaqueteAPlanificador(self,BLOK_HILO);
+			log_info(self->loggerCPU, "CPU: envia un BLOK_HILO");
+			break;
+		case WAKE_HILO:
+			cpuEnviarPaqueteAPlanificador(self,WAKE_HILO);
+			log_info(self->loggerCPU, "CPU: envia un WAKE_HILO");
 			break;
 		default:
 			cpuEnviarPaqueteAPlanificador(self,MENSAJE_DE_ERROR);

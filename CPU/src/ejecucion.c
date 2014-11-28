@@ -16,7 +16,7 @@ char *instrucciones_eso[] = {"LOAD", "GETM", "SETM", "MOVR", "ADDR", "SUBR", "MU
 		"COMP", "CGEQ", "CLEQ", "GOTO", "JMPZ", "JPNZ", "INTE", "SHIF", "NOPP", "PUSH", "TAKE", "XXXX", "MALC", "FREE", "INNN",
 		"INNC", "OUTN", "OUTC", "CREA", "JOIN", "BLOK", "WAKE"};
 
-int cpuProcesarTCB(t_CPU *self){
+t_CPU * cpuProcesarTCB(t_CPU *self){
 
 	int estado_ejecucion_instruccion;
 	int estado;
@@ -38,7 +38,8 @@ int cpuProcesarTCB(t_CPU *self){
 
 		if ((estado < 0) && (estado != SIN_ERRORES)){
 			log_error(self->loggerCPU, "CPU: error al intentar cpuLeerMemoria, con N°: %d", estado);
-			return estado;
+			self->estado_ejecucion_instruccion=estado;
+			return self;
 		}
 		//estado puede ser SIN_ERRORES o ERROR_POR_SEGMENTATION_FAULT
 		//TODO Ver manejo de errores con el Kernel!!!
@@ -57,7 +58,8 @@ int cpuProcesarTCB(t_CPU *self){
 
 	}
 
-	return estado_ejecucion_instruccion;
+	self->estado_ejecucion_instruccion= estado_ejecucion_instruccion;
+	return self;
 }
 
 

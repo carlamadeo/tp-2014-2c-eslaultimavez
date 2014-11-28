@@ -62,6 +62,7 @@ typedef struct {
 	char* ipMsp;
 	int quantum;
 	int retardo;
+	int estado_ejecucion_instruccion;
 }t_CPU;
 
 

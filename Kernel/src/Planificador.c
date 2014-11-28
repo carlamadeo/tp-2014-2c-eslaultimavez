@@ -137,6 +137,9 @@ void atenderCPU(t_kernel* self,t_cpu* cpu, fd_set* master){
 		log_info(self->loggerPlanificador, "Planificador: recibe un MENSAJE_DE_ERROR" );
 		//ejecutar_UNA_INTERRUPCION();
 		break;
+	case INTERRUPCION:
+		ejecutar_UNA_INTERRUPCION();
+		break;
 	case ENTRADA_ESTANDAR:
 		ejecutar_UNA_ENTRADA_STANDAR();
 		break;
