@@ -120,48 +120,50 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 	free(paquete);
 }
 
+
 void atenderCPU(t_kernel* self,t_cpu* cpu, fd_set* master){
-	log_debug(self->loggerPlanificador, "Planificador: LISTO PARA ATENDER CPUs" );
 
-	while (self->quamtum>0){
-		self->quamtum--;
-		t_socket_paquete *paqueteCPU = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-		socket_recvPaquete(cpu->socket, paqueteCPU);
+	log_info(self->loggerPlanificador, "Planificador: LISTO PARA ATENDER CPUs" );
 
-		switch(paqueteCPU->header.type){
-		case CPU_TERMINE_UNA_LINEA:
-			//ejecutar_CPU_TERMINE_UNA_LINEA(self,socketNuevoCliente);
-			break;
-		case INTERRUPCION:
-			ejecutar_UNA_INTERRUPCION();
-			break;
-		case ENTRADA_ESTANDAR:
-			ejecutar_UNA_ENTRADA_STANDAR();
-			break;
-		case SALIDA_ESTANDAR:
-			ejecutar_UNA_SALIDA_ESTANDAR();
-			break;
-		case CREAR_HILO:
-			ejecutar_UN_CREAR_HILO();
-			break;
-		case JOIN_HILO:
-			ejecutar_UN_JOIN_HILO();
-			break;
-		case BLOK_HILO:
-			ejecutar_UN_BLOK_HILO();
-			break;
-		case WAKE_HILO:
-			ejecutar_UN_WAKE_HILO();
-			break;
-		default:
-			log_error(self->loggerPlanificador, "Planificador:Conexión cerrada con CPU.");
-			FD_CLR(cpu->socket->descriptor, master);
-			close(cpu->socket->descriptor);
-			self->quamtum =0; //para salir del while
-			break;
+	t_socket_paquete *paqueteCPU = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+	socket_recvPaquete(cpu->socket, paqueteCPU);
 
-		}//fin switch(paqueteCPU->header.type)
-	}//fin del while
+	switch(paqueteCPU->header.type){
+	case CAMBIO_DE_CONTEXTO:
+		log_info(self->loggerPlanificador, "Planificador: recibe un CAMBIO_DE_CONTEXTO" );
+		//ejecutar_CPU_TERMINE_UNA_LINEA(self,socketNuevoCliente);
+		break;
+	case MENSAJE_DE_ERROR:
+		log_info(self->loggerPlanificador, "Planificador: recibe un MENSAJE_DE_ERROR" );
+		//ejecutar_UNA_INTERRUPCION();
+		break;
+	case ENTRADA_ESTANDAR:
+		ejecutar_UNA_ENTRADA_STANDAR();
+		break;
+	case SALIDA_ESTANDAR:
+		ejecutar_UNA_SALIDA_ESTANDAR();
+		break;
+	case CREAR_HILO:
+		ejecutar_UN_CREAR_HILO();
+		break;
+	case JOIN_HILO:
+		ejecutar_UN_JOIN_HILO();
+		break;
+	case BLOK_HILO:
+		ejecutar_UN_BLOK_HILO();
+		break;
+	case WAKE_HILO:
+		ejecutar_UN_WAKE_HILO();
+		break;
+	default:
+		log_error(self->loggerPlanificador, "Planificador:Conexión cerrada con CPU.");
+		FD_CLR(cpu->socket->descriptor, master);
+		close(cpu->socket->descriptor);
+		self->quamtum =0; //para salir del while
+		break;
+
+	}//fin switch(paqueteCPU->header.type)
+
 
 	//Cuando sale del while(self->quamtum>0) se tiene que hacer un cambio de Contexto
 

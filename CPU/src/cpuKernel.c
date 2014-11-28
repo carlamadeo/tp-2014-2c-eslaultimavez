@@ -108,28 +108,12 @@ void cpuRecibirQuantum(t_CPU *self){
 }
 
 
-int cpuEnviaTermineUnaLinea(t_CPU *self){
+void cpuEnviarPaqueteAPlanificador(t_CPU *self, int paquete){
 
-	if (socket_sendPaquete(self->socketPlanificador->socket, CPU_TERMINE_UNA_LINEA, 0, NULL) <= 0){
+	if (socket_sendPaquete(self->socketPlanificador->socket, paquete, 0, NULL) <= 0)
 		log_info(self->loggerCPU, "CPU: Fallo envio de CPU_TERMINE_UNA_LINEA, PID: %d", self->tcb->pid);
-		return EXIT_FAILURE;
-	}
-
-	else{
-
-		log_info(self->loggerCPU, "CPU: Envia al Planificador CPU_TERMINE_UNA_LINEA.");
-
-		t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-
-		if(socket_recvPaquete(self->socketPlanificador->socket, paquete) >= 0)
-			return paquete->header.type;
-
-		else{
-			log_info(self->loggerCPU, "CPU: Error al esperar un paquete del planificador.");
-			return EXIT_FAILURE;
-		}
-
-	}
+	else
+		log_info(self->loggerCPU, "CPU: envia al Planificador un paquete N°: %d", paquete);
 
 }
 

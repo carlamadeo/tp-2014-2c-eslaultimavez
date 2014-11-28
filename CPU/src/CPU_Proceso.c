@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
 
 	verificar_argumentosCPU(argc, argv);
 	t_CPU *self = malloc(sizeof(t_CPU));
-
+	int valorCPU;
 	t_config *configCPU;
 
 	char *nombreLog = malloc(strlen("logCPU_.log") + sizeof(int) + 1);
@@ -43,7 +43,21 @@ int main(int argc, char** argv) {
 		//2) Paso, recibir TCB
 		cpuRecibirTCB(self);
 		//3) Paso, Procesa TCB
-		cpuProcesarTCB(self);
+		valorCPU=cpuProcesarTCB(self);
+
+		log_info(self->loggerCPU, "CPU: valorCPU==%d",valorCPU);
+		switch(valorCPU){
+
+		case SIN_ERRORES:
+			cpuEnviarPaqueteAPlanificador(self,CAMBIO_DE_CONTEXTO);
+			log_info(self->loggerCPU, "CPU: envia un CAMBIO_DE_CONTEXTO");
+			break;
+		default:
+			cpuEnviarPaqueteAPlanificador(self,MENSAJE_DE_ERROR);
+			log_error(self->loggerCPU, "CPU: envia un MENSAJE_DE_ERROR");
+			return MENSAJE_DE_ERROR;
+		}
+
 	}
 
 	log_info(self->loggerCPU, "Se desconecto la CPU. Elimino todo");

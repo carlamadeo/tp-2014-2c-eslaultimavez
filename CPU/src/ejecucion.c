@@ -18,73 +18,44 @@ char *instrucciones_eso[] = {"LOAD", "GETM", "SETM", "MOVR", "ADDR", "SUBR", "MU
 
 int cpuProcesarTCB(t_CPU *self){
 
+	int estado_ejecucion_instruccion;
 	int estado;
 	int tamanio = sizeof(char) * 4;
 	char *datosDeMSP = malloc(sizeof(tamanio) + 1);
-	int terminarLinea;
+	int encontrado = 0;
+	int indice = 0;
+
+	//int terminarLinea;
 
 	//ejecucion_hilo(hilo_log, self->quantum);
 	log_info(self->loggerCPU, "CPU: Comienzo a procesar el TCB de pid: %d", self->tcb->pid);
-
 	while(self->quantum > 0){
 
 		estado = cpuLeerMemoria(self, self->tcb->puntero_instruccion, datosDeMSP, tamanio);
 
+		if ((estado<0) && (estado!= SIN_ERRORES)){
+			log_error(self->loggerCPU, "CPU: error al intentar cpuLeerMemoria, con N°: %d", estado);
+			return estado;
+		}
 		//estado puede ser SIN_ERRORES o ERROR_POR_SEGMENTATION_FAULT
 		//TODO Ver manejo de errores con el Kernel!!!
 
-		int encontrado = 0;
-		int indice = 0;
+
 		while (!encontrado && indice <= CANTIDAD_INSTRUCCIONES){
 
 			if(strncmp(instrucciones_eso[indice], datosDeMSP, 4) == 0){
-
 				encontrado = 1;
-				int estado_ejecucion_instruccion = ejecutar_instruccion(self, indice);
-				/*
-				switch(estado_ejecucion_instruccion){
-				case SIN_ERRORES:
-					log_info(self->loggerCPU, "CPU: instruccion ejecutada SIN_ERRORES");
-					break;
-				case ERROR_POR_EJECUCION_ILICITA:
-					return ERROR_POR_EJECUCION_ILICITA;
-				case MENSAJE_DE_ERROR:
-					return MENSAJE_DE_ERROR;
-				default:
-					return ERROR_POR_CODIGO_INESPERADO;
-				}*/
-			}
-
+				estado_ejecucion_instruccion = ejecutar_instruccion(self, indice);
+			}else   //Se deberia validar si hay un error el intentar ejecutar una instruccion
+				log_error(self->loggerCPU, "CPU: error el ejecutar una instruccion con indice=%d", indice);
 			indice++;
 		}
 
-		usleep(100);
-
-		terminarLinea = cpuEnviaTermineUnaLinea(self);
-
-		switch(terminarLinea){
-
-		case CPU_SEGUI_EJECUTANDO:
-			log_info(self->loggerCPU, "CPU: recibe un CPU_SEGUI_EJECUTANDO");
-			break;
-
-		case KERNEL_FIN_TCB_QUANTUM:
-			cpuCambioContexto(self);
-			return SIN_ERRORES;
-
-		case ERROR_POR_DESCONEXION_DE_CONSOLA:
-			log_error(self->loggerCPU, "CPU: Recibe un ERROR_POR_DESCONEXION_DE_CONSOLA.");
-			return ERROR_POR_DESCONEXION_DE_CONSOLA;
-
-		default:
-			log_error(self->loggerCPU, "CPU: Recibe un codigo inesperado al mandar un CPU_TERMINE_UNA_LINEA.");
-			return MENSAJE_DE_ERROR;
-		}
-
+		//usleep(100);
 		self->quantum = self->quantum - 1;
+		log_info(self->loggerCPU, "CPU: --------------------QUANTUM=%d------------------",self->quantum);
 	}
-
-	return estado;
+	return estado_ejecucion_instruccion;
 }
 
 
@@ -104,8 +75,6 @@ int determinar_registro(char registro){
 
 int ejecutar_instruccion(t_CPU *self, int linea){
 
-
-	int estado_bloque;
 	int estado = 0;
 	parametros = list_create();
 
@@ -113,11 +82,10 @@ int ejecutar_instruccion(t_CPU *self, int linea){
 
 	log_info(self->loggerCPU, "CPU: Se ejecutara la instruccion %s", instrucciones_eso[linea]);
 	log_info(self->loggerCPU, "CPU: Retardo de %d", self->retardo);
-	usleep(self->retardo);
+	//usleep(self->retardo);
 
-									/****************************\
-									 	 INICIO SWITCH - CASE
-									\****************************/
+	//-----------------------------------INICIO SWITCH - CASE--------------------------------
+
 	switch(linea){
 
 	case LOAD:
@@ -216,7 +184,7 @@ int ejecutar_instruccion(t_CPU *self, int linea){
 		 *								--Comienzo SYSTEMCALL--									 	 *
 		\***************************************************************************************************/
 
-/*
+		/*
 	case MALC:
 		if(self->tcb->km==1){
 			log_info(self->loggerCPU, "CPU: ejecutando instruccion MALC" );
@@ -310,15 +278,15 @@ int ejecutar_instruccion(t_CPU *self, int linea){
 		//free(lectura_en_msp);
 		//free(cpu_leer_memoria);
 		usleep(100);
-		estado_bloque = ERROR_POR_CODIGO_INESPERADO;
+		estado = ERROR_POR_CODIGO_INESPERADO;
 		break;
 	}
 
-										/****************************\
+	/****************************\
 										  	  FIN SWITCH - CASE
 										\****************************/
 
 	usleep(100);
-	return estado_bloque;
+	return estado;
 }
 

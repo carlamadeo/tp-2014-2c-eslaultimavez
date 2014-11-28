@@ -163,9 +163,5 @@ int cpuLeerMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int t
 	printf("Un estado MSP: %d\n", unaLectura->estado);
 	strcpy(programa, unaLectura->lectura);  //en esta linea rompe Para que se usa un programa y como se carga
 
-	if (unaLectura->estado == ERROR_POR_SEGMENTATION_FAULT){
-		log_error(self->loggerCPU, "CPU: error por Segmentation Fault");
-	}
-
 	return unaLectura->estado;
 }
