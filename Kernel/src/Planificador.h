@@ -36,12 +36,12 @@ t_list* listaDeCPUExec, *listaDeCPULibres;
 t_TCB_Kernel* test_TCB ();
 
 t_list* listaCpu;
-void kernel_comenzar_Planificador(t_kernel* self);
 
-void planificadorEscuchaCPU(t_kernel* self);
+
+void kernel_comenzar_Planificador(t_kernel* self);
 t_cpu* obtenerCPUSegunDescriptor(t_kernel* self,int descriptor);
 void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set* master, int* fdmax);
-void atienderCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set* master);
+void atenderCPU(t_kernel* self,t_cpu* cpu, fd_set* master);
 
 t_programaEnKernel* obtenerTCBdeReady(t_kernel* self);
 void finalizarProgramaEnPlanificacion(t_programaEnKernel* programa);

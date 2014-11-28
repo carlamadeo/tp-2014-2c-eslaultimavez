@@ -1,8 +1,12 @@
 #include "planificadorMensajesCPU.h"
 
 
-void agregarEnListaDeCPU(){
-
+void agregarEnListaDeCPU(int id,  t_socket* socketCPU){
+    t_cpu* unaCpu;
+    unaCpu = malloc( sizeof(t_cpu) );
+    unaCpu->id = id;
+    unaCpu->socket = socketCPU;
+    list_add(listaDeCPULibres,unaCpu);
 }
 
 void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente){

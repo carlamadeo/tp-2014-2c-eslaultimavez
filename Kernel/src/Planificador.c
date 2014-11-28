@@ -4,13 +4,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+
+int idCPU=250;
 void kernel_comenzar_Planificador(t_kernel* self){
 
-	planificadorEscuchaCPU(self);
-}
-
-
-void planificadorEscuchaCPU(t_kernel* self){
 	t_socket *socketNuevaConexionCPU;
 	listaCpu = list_create();
 	fd_set master;   //conjunto maestro de descriptores de fichero
@@ -65,7 +62,7 @@ void planificadorEscuchaCPU(t_kernel* self){
 						log_debug(self->loggerPlanificador, "Planificador:Mensaje del Programa descriptor= %d.", i);
 						t_cpu* cpuCliente = obtenerCPUSegunDescriptor(self,i);
 						log_debug(self->loggerPlanificador, "Planificador: Mensaje del CPU.", cpuCliente->id);
-						atienderCPU(self,cpuCliente, &master);
+						atenderCPU(self,cpuCliente, &master);
 					}
 				}//fin del if FD_ISSET
 			}// fin del for de las i
@@ -87,10 +84,10 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 		if (socket_sendPaquete(socketNuevoCliente, HANDSHAKE_PLANIFICADOR, 0, NULL) >= 0){
 			log_info(self->loggerPlanificador, "Planificador: envia HANDSHAKE_PLANIFICADOR.");
 
+			idCPU++;
 			sem_wait(&mutex_cpuLibre);
-			agregarEnListaDeCPU();
+			agregarEnListaDeCPU(idCPU, socketNuevoCliente);
 			sem_post(&mutex_cpuLibre);
-
 		}
 		else
 			log_error(self->loggerPlanificador, "Planificador: Error en el HANDSHAKE_PLANIFICADOR con la CPU.");
@@ -102,11 +99,6 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 		log_info(self->loggerPlanificador, "Se actualiza y añade el conjunto maestro %d", socketNuevoCliente->descriptor);
 		*fdmax = socketNuevoCliente->descriptor; /*actualizar el máximo*/
 	}
-
-
-	//esto Cambiar a otra funcion!!!!
-
-	//se tiene que mandar un TCB
 
 	t_programaEnKernel* unTCBCOLA = obtenerTCBdeReady(self);
 
@@ -124,27 +116,21 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 		//se mande un TCB a CPU
 		socket_sendPaquete(socketNuevoCliente, TCB_NUEVO,sizeof(t_TCB_Kernel), unTCBaCPU);
 		log_debug(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID: %d TID:%d KM:%d", unTCBaCPU->pid,unTCBaCPU->tid,unTCBaCPU->km );
-
-
-
 	}
 	free(paquete);
+}
 
-
-	//mientras no termine los quamtum o no alla alla interrupcion
-
-	//si se desconecta una CPU, el le tiene que avisar a la consola
-	//con sus correspondiente hijos
+void atenderCPU(t_kernel* self,t_cpu* cpu, fd_set* master){
+	log_debug(self->loggerPlanificador, "Planificador: LISTO PARA ATENDER CPUs" );
 
 	while (self->quamtum>0){
 		self->quamtum--;
 		t_socket_paquete *paqueteCPU = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-		socket_recvPaquete(socketNuevoCliente, paqueteCPU);
-
+		socket_recvPaquete(cpu->socket, paqueteCPU);
 
 		switch(paqueteCPU->header.type){
 		case CPU_TERMINE_UNA_LINEA:
-			ejecutar_CPU_TERMINE_UNA_LINEA(self,socketNuevoCliente);
+			//ejecutar_CPU_TERMINE_UNA_LINEA(self,socketNuevoCliente);
 			break;
 		case INTERRUPCION:
 			ejecutar_UNA_INTERRUPCION();
@@ -169,8 +155,8 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 			break;
 		default:
 			log_error(self->loggerPlanificador, "Planificador:Conexión cerrada con CPU.");
-			FD_CLR(socketNuevoCliente->descriptor, master);
-			close(socketNuevoCliente->descriptor);
+			FD_CLR(cpu->socket->descriptor, master);
+			close(cpu->socket->descriptor);
 			self->quamtum =0; //para salir del while
 			break;
 
@@ -185,22 +171,21 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 	//	free(paqueteCambioDeContexto);
 }
 
-void atienderCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set* master){
-
-
-
-}
-
 
 t_cpu* obtenerCPUSegunDescriptor(t_kernel* self,int descriptor){
 
-	log_info(self->loggerPlanificador,"Planificador:Obteniendo CPU segun el descriptor %d",descriptor);
-
-	bool _esProgramaDescriptor(t_cpu* cpu) {
+	log_info(self->loggerPlanificador,"Planificador: buscando el descriptor %d de un CPU",descriptor);
+	bool _esCPUDescriptor(t_cpu* cpu) {
 		return (cpu->socket->descriptor == descriptor);
 	}
-	t_cpu* cpuBuscado = list_find(listaCpu, (void*)_esProgramaDescriptor);
-	log_info(self->loggerPlanificador," Planificador: Se encontro programa %d",cpuBuscado->id);
+	t_cpu* cpuBuscado = list_find(listaDeCPUExec, (void*)_esCPUDescriptor);
+	if(cpuBuscado!=NULL){
+	}else{
+		sem_wait(&mutex_cpuLibre);
+		cpuBuscado = list_find(listaDeCPULibres, (void*)_esCPUDescriptor);
+		sem_post(&mutex_cpuLibre);
+	}
+	log_info(self->loggerPlanificador,"Planificador: Se encontro CPU ID: %d",cpuBuscado->id);
 	return cpuBuscado;
 }
 

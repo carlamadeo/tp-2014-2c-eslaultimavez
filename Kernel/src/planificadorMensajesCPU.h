@@ -2,7 +2,7 @@
 #define PLANIFICADOR_MENSAJE_H_
 
 #include "Planificador.h"
-void agregarEnListaDeCPU();
+void agregarEnListaDeCPU(int id,  t_socket* socketCPU);
 void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente);
 void ejecutar_UNA_INTERRUPCION();
 void ejecutar_UNA_ENTRADA_STANDAR();
