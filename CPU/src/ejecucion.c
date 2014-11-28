@@ -84,7 +84,7 @@ int ejecutar_instruccion(t_CPU *self, int linea){
 
 	log_info(self->loggerCPU, "CPU: Se ejecutara la instruccion %s", instrucciones_eso[linea]);
 	log_info(self->loggerCPU, "CPU: Retardo de %d", self->retardo);
-	//usleep(self->retardo);
+	usleep(self->retardo);
 
 	//-----------------------------------INICIO SWITCH - CASE--------------------------------
 
