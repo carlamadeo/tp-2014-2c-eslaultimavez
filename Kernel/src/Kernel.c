@@ -64,13 +64,13 @@ int main(int argc, char** argv) {
 	//
 	iretThread = pthread_create( &LoaderHilo, NULL, (void*) kernel_comenzar_Loader, self);
 	if(iretThread) {
-		printf(stderr,"Error - pthread_create() return code: %d\n", iretThread);
+		printf("Error - pthread_create() LoaderHilo, return code: %d\n", iretThread);
 		exit(EXIT_FAILURE);
 	}
 
 	iretThread = pthread_create( &PlanificadorHilo, NULL, (void*) kernel_comenzar_Planificador, self);
 	if(iretThread) {
-		printf(stderr,"Error - pthread_create() return code: %d\n",iretThread);
+		printf("Error - pthread_create() PlanificadorHilo, return code: %d\n",iretThread);
 		exit(EXIT_FAILURE);
 	}
 

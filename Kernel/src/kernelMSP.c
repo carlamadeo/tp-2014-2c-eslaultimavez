@@ -44,6 +44,7 @@ void realizarHandshakeConMSP(t_kernel *self) {
 	else
 		log_error(self->loggerKernel, "Kernel: Error al recibir los datos de la MSP!");
 
+	socket_freePaquete(paquete);
 }
 
 
@@ -83,6 +84,8 @@ int kernelCrearSegmento(t_kernel *self, int pid, int tamanio){
 		}
 	}
 
+	socket_freePaquete(paquete);
+	free(datosRecibidos);
 	free(datosAEnviar);
 	return datosRecibidos->direccionBase;
 }
@@ -118,5 +121,7 @@ int kernelEscribirMemoria(t_kernel* self, int pid, uint32_t direccionVirtual, ch
 
 	}
 
+	free(escrituraDeCodigo);
+	free(paqueteConfirmacionEscritura);
 	return unaConfirmacionEscritura->estado;
 }

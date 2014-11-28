@@ -116,8 +116,11 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 		//se mande un TCB a CPU
 		socket_sendPaquete(socketNuevoCliente, TCB_NUEVO,sizeof(t_TCB_Kernel), unTCBaCPU);
 		log_debug(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID: %d TID:%d KM:%d", unTCBaCPU->pid,unTCBaCPU->tid,unTCBaCPU->km );
+		free(unQuamtum);
+		free(unTCBaCPU);
 	}
-	free(paquete);
+
+	socket_freePaquete(paquete);
 }
 
 
@@ -131,32 +134,30 @@ void atenderCPU(t_kernel* self,t_cpu* cpu, fd_set* master){
 	switch(paqueteCPU->header.type){
 	case CAMBIO_DE_CONTEXTO:
 		log_info(self->loggerPlanificador, "Planificador: recibe un CAMBIO_DE_CONTEXTO" );
-		//ejecutar_CPU_TERMINE_UNA_LINEA(self,socketNuevoCliente);
 		break;
 	case MENSAJE_DE_ERROR:
 		log_info(self->loggerPlanificador, "Planificador: recibe un MENSAJE_DE_ERROR" );
-		//ejecutar_UNA_INTERRUPCION();
 		break;
 	case INTERRUPCION:
 		ejecutar_UNA_INTERRUPCION(self);
 		break;
 	case ENTRADA_ESTANDAR:
-		ejecutar_UNA_ENTRADA_STANDAR();
+		ejecutar_UNA_ENTRADA_STANDAR(self);
 		break;
 	case SALIDA_ESTANDAR:
-		ejecutar_UNA_SALIDA_ESTANDAR();
+		ejecutar_UNA_SALIDA_ESTANDAR(self);
 		break;
 	case CREAR_HILO:
-		ejecutar_UN_CREAR_HILO();
+		ejecutar_UN_CREAR_HILO(self);
 		break;
 	case JOIN_HILO:
-		ejecutar_UN_JOIN_HILO();
+		ejecutar_UN_JOIN_HILO(self);
 		break;
 	case BLOK_HILO:
-		ejecutar_UN_BLOK_HILO();
+		ejecutar_UN_BLOK_HILO(self);
 		break;
 	case WAKE_HILO:
-		ejecutar_UN_WAKE_HILO();
+		ejecutar_UN_WAKE_HILO(self);
 		break;
 	default:
 		log_error(self->loggerPlanificador, "Planificador:Conexión cerrada con CPU.");
@@ -166,13 +167,7 @@ void atenderCPU(t_kernel* self,t_cpu* cpu, fd_set* master){
 
 	}//fin switch(paqueteCPU->header.type)
 
-
-	//Cuando sale del while(self->quamtum>0) se tiene que hacer un cambio de Contexto
-
-	//	t_socket_paquete *paqueteCambioDeContexto = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-	//	socket_recvPaquete(socketNuevoCliente, paqueteCambioDeContexto);
-	//	log_info(self->loggerPlanificador, "Planificador: recibe de  CPU: CAMBIO_DE_CONTEXTO.");
-	//	free(paqueteCambioDeContexto);
+	socket_freePaquete(paqueteCPU);
 }
 
 
@@ -214,22 +209,22 @@ t_programaEnKernel* obtenerTCBdeReady(t_kernel* self){
 
 	return NULL;
 }
-t_TCB_Kernel* test_TCB (){
-	t_TCB_Kernel* test_TCB = malloc(sizeof(t_TCB_Kernel));
-
-	test_TCB->pid= 0;
-	test_TCB->tid= 523;
-	test_TCB->km = 1;
-	test_TCB->base_segmento_codigo = 1048576;
-	test_TCB->tamanio_segmento_codigo = 1000;
-	test_TCB->base_stack = 2097152;
-	test_TCB->cursor_stack = 2097152;
-	test_TCB->puntero_instruccion = 1048576;
-	//test_TCB->registro_de_programacion = 56;
-
-
-	return test_TCB;
-}
+//t_TCB_Kernel* test_TCB (){
+//	t_TCB_Kernel* test_TCB = malloc(sizeof(t_TCB_Kernel));
+//
+//	test_TCB->pid= 0;
+//	test_TCB->tid= 523;
+//	test_TCB->km = 1;
+//	test_TCB->base_segmento_codigo = 1048576;
+//	test_TCB->tamanio_segmento_codigo = 1000;
+//	test_TCB->base_stack = 2097152;
+//	test_TCB->cursor_stack = 2097152;
+//	test_TCB->puntero_instruccion = 1048576;
+//	//test_TCB->registro_de_programacion = 56;
+//
+//
+//	return test_TCB;
+//}
 
 void finalizarProgramaEnPlanificacion(t_programaEnKernel* programa){
 	sem_wait(&mutex_exit);//BLOQUEO LISTA DE EXIT

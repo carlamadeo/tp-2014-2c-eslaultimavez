@@ -49,6 +49,8 @@ void crearTCBKERNEL(t_kernel* self){
 	log_info(self->loggerLoader,"Boot: Agrego un elemento a la Cola Block con el PID:%d  TID:%d ", self->tcbKernel->pid, self->tcbKernel->tid);
 
 	//return programaEnElKernel;
+	free(codigoSC);
+	socket_freePaquete(paquete);
 }
 
 int obtenerTamanioArchivo(t_kernel *self, FILE *archivoBesoSystemCall){

@@ -12,15 +12,6 @@ int unTIDGlobal = 1;
 
 void kernel_comenzar_Loader(t_kernel* self){
 
-
-	loaderEscuchaProgramaBeso(self);
-
-
-}
-
-
-void loaderEscuchaProgramaBeso(t_kernel* self){
-
 	t_socket *socketEscucha, *socketNuevaConexion;
 	listaDeProgramasDisponibles = list_create();
 	fd_set master;   //conjunto maestro de descriptores de fichero
@@ -205,11 +196,11 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 			*fdmax = socketNuevoCliente->descriptor; /*actualizar el máximo*/
 		}
 
+		free(unPrograma);
+		free(programaBeso);
+	}//fin de else
 
-
-	}
-
-	free(paquete);
+	socket_freePaquete(paquete);
 }
 
 

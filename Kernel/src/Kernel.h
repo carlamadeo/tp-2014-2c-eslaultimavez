@@ -14,7 +14,6 @@
 #define PATH_CONFIG "archivoConfiguracion.cfg"
 #define PATH_LOG "logs/trace.log"
 
-
 typedef struct {
 	int pid;
 	int tid;
@@ -50,24 +49,56 @@ typedef struct {
 } t_kernel;
 
 
-//es la que comparte el loader y el planificador, con los programas cargados
-t_list* cola_new;
-sem_t mutex_new;
-sem_t mutex_BloqueoPlanificador;// Mutex cola New
-t_list* listaDeProgramasDisponibles;
-
-//La necesita el Boot
-t_list* cola_block;
-sem_t mutex_block;      // Mutex cola Block
 
 typedef struct {
 	t_TCB_Kernel* programaTCB;
 	t_socket* socketProgramaConsola;
 } t_programaEnKernel;
 
+
+typedef struct {
+		int motivo;
+        t_TCB_Kernel* tcbKernel;
+} t_procesoBloquea;
+
+typedef struct {
+        int id;
+        t_TCB_Kernel* TCB;
+        t_socket* socket;
+} t_cpu;
+
+//Guardan un TCB,Socket, ID
+t_list* cola_new;  //es la que comparte el loader y el planificador, con los programas cargados
+t_list* cola_ready;
+t_list* cola_exec;
+t_list* cola_block; //POR CUATRO, bloqueado por systemCall, por recurso, por esperando un hilo
+t_list* cola_exit;
+
+//Guardan solo TCB para planificador
+t_list* cola_CPU_Disponibles;
+t_list* cola_CPU_Libres;
+t_list* listaDeCPUExec;
+t_list* listaDeCPULibres;
+t_list* listaCpu;
+t_list* listaSystemCall;
+t_list* listaDeEsperaRecurso;
+
+//Guardan solo TCB para el loader
+t_list* listaDeProgramasDisponibles;
+
+
+// Semaforos
+sem_t mutex_new;
+sem_t mutex_block;      // Mutex cola Block
+sem_t mutex_ready;      // Mutex cola Ready
+sem_t mutex_exec;       // Mutex cola Exec
+sem_t mutex_exit;       // Mutex cola Exit
+sem_t mutex_cpuLibre;   // Mutex cola de CPUs libres
+sem_t mutex_cpuExec;    // Mutex cola de CPUs procesando
+sem_t mutex_BloqueoPlanificador;// Mutex cola New
+
+
 int iretThread;
-
-
 pthread_t LoaderHilo, PlanificadorHilo;
 
 void kernel_crearColaDeEstados(void);

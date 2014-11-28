@@ -39,16 +39,19 @@ typedef struct {
 	t_TCB_Kernel* tcb;
 } t_crea_hiloKernel;
 
+typedef struct {
+	int ramaDelHiloPrincipal;
+	t_TCB_Kernel* tcb;
+} t_crea_hiloKernelSecundario;
+
 void agregarEnListaDeCPU(int id,  t_socket* socketCPU);
 void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente);
-
 void ejecutar_UNA_INTERRUPCION(t_kernel* self);
-
-void ejecutar_UNA_ENTRADA_STANDAR();
-void ejecutar_UNA_SALIDA_ESTANDAR();
-void ejecutar_UN_CREAR_HILO();
-void ejecutar_UN_JOIN_HILO();
-void ejecutar_UN_BLOK_HILO();
-void ejecutar_UN_WAKE_HILO();
+void ejecutar_UNA_ENTRADA_STANDAR(t_kernel* self);
+void ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self);
+void ejecutar_UN_CREAR_HILO(t_kernel* self);
+void ejecutar_UN_JOIN_HILO(t_kernel* self);
+void ejecutar_UN_BLOK_HILO(t_kernel* self);
+void ejecutar_UN_WAKE_HILO(t_kernel* self);
 
 #endif // PLANIFICADOR_MENSAJE_H_

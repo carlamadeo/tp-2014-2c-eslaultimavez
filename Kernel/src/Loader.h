@@ -26,8 +26,6 @@ void atenderNuevaConexionPrograma(t_kernel* self,t_socket* socketNuevoCliente, f
 
 t_TCB_Kernel* loaderCrearTCB(t_kernel* self, char *programaBeso, t_socket* socketNuevoCliente, int tamanioBeso);
 
-void loaderEscuchaProgramaBeso(t_kernel* self);
-
 void loaderTrabajaConMSP(t_kernel* self);
 
 void loaderValidarEscrituraEnMSP(t_kernel* self, t_socket* socketNuevoCliente, int unaRespuesta);
