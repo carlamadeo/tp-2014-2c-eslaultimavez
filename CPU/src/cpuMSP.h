@@ -37,7 +37,7 @@ typedef struct{
 
 typedef struct{
 	int estado;
-	char lectura[1000];
+	char* lectura[1000];
 }t_datos_deMSPLectura;
 
 typedef struct{
@@ -51,6 +51,7 @@ void cpuRealizarHandshakeConMSP(t_CPU *self);
 int cpuCrearSegmento(t_CPU *self, int pid, int tamanio);
 int cpuDestruirSegmento(t_CPU *self);
 int cpuEscribirMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int tamanio);
-int cpuLeerMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int tamanio);
+//int cpuLeerMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int tamanio);
+t_CPU * cpuLeerMemoria(t_CPU *self, int tamanio);
 
 #endif /* CPUMPS_H_ */

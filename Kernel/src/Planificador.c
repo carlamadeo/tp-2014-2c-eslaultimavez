@@ -138,7 +138,7 @@ void atenderCPU(t_kernel* self,t_cpu* cpu, fd_set* master){
 		//ejecutar_UNA_INTERRUPCION();
 		break;
 	case INTERRUPCION:
-		ejecutar_UNA_INTERRUPCION();
+		ejecutar_UNA_INTERRUPCION(self);
 		break;
 	case ENTRADA_ESTANDAR:
 		ejecutar_UNA_ENTRADA_STANDAR();
@@ -162,7 +162,6 @@ void atenderCPU(t_kernel* self,t_cpu* cpu, fd_set* master){
 		log_error(self->loggerPlanificador, "Planificador:Conexión cerrada con CPU.");
 		FD_CLR(cpu->socket->descriptor, master);
 		close(cpu->socket->descriptor);
-		self->quamtum =0; //para salir del while
 		break;
 
 	}//fin switch(paqueteCPU->header.type)

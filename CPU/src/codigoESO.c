@@ -16,10 +16,10 @@ int LOAD_ESO(t_CPU *self){
 	int tamanio = 5;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 
-	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
-	int estado_bloque = estado_lectura;
+	self = cpuLeerMemoria(self, tamanio);
+	int estado_bloque = self->estado;
 
-	if (estado_lectura == SIN_ERRORES){
+	if (self->estado == SIN_ERRORES){
 
 		self->tcb->puntero_instruccion += tamanio;
 
@@ -54,7 +54,7 @@ int LOAD_ESO(t_CPU *self){
 	return estado_bloque;
 }
 
-
+/*
 int GETM_ESO(t_CPU *self){
 
 	int tamanio = 2;
@@ -1016,7 +1016,7 @@ int XXXX_ESO(t_CPU *self){
 	free(data);
 
 }
-
+*/
 
 //Instrucciones Protegidas, KM=1   (ninguna de estas operaciones tiene operadores)
 

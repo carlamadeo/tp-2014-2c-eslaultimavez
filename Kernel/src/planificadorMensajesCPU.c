@@ -2,11 +2,11 @@
 
 
 void agregarEnListaDeCPU(int id,  t_socket* socketCPU){
-    t_cpu* unaCpu;
-    unaCpu = malloc( sizeof(t_cpu) );
-    unaCpu->id = id;
-    unaCpu->socket = socketCPU;
-    list_add(listaDeCPULibres,unaCpu);
+	t_cpu* unaCpu;
+	unaCpu = malloc( sizeof(t_cpu) );
+	unaCpu->id = id;
+	unaCpu->socket = socketCPU;
+	list_add(listaDeCPULibres,unaCpu);
 }
 
 void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente){
@@ -15,7 +15,25 @@ void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente
 	log_info(self->loggerPlanificador, "Planificador: envia CPU_SEGUI_EJECUTANDO");
 }
 
-void ejecutar_UNA_INTERRUPCION(){
+
+void ejecutar_UNA_INTERRUPCION(t_kernel* self){
+
+	t_socket_paquete *paqueteCPU = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+	t_interrupcionKernel* unaInterrupcion = (t_interrupcionKernel*) malloc(sizeof(t_interrupcionKernel));
+
+	if(socket_recvPaquete(self->socketCPU, paqueteCPU) >= 0){
+		unaInterrupcion = (t_interrupcionKernel*) paqueteCPU->data;
+
+	}else{
+		unaInterrupcion->tcb = NULL;
+		unaInterrupcion->direccion= 0;
+		log_error(self->loggerPlanificador, "Planificador: error en recibir una INTERRUPCION" );
+	}
+
+	log_info(self->loggerPlanificador, "Planificador: recibe una INTERRUPCION");
+	log_info(self->loggerPlanificador, "Planificador: TCB PID:%d  TCB TID:%d DIRECCION:%d", unaInterrupcion->tcb->pid,unaInterrupcion->tcb->tid,unaInterrupcion->direccion);
+
+
 
 }
 

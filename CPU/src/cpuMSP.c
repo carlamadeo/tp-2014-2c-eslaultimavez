@@ -142,13 +142,14 @@ int cpuEscribirMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, i
 	return unaConfirmacionEscritura->estado;
 }
 
-int cpuLeerMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int tamanio){
+t_CPU * cpuLeerMemoria(t_CPU *self, int tamanio){
+//int cpuLeerMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int tamanio){
 
 	t_datos_aMSPLectura *datosAMSP = malloc(sizeof(t_datos_aMSPLectura));
 	t_socket_paquete *paqueteLectura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 	t_datos_deMSPLectura *unaLectura = (t_datos_deMSPLectura *)malloc(sizeof(t_datos_deMSPLectura));
 
-	datosAMSP->direccionVirtual = direccionVirtual;
+	datosAMSP->direccionVirtual = self->tcb->puntero_instruccion;
 	datosAMSP->pid = self->tcb->pid; //esto devuelve un CERO, me parece que es un error!!!!
 	datosAMSP->tamanio = tamanio;
 
@@ -159,10 +160,16 @@ int cpuLeerMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int t
 	socket_recvPaquete(self->socketMSP->socket, paqueteLectura);
 
 	unaLectura = (t_datos_deMSPLectura *) paqueteLectura->data;
-	printf("Una lectura MSP: %s\n", unaLectura->lectura);
-	printf("Un estado MSP: %d\n", unaLectura->estado);
-	memset(programa, 0, tamanio);
-	memcpy(programa, unaLectura->lectura, tamanio);  //en esta linea rompe Para que se usa un programa y como se carga
 
-	return unaLectura->estado;
+	self->estado = unaLectura->estado;
+
+	self->datosDeMSP = malloc(sizeof(tamanio));
+	printf("Una lectura MSP: %c\n", unaLectura->lectura);
+	printf("Un estado MSP: %d\n", unaLectura->estado);
+	memset(self->datosDeMSP, 0, tamanio);
+	memcpy(self->datosDeMSP, unaLectura->lectura, tamanio);  //en esta linea rompe Para que se usa un programa y como se carga
+
+	printf("self->datosDeMSP: %c\n", self->datosDeMSP);
+	printf("self->estado: %d\n", self->estado);
+	return self;
 }
