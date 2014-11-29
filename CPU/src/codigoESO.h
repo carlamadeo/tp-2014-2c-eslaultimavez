@@ -3,6 +3,8 @@
 
 #include "CPU_Proceso.h"
 
+
+
 //Instrucciones de usuario
 
 int LOAD_ESO(t_CPU *self); //Carga en el registro, el número dado.

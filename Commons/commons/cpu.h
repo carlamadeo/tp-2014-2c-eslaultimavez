@@ -3,6 +3,7 @@
 
 	#include "panel.h"
 
+
 	typedef struct {
 		int32_t registros_programacion[5]; //A, B, C, D y E
 		uint32_t M; //Base de segmento de código
@@ -42,7 +43,7 @@
 	 *
 	 * @param  registros  Estructura conteniendo cada uno de los registros de la CPU.
 	 */
-	void cambio_registros(t_registros_cpu registros);
+	void cambio_registros(t_registros_cpu* registros);
 
 	//-------------------------------------------------
 	//Retrocompatibilidad con el ejemplo del enunciado:

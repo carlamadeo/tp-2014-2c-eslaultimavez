@@ -13,6 +13,7 @@
 #include "cpuMSP.h"
 #include "cpuKernel.h"
 #include "cpuConfig.h"
+#include "ejecucion.h"
 #include <sys/types.h>
 #include <stdlib.h>
 

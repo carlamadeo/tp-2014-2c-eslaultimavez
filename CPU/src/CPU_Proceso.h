@@ -48,8 +48,8 @@ typedef struct {
 	uint32_t S; //Cursor de stack
 	uint32_t K; //Kernel Mode
 	uint32_t I; //PID
-} t_registros_cpu;*/
-
+} t_registros_cpu_nuestro;
+*/
 
 typedef struct {
 	t_TCB_CPU* tcb;
@@ -75,7 +75,7 @@ typedef struct{
 	int tid;
 }t_CPU_TERMINE_UNA_LINEA;
 
-t_registros_cpu* registros_cpu;
+t_registros_cpu *registros_cpu;
 t_hilo_log* hilo_log;
 
 

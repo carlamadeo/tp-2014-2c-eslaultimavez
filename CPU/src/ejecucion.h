@@ -43,6 +43,8 @@
 #define WAKE 32
 #define CANTIDAD_INSTRUCCIONES 33
 
+t_list* parametros;
+
 int cpuProcesarTCB(t_CPU *self);
 int determinar_registro(char registro);
 int ejecutar_instruccion(t_CPU *self, int indice);
