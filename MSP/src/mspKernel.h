@@ -49,13 +49,9 @@ typedef struct{
 }t_datos_aKernelEscritura;
 
 void* mspLanzarHiloKernel();
-
 void crearSegmentoKernel(t_socket_paquete *paquete);
-
 void destruirSegmentoKernel(t_socket_paquete *paquete);
-
 void escribirMemoriaKernel(t_socket_paquete *paquete);
-
 void leerMemoriaKernel(t_socket_paquete *paquete);
 
 #endif /* KERNEL_H_ */

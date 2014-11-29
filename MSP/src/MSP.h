@@ -1,6 +1,8 @@
 #ifndef MSP_H_
 #define MSP_H_
 
+#define CANTIDAD_MAXIMA_CPUS 50
+
 #include "commons/log.h"
 #include "commons/collections/list.h"
 #include "commons/socketInBigBang.h"
@@ -24,7 +26,7 @@ typedef struct{
 	t_list *marcosOcupados;
 }t_MSP;
 
-pthread_t *mspHiloCpus[10];
+pthread_t *mspHiloCpus[CANTIDAD_MAXIMA_CPUS];
 pthread_t *mspHiloKernel;
 pthread_t *mspConsolaHilo;
 

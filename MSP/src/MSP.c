@@ -13,6 +13,7 @@
 #include "mspCPU.h"
 #include "commons/protocolStructInBigBang.h"
 #include "commons/log.h"
+#include "mspConfig.h"
 #include <stdlib.h>
 #include <pthread.h>
 #include <string.h>
@@ -21,6 +22,7 @@
 
 t_sockets *sockets;
 t_MSP *self;
+pthread_rwlock_t rw_memoria;
 
 int main(int argc, char *argv[]){
 
@@ -49,9 +51,12 @@ int main(int argc, char *argv[]){
 
 	crearHilosConexiones();
 
+	pthread_rwlock_init(&rw_memoria, NULL);
+
 	log_info(self->logMSP, "Finalizando la consola de la MSP...");
 	//pthread_join(mspConsolathreadNum, NULL);
 	destruirConfiguracionMSP();
+	pthread_rwlock_destroy(&rw_memoria);
 
 	log_destroy(self->logMSP);
 	return EXIT_SUCCESS;
@@ -107,6 +112,8 @@ void crearHilosConexiones(){
 		}
 		contadorCpu++;
 	}//fin del while
+
+	free(sockets);
 }
 
 

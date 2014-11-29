@@ -101,7 +101,6 @@ void destruirConfiguracionMSP(){
 	list_destroy_and_destroy_elements(self->marcosLibres, free);
 	list_destroy_and_destroy_elements(self->marcosOcupados, free);
 
-	free(self->memoria);
 	free(self);
 	config_destroy(MSPConfig);
 }
