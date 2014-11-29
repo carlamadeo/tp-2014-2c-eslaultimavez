@@ -17,7 +17,7 @@ char *instrucciones_eso[] = {"LOAD", "GETM", "SETM", "MOVR", "ADDR", "SUBR", "MU
 		"COMP", "CGEQ", "CLEQ", "GOTO", "JMPZ", "JPNZ", "INTE", "SHIF", "NOPP", "PUSH", "TAKE", "XXXX", "MALC", "FREE", "INNN",
 		"INNC", "OUTN", "OUTC", "CREA", "JOIN", "BLOK", "WAKE"};
 
-int cpuProcesarTCB(t_CPU *self){
+int cpuProcesarTCB(t_CPU *self,t_ServiciosAlPlanificador* serviciosAlPlanificador){
 
 	int estado_ejecucion_instruccion;
 	int estado;
@@ -46,7 +46,7 @@ int cpuProcesarTCB(t_CPU *self){
 		//estado puede ser SIN_ERRORES o ERROR_POR_SEGMENTATION_FAULT
 		//TODO Ver manejo de errores con el Kernel!!!
 
-		while (!encontrado && indice <= CANTIDAD_INSTRUCCIONES){
+		while ((encontrado==0) && (indice <= CANTIDAD_INSTRUCCIONES)){
 
 			if(strncmp(instrucciones_eso[indice], datosDeMSP, 4) == 0){
 				encontrado = 1;

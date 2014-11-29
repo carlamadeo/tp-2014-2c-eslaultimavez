@@ -22,6 +22,8 @@ int main(int argc, char** argv) {
 
 	verificar_argumentosCPU(argc, argv);
 	t_CPU *self = malloc(sizeof(t_CPU));
+	t_ServiciosAlPlanificador* serviciosAlPlanificador = malloc(sizeof(t_ServiciosAlPlanificador));
+
 	int valorCPU;
 	t_config *configCPU;
 
@@ -44,7 +46,7 @@ int main(int argc, char** argv) {
 		//2) Paso, recibir TCB
 		cpuRecibirTCB(self);
 		//3) Paso, Procesa TCB
-		valorCPU = cpuProcesarTCB(self);
+		valorCPU = cpuProcesarTCB(self, serviciosAlPlanificador);
 
 		log_info(self->loggerCPU, "CPU: valorCPU == %d",valorCPU);
 

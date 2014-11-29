@@ -45,7 +45,7 @@
 
 t_list* parametros;
 
-int cpuProcesarTCB(t_CPU *self);
+int cpuProcesarTCB(t_CPU *self,t_ServiciosAlPlanificador* serviciosAlPlanificador);
 int determinar_registro(char registro);
 int ejecutar_instruccion(t_CPU *self, int indice);
 

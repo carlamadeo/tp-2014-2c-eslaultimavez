@@ -3,6 +3,7 @@
 
 #include "CPU_Proceso.h"
 
+
 typedef struct {
 	t_TCB_CPU* tcb;
 	int quantum;
@@ -94,6 +95,18 @@ typedef struct {
 typedef struct {
 	t_TCB_CPU* tcb;
 } t_crea_hilo;
+
+
+typedef struct {
+	t_TCB_nuevo* tcbNuevo;
+	t_entrada_estandar* entradaEstandar;
+	t_salida_estandar*  salidaEstandar;
+	t_interrupcion* instruccion;
+	t_join* join;
+	t_bloquear* bloquear;
+	t_despertar* despear;
+	t_crea_hilo* crearHijo;
+} t_ServiciosAlPlanificador;
 
 
 void cpuConectarConKernel(t_CPU *self);

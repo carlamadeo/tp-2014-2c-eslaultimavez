@@ -1,6 +1,6 @@
 #include "codigoESO.h"
 #include "CPU_Proceso.h"
-#include "commons/cpu.h"
+//#include "commons/cpu.h"
 #include "commons/string.h"
 #include "cpuMSP.h"
 #include "cpuKernel.h"
@@ -11,11 +11,14 @@
 
 int LOAD_ESO(t_CPU *self){
 
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+
 	char registro;
 	int reg;
 	int32_t numero;
 	int tamanio = 5;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
+
 
 	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 	int estado_bloque = estado_lectura;
@@ -23,45 +26,42 @@ int LOAD_ESO(t_CPU *self){
 	if (estado_lectura == SIN_ERRORES){
 
 		self->tcb->puntero_instruccion += tamanio;
-
-
 		log_info(self->loggerCPU,"CPU: Recibiendo parametros de instruccion LOAD");
 
 		memcpy(&(registro), lecturaDeMSP, sizeof(char));
 		memcpy(&(numero), lecturaDeMSP + sizeof(char), sizeof(int));
 
-		printf("un registro de MSP %c : Jorge Ok\n", registro);
-		printf("un Numero de MSP   %d : Jorge estan seguro que este numero va?\n", numero);
-
 		reg = determinar_registro(registro);
-
 	}
 
 	if(reg != -1){
-
+		//printf("test2:%d\n", self->tcb->puntero_instruccion);
 		list_add(parametros, &registro);
 		list_add(parametros, &numero);
-		ejecucion_instruccion("LOAD", parametros);
+		//ejecucion_instruccion("LOAD", parametros);
 
 		self->tcb->registro_de_programacion[reg] = numero;
 
+		//printf("valor en self->tcb->puntero_instruccion: %d", self->tcb->puntero_instruccion);
 		registros_cpu->P=self->tcb->puntero_instruccion;
 		registros_cpu->registros_programacion[reg]=self->tcb->registro_de_programacion[reg];
 		cambio_registros(registros_cpu);
 
 		log_info(self->loggerCPU, "CPU: LOAD ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-	}
-
-	else{
+	}else{
 		log_error(self->loggerCPU, "CPU: Error registro de programacion no encontrado %d", self->tcb->pid);
 		estado_bloque = ERROR_REGISTRO_DESCONOCIDO;
 	}
 
+
+	free(lecturaDeMSP);
+	free(registros_cpu);
 	return estado_bloque;
 }
 
 
 int GETM_ESO(t_CPU *self){
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
@@ -176,6 +176,7 @@ int SETM_ESO(t_CPU *self){
 
 int MOVR_ESO(t_CPU *self){
 
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
@@ -223,6 +224,7 @@ int MOVR_ESO(t_CPU *self){
 
 int ADDR_ESO(t_CPU *self){
 
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
@@ -270,6 +272,7 @@ int ADDR_ESO(t_CPU *self){
 
 int SUBR_ESO(t_CPU *self){
 
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
@@ -318,6 +321,7 @@ int SUBR_ESO(t_CPU *self){
 
 int MULR_ESO(t_CPU *self){
 
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
@@ -367,6 +371,7 @@ int MULR_ESO(t_CPU *self){
 
 int MODR_ESO(t_CPU *self){
 
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
@@ -416,6 +421,7 @@ int MODR_ESO(t_CPU *self){
 
 int DIVR_ESO(t_CPU *self){
 
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
@@ -473,6 +479,7 @@ int DIVR_ESO(t_CPU *self){
 
 int INCR_ESO(t_CPU *self){
 
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 1;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registro;
@@ -519,6 +526,7 @@ int INCR_ESO(t_CPU *self){
 
 int DECR_ESO(t_CPU *self){
 
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 1;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registro;
@@ -565,6 +573,7 @@ int DECR_ESO(t_CPU *self){
 
 int COMP_ESO(t_CPU *self){
 
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
@@ -618,6 +627,7 @@ int COMP_ESO(t_CPU *self){
 
 int CGEQ_ESO(t_CPU *self){
 
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
@@ -671,6 +681,8 @@ int CGEQ_ESO(t_CPU *self){
 
 int CLEQ_ESO(t_CPU *self){
 
+
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
@@ -724,6 +736,7 @@ int CLEQ_ESO(t_CPU *self){
 
 int GOTO_ESO(t_CPU *self){
 
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 1;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registro;
@@ -773,6 +786,7 @@ int GOTO_ESO(t_CPU *self){
 
 int JMPZ_ESO(t_CPU *self){
 
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 4;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	uint32_t direccion;
@@ -815,6 +829,7 @@ int JMPZ_ESO(t_CPU *self){
 
 int JPNZ_ESO(t_CPU *self){
 
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 4;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	uint32_t direccion;
@@ -857,6 +872,7 @@ int JPNZ_ESO(t_CPU *self){
 
 int INTE_ESO(t_CPU *self){
 
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 4;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	uint32_t direccion;
@@ -896,6 +912,7 @@ int INTE_ESO(t_CPU *self){
 
 int SHIF_ESO(t_CPU *self){
 
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 5;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registro;
@@ -950,6 +967,7 @@ int NOPP_ESO(t_CPU *self){
 
 int PUSH_ESO(t_CPU *self){
 
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 5;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registro;
@@ -1001,6 +1019,7 @@ int PUSH_ESO(t_CPU *self){
 
 int TAKE_ESO(t_CPU *self){
 
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 5;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registro;
@@ -1074,6 +1093,7 @@ int XXXX_ESO(t_CPU *self){
 //Instrucciones Protegidas, KM=1   (ninguna de estas operaciones tiene operadores)
 
 int MALC_ESO(t_CPU *self){
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	//CREAR_SEGMENTO
 	int estado_malc = cpuCrearSegmento(self, self->tcb->pid, self->tcb->registro_de_programacion[0]);
 	switch(estado_malc){
@@ -1115,7 +1135,7 @@ int FREE_ESO(t_CPU *self){
 }
 
 int INNN_ESO(t_CPU *self){
-
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int estado_innn;
 	t_entrada_estandar* entrada_estandar = malloc(sizeof(t_entrada_estandar));
 	entrada_estandar->pid = self->tcb->pid;
