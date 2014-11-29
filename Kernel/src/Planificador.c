@@ -128,10 +128,10 @@ void atenderCPU(t_kernel* self,t_cpu* cpu, fd_set* master){
 
 	log_info(self->loggerPlanificador, "Planificador: LISTO PARA ATENDER CPUs" );
 
-	t_socket_paquete *paqueteCPU = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-	socket_recvPaquete(cpu->socket, paqueteCPU);
+	t_socket_paquete *paqueteCPUAtendido = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+	socket_recvPaquete(cpu->socket, paqueteCPUAtendido);
 
-	switch(paqueteCPU->header.type){
+	switch(paqueteCPUAtendido->header.type){
 	case CAMBIO_DE_CONTEXTO:
 		log_info(self->loggerPlanificador, "Planificador: recibe un CAMBIO_DE_CONTEXTO" );
 		break;
@@ -167,7 +167,7 @@ void atenderCPU(t_kernel* self,t_cpu* cpu, fd_set* master){
 
 	}//fin switch(paqueteCPU->header.type)
 
-	socket_freePaquete(paqueteCPU);
+	socket_freePaquete(paqueteCPUAtendido);
 }
 
 

@@ -94,14 +94,14 @@ int cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
 	return datosRecibidos->direccionBase;
 }
 
-int cpuDestruirSegmento(t_CPU *self){
+int cpuDestruirSegmento(t_CPU *self, uint32_t direccionVirtual){
 
 	t_destruirSegmento* destruir_segmento = malloc(sizeof(t_destruirSegmento));
 	t_socket_paquete *paqueteConfirmacionDestruccionSegmento = malloc(sizeof(t_socket_paquete));
 	t_confirmacion* confirmacion = malloc(sizeof(t_confirmacion));
 
 	destruir_segmento->pid = self->tcb->pid;
-	destruir_segmento->direccionVirtual = self->tcb->registro_de_programacion[0];
+	destruir_segmento->direccionVirtual = direccionVirtual;
 
 	socket_sendPaquete(self->socketMSP->socket, DESTRUIR_SEGMENTO, sizeof(t_destruirSegmento), destruir_segmento);
 
@@ -161,7 +161,9 @@ int cpuLeerMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int t
 	t_datos_deMSPLectura *unaLectura = (t_datos_deMSPLectura *)malloc(sizeof(t_datos_deMSPLectura));
 
 	datosAMSP->direccionVirtual = direccionVirtual;
-	datosAMSP->pid = self->tcb->pid; //esto devuelve un CERO, me parece que es un error!!!!
+	int pid = 0;
+	if(self->tcb->km == 0) pid = self->tcb->pid;
+	datosAMSP->pid = pid; //esto devuelve un CERO, me parece que es un error!!!!
 	datosAMSP->tamanio = tamanio;
 
 	log_info(self->loggerCPU, "CPU: Solicitud de lectura de memoria para PID: %d, Direccion Virtual: %0.8p, Tamaño: %d.", datosAMSP->pid, datosAMSP->direccionVirtual, datosAMSP->tamanio);

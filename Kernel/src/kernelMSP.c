@@ -85,7 +85,6 @@ int kernelCrearSegmento(t_kernel *self, int pid, int tamanio){
 	}
 
 	socket_freePaquete(paquete);
-	free(datosRecibidos);
 	free(datosAEnviar);
 	return datosRecibidos->direccionBase;
 }

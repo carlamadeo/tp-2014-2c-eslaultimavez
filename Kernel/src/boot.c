@@ -21,6 +21,7 @@ void crearTCBKERNEL(t_kernel* self){
 	char *codigoSC = obtenerCodigoArchivo(self, archivoBesoSystemCall, self->tcbKernel->tamanio_segmento_codigo);
 
 	self->tcbKernel->base_segmento_codigo = kernelCrearSegmento(self, self->tcbKernel->pid, self->tcbKernel->tamanio_segmento_codigo);
+	printf("base %0.8p\n", self->tcbKernel->base_segmento_codigo);
 	self->tcbKernel->puntero_instruccion  = self->tcbKernel->base_segmento_codigo;
 
 	bootEscribirMemoria(self, self->tcbKernel->pid, self->tcbKernel->base_segmento_codigo, codigoSC, self->tcbKernel->tamanio_segmento_codigo);

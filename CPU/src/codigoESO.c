@@ -95,7 +95,7 @@ int GETM_ESO(t_CPU *self){
 			char *lecturaMSP = malloc(sizeof(char)*tamanioMSP);
 
 			estado_lectura = cpuLeerMemoria(self, (uint32_t)self->tcb->registro_de_programacion[regB], lecturaMSP, tamanioMSP);
-           //David: en que momento se asigna el valor obtenido en el primer registro (regA)??? para mi falta:
+			//David: en que momento se asigna el valor obtenido en el primer registro (regA)??? para mi falta:
 			self->tcb->registro_de_programacion[regA]=(int32_t)lecturaMSP;
 			registros_cpu->P=self->tcb->puntero_instruccion;
 			registros_cpu->registros_programacion[regA]=self->tcb->registro_de_programacion[regA];
@@ -1102,17 +1102,15 @@ int MALC_ESO(t_CPU *self){
 }
 int FREE_ESO(t_CPU *self){
 	int estado_free;
-	t_destruirSegmento* destruir_segmento = malloc(sizeof(t_destruirSegmento));
+	int direccionVirtual = self->tcb->registro_de_programacion[0];
 
-	destruir_segmento->direccionVirtual = self->tcb->registro_de_programacion[0];
-	destruir_segmento->pid = self->tcb->pid;
-	estado_free = cpuDestruirSegmento(self);
+	estado_free = cpuDestruirSegmento(self, direccionVirtual);
+
 	if(estado_free == ERROR_POR_SEGMENTO_DESCONOCIDO){
 		log_info(self->loggerCPU, "CPU: FREE ejecutado con ERROR_POR_SEGMENTO_DESCONOCIDO para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 	} else {
 		log_info(self->loggerCPU, "CPU: FREE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			}
-	free(destruir_segmento);
+	}
 	return estado_free;
 }
 
@@ -1157,41 +1155,41 @@ int INNN_ESO(t_CPU *self){
 
 int INNC_ESO(t_CPU *self){
 	int estado_innc;
-		t_entrada_estandar* pedir_cadena = malloc(sizeof(t_entrada_estandar));
+	t_entrada_estandar* pedir_cadena = malloc(sizeof(t_entrada_estandar));
 
-		pedir_cadena->pid = self->tcb->pid;
-		pedir_cadena->tamanio = self->tcb->registro_de_programacion[1];
-		pedir_cadena->tipo  = 2; //2 es un string
+	pedir_cadena->pid = self->tcb->pid;
+	pedir_cadena->tamanio = self->tcb->registro_de_programacion[1];
+	pedir_cadena->tipo  = 2; //2 es un string
 
-		if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR,sizeof(t_entrada_estandar), pedir_cadena)<=0){  //22 corresponde a interrupcion
-			log_info(self->loggerCPU, "CPU: INNC ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		}
-		free(pedir_cadena);
+	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR,sizeof(t_entrada_estandar), pedir_cadena)<=0){  //22 corresponde a interrupcion
+		log_info(self->loggerCPU, "CPU: INNC ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+	}
+	free(pedir_cadena);
 
-		t_socket_paquete *paquete_KERNEL = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-		if(socket_recvPaquete(self->socketPlanificador->socket, paquete_KERNEL) > 0){
+	t_socket_paquete *paquete_KERNEL = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+	if(socket_recvPaquete(self->socketPlanificador->socket, paquete_KERNEL) > 0){
 		if(paquete_KERNEL->header.type == ENTRADA_ESTANDAR){
-				log_info(self->loggerCPU, "CPU: recibiendo CADENA ingresado por consola ", self->tcb->pid);
-				char *cadena = malloc(self->tcb->registro_de_programacion[1]);
-				memcpy(cadena, paquete_KERNEL->data, self->tcb->registro_de_programacion[1]);
-				int estadoEscritura = cpuEscribirMemoria(self, self->tcb->registro_de_programacion[0], cadena, sizeof(self->tcb->registro_de_programacion[1]));
+			log_info(self->loggerCPU, "CPU: recibiendo CADENA ingresado por consola ", self->tcb->pid);
+			char *cadena = malloc(self->tcb->registro_de_programacion[1]);
+			memcpy(cadena, paquete_KERNEL->data, self->tcb->registro_de_programacion[1]);
+			int estadoEscritura = cpuEscribirMemoria(self, self->tcb->registro_de_programacion[0], cadena, sizeof(self->tcb->registro_de_programacion[1]));
 
-				if(estadoEscritura == ERROR_POR_SEGMENTATION_FAULT){
-					log_info(self->loggerCPU, "CPU: INNC ejecutado con ERROR_POR_SEGMENTATION_FAULT para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-					estado_innc = ERROR_POR_SEGMENTATION_FAULT;
-				} else {
+			if(estadoEscritura == ERROR_POR_SEGMENTATION_FAULT){
+				log_info(self->loggerCPU, "CPU: INNC ejecutado con ERROR_POR_SEGMENTATION_FAULT para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+				estado_innc = ERROR_POR_SEGMENTATION_FAULT;
+			} else {
 				free(cadena);
 				log_info(self->loggerCPU, "CPU: INNC ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 				estado_innc = ENTRADA_ESTANDAR;
-				}
+			}
 		}else{
 			log_info(self->loggerCPU, "CPU: codigo inesperado de MSP");
 			printf("CPU: codigo inesperado de MSP\n");
 			estado_innc = MENSAJE_DE_ERROR;
-			}
-		free(paquete_KERNEL);
 		}
-		return estado_innc;
+		free(paquete_KERNEL);
+	}
+	return estado_innc;
 }
 
 
@@ -1217,16 +1215,16 @@ int OUTC_ESO(t_CPU* self){
 	if (estado_lectura == ERROR_POR_SEGMENTATION_FAULT){
 		estado_outc = ERROR_POR_SEGMENTATION_FAULT;
 	}else{
-			t_salida_estandar* salida_estandar = malloc(sizeof(t_salida_estandar));
-			salida_estandar->pid = self->tcb->pid;
-			salida_estandar->cadena = lecturaDeMSP;
-			if (socket_sendPaquete(self->socketPlanificador->socket, SALIDA_ESTANDAR,sizeof(t_salida_estandar), salida_estandar)<=0){  //22 corresponde a interrupcion
-						log_info(self->loggerCPU, "CPU: OUTC ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-						estado_outc = MENSAJE_DE_ERROR;
-			}
-			free(salida_estandar);
-			log_info(self->loggerCPU, "CPU: OUTN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			estado_outc = SALIDA_ESTANDAR;
+		t_salida_estandar* salida_estandar = malloc(sizeof(t_salida_estandar));
+		salida_estandar->pid = self->tcb->pid;
+		salida_estandar->cadena = lecturaDeMSP;
+		if (socket_sendPaquete(self->socketPlanificador->socket, SALIDA_ESTANDAR,sizeof(t_salida_estandar), salida_estandar)<=0){  //22 corresponde a interrupcion
+			log_info(self->loggerCPU, "CPU: OUTC ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			estado_outc = MENSAJE_DE_ERROR;
+		}
+		free(salida_estandar);
+		log_info(self->loggerCPU, "CPU: OUTN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		estado_outc = SALIDA_ESTANDAR;
 	}
 	return estado_outc;
 
@@ -1237,7 +1235,7 @@ int CREA_ESO(t_CPU *self){ 	// CREA un hilo hijo de TCB
 	crear_hilo->tcb = self->tcb;
 	if (socket_sendPaquete(self->socketPlanificador->socket, CREAR_HILO,sizeof(t_crea_hilo), crear_hilo)<=0){  //22 corresponde a interrupcion
 		log_info(self->loggerCPU, "CPU: CREA ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-				estado_crea = MENSAJE_DE_ERROR;
+		estado_crea = MENSAJE_DE_ERROR;
 	}
 	free(crear_hilo);
 	log_info(self->loggerCPU, "CPU: CREA ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
@@ -1252,7 +1250,7 @@ int JOIN_ESO(t_CPU *self){
 	joinear->tid_esperar = self->tcb->registro_de_programacion[0];
 	if (socket_sendPaquete(self->socketPlanificador->socket, JOIN_HILO,sizeof(t_join), joinear)<=0){  //22 corresponde a interrupcion
 		log_info(self->loggerCPU, "CPU: JOIN ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-				estado_join = MENSAJE_DE_ERROR;
+		estado_join = MENSAJE_DE_ERROR;
 	}
 	free(joinear);
 	log_info(self->loggerCPU, "CPU: JOIN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
@@ -1264,18 +1262,18 @@ int JOIN_ESO(t_CPU *self){
 
 int BLOK_ESO(t_CPU *self){
 	int estado_blok;
-	 t_bloquear* blocker = malloc(sizeof(t_bloquear));
-	 blocker->tcb = self->tcb;
-	 blocker->id_recurso = self->tcb->registro_de_programacion[1];
-	 if (socket_sendPaquete(self->socketPlanificador->socket, BLOK_HILO,sizeof(t_bloquear), blocker)<=0){
-	 		log_info(self->loggerCPU, "CPU: BLOK ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-	 				estado_blok = MENSAJE_DE_ERROR;
-	 	} else{
-	 	log_info(self->loggerCPU, "CPU: BLOK ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-	 	estado_blok = JOIN_HILO;
-	 	}
-	 	free(blocker);
-	 	return estado_blok;
+	t_bloquear* blocker = malloc(sizeof(t_bloquear));
+	blocker->tcb = self->tcb;
+	blocker->id_recurso = self->tcb->registro_de_programacion[1];
+	if (socket_sendPaquete(self->socketPlanificador->socket, BLOK_HILO,sizeof(t_bloquear), blocker)<=0){
+		log_info(self->loggerCPU, "CPU: BLOK ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		estado_blok = MENSAJE_DE_ERROR;
+	} else{
+		log_info(self->loggerCPU, "CPU: BLOK ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		estado_blok = JOIN_HILO;
+	}
+	free(blocker);
+	return estado_blok;
 
 }
 

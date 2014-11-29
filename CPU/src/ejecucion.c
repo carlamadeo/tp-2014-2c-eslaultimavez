@@ -33,7 +33,7 @@ int cpuProcesarTCB(t_CPU *self){
 
 	log_info(self->loggerCPU, "CPU: Comienzo a procesar el TCB de pid: %d", self->tcb->pid);
 
-	while(self->quantum > 0){
+	while((self->quantum > 0) || (self->tcb->km == 1)){
 		encontrado = 0;
 		indice = 0;
 
