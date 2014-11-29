@@ -27,8 +27,10 @@ int cpuProcesarTCB(t_CPU *self){
 	int indice;
 
 	//int terminarLinea;
+	//COPIO LA ESTRUCTURA DEL TCB AL hilo_log
+	hilo_log=(t_hilo_log *)self->tcb;
+	ejecucion_hilo(hilo_log, self->quantum);
 
-	//ejecucion_hilo(hilo_log, self->quantum);
 	log_info(self->loggerCPU, "CPU: Comienzo a procesar el TCB de pid: %d", self->tcb->pid);
 
 	while(self->quantum > 0){
@@ -264,6 +266,16 @@ int ejecutar_instruccion(t_CPU *self, int linea){
 
 		if(self->tcb->km==1){
 			estado = BLOK_ESO(self);
+		}else{
+			estado = ERROR_POR_EJECUCION_ILICITA;
+			break;
+		}
+		break;
+
+	case WAKE:
+
+		if(self->tcb->km==1){
+			estado = WAKE_ESO(self);
 		}else{
 			estado = ERROR_POR_EJECUCION_ILICITA;
 			break;

@@ -1,5 +1,5 @@
-#ifndef CPU_H_
-#define CPU_H_
+#ifndef CPUPROCESO_H_
+#define CPUPROCESO_H_
 
 #include <unistd.h>
 #include <stdint.h>
@@ -75,8 +75,8 @@ typedef struct{
 	int tid;
 }t_CPU_TERMINE_UNA_LINEA;
 
-//t_registros_cpu* registros_cpu;
-t_hilo* hilo_log;
+t_registros_cpu* registros_cpu;
+t_hilo_log* hilo_log;
 
 
 //FUNCIONES

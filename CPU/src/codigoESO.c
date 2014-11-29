@@ -8,6 +8,7 @@
 
 t_list* parametros;
 
+
 int LOAD_ESO(t_CPU *self){
 
 	char registro;
@@ -23,6 +24,7 @@ int LOAD_ESO(t_CPU *self){
 
 		self->tcb->puntero_instruccion += tamanio;
 
+
 		log_info(self->loggerCPU,"CPU: Recibiendo parametros de instruccion LOAD");
 
 		memcpy(&(registro), lecturaDeMSP, sizeof(char));
@@ -37,12 +39,16 @@ int LOAD_ESO(t_CPU *self){
 
 	if(reg != -1){
 
-		//list_add(parametros, (void *)registro);
-		//list_add(parametros, (void *)numero);
-		//ejecucion_instruccion("LOAD", parametros);
+		list_add(parametros, (void *)registro);
+		list_add(parametros, (void *)numero);
+		ejecucion_instruccion("LOAD", parametros);
 
 		self->tcb->registro_de_programacion[reg] = numero;
-		//cambio_registros(registros_cpu);
+
+		registros_cpu->P=self->tcb->puntero_instruccion;
+		registros_cpu.registros_programacion[reg]=self->tcb->registro_de_programacion[reg];
+		cambio_registros(registros_cpu);
+
 		log_info(self->loggerCPU, "CPU: LOAD ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 	}
 
@@ -81,17 +87,21 @@ int GETM_ESO(t_CPU *self){
 
 		if((regA != -1) || (regB != -1)){
 
-			//list_add(parametros, (void *)registroA);
-			//list_add(parametros, (void *)registroB);
-			//ejecucion_instruccion("GETM", parametros);
+			list_add(parametros, (void *)regA);
+			list_add(parametros, (void *)regB);
+			ejecucion_instruccion("GETM", parametros);
 
 			int tamanioMSP = sizeof(int32_t);
 			char *lecturaMSP = malloc(sizeof(char)*tamanioMSP);
 
 			estado_lectura = cpuLeerMemoria(self, (uint32_t)self->tcb->registro_de_programacion[regB], lecturaMSP, tamanioMSP);
+           //David: en que momento se asigna el valor obtenido en el primer registro (regA)??? para mi falta:
+			self->tcb->registro_de_programacion[regA]=lecturaMSP;
+			registros_cpu->P=self->tcb->puntero_instruccion;
+			registros_cpu.registros_programacion[regA]=self->tcb->registro_de_programacion[regA];
+			cambio_registros(registros_cpu);
 
 			estado_bloque = estado_lectura;
-
 			log_info(self->loggerCPU, "CPU: GETM ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
 			free(lecturaMSP);
@@ -135,10 +145,10 @@ int SETM_ESO(t_CPU *self){
 
 			if(numero <= sizeof(uint32_t)){
 
-				//list_add(parametros, (void *)registroA);
-				//list_add(parametros, (void *)registroB);
-				//list_add(parametros, (void *)numero);
-				//ejecucion_instruccion("SETM", parametros);
+				list_add(parametros, (void *)registroA);
+				list_add(parametros, (void *)registroB);
+				list_add(parametros, (void *)numero);
+				ejecucion_instruccion("SETM", parametros);
 
 				char* byte_a_escribir = malloc(sizeof(int32_t));
 				memcpy(byte_a_escribir, &(self->tcb->registro_de_programacion[regB]), numero);
@@ -188,15 +198,16 @@ int MOVR_ESO(t_CPU *self){
 
 		if((regA != -1) || (regB != -1)){
 
-			//list_add(parametros, (void *)registroA);
-			//list_add(parametros, (void *)registroB);
-
-			//ejecucion_instruccion("MOVR", parametros);
+			list_add(parametros, (void *)registroA);
+			list_add(parametros, (void *)registroB);
+			ejecucion_instruccion("MOVR", parametros);
 
 			self->tcb->registro_de_programacion[regA] = self->tcb->registro_de_programacion[regB];
 
 			log_info(self->loggerCPU, "CPU: MOVR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			//cambio_registros(registros_cpu);
+			registros_cpu->P=self->tcb->puntero_instruccion;
+			registros_cpu.registros_programacion[regA]=self->tcb->registro_de_programacion[regA];
+			cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -233,14 +244,16 @@ int ADDR_ESO(t_CPU *self){
 
 		if((regA != -1) || (regB != -1)){
 
-			//list_add(parametros, (void *)registroA);
-			//list_add(parametros, (void *)registroB);
-			//ejecucion_instruccion("ADDR", parametros);
+			list_add(parametros, (void *)registroA);
+			list_add(parametros, (void *)registroB);
+			ejecucion_instruccion("ADDR", parametros);
 
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] + self->tcb->registro_de_programacion[regB];
 
 			log_info(self->loggerCPU, "CPU: ADDR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			//cambio_registros(registros_cpu);
+			registros_cpu->P=self->tcb->puntero_instruccion;
+			registros_cpu.registros_programacion[0]=self->tcb->registro_de_programacion[0];
+			cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -279,14 +292,16 @@ int SUBR_ESO(t_CPU *self){
 
 		if((regA != -1) || (regB != -1)){
 
-			//list_add(parametros, (void *)registroA);
-			//list_add(parametros, (void *)registroB);
-			//ejecucion_instruccion("SUBR", parametros);
+			list_add(parametros, (void *)registroA);
+			list_add(parametros, (void *)registroB);
+			ejecucion_instruccion("SUBR", parametros);
 
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] - self->tcb->registro_de_programacion[regB];
 
 			log_info(self->loggerCPU, "CPU: SUBR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			//cambio_registros(registros_cpu);
+			registros_cpu->P=self->tcb->puntero_instruccion;
+			registros_cpu.registros_programacion[0]=self->tcb->registro_de_programacion[0];
+			cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -325,14 +340,16 @@ int MULR_ESO(t_CPU *self){
 
 		if((regA != -1) || (regB != -1)){
 
-			//list_add(parametros, (void *)registroA);
-			//list_add(parametros, (void *)registroB);
-			//ejecucion_instruccion("MULR", parametros);
+			list_add(parametros, (void *)registroA);
+			list_add(parametros, (void *)registroB);
+			ejecucion_instruccion("MULR", parametros);
 
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] * self->tcb->registro_de_programacion[regB];
 
 			log_info(self->loggerCPU, "CPU: MULR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			//cambio_registros(registros_cpu);
+			registros_cpu->P=self->tcb->puntero_instruccion;
+			registros_cpu.registros_programacion[0]=self->tcb->registro_de_programacion[0];
+			cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -372,14 +389,16 @@ int MODR_ESO(t_CPU *self){
 
 		if((regA != -1) || (regB != -1)){
 
-			//list_add(parametros, (void *)registroA);
-			//list_add(parametros, (void *)registroB);
-			//ejecucion_instruccion("MODR", parametros);
+			list_add(parametros, (void *)registroA);
+			list_add(parametros, (void *)registroB);
+			ejecucion_instruccion("MODR", parametros);
 
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] % self->tcb->registro_de_programacion[regB];
 
 			log_info(self->loggerCPU, "CPU: MODR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			//cambio_registros(registros_cpu);
+			registros_cpu->P=self->tcb->puntero_instruccion;
+			registros_cpu.registros_programacion[0]=self->tcb->registro_de_programacion[0];
+			cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -419,15 +438,18 @@ int DIVR_ESO(t_CPU *self){
 
 		if((regA != -1) || (regB != -1)){
 
-			//list_add(parametros, (void *)registroA);
-			//list_add(parametros, (void *)registroB);
-			//ejecucion_instruccion("DIVR", parametros);
+			list_add(parametros, (void *)registroA);
+			list_add(parametros, (void *)registroB);
+			ejecucion_instruccion("DIVR", parametros);
 
 			//int32_t auxiliar = self->tcb->registro_de_programacion[regB];
 
 			if (self->tcb->registro_de_programacion[regB] != 0){
 				self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] / self->tcb->registro_de_programacion[regB];
 				log_info(self->loggerCPU, "CPU: DIVR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+				registros_cpu->P=self->tcb->puntero_instruccion;
+				registros_cpu.registros_programacion[0]=self->tcb->registro_de_programacion[0];
+				cambio_registros(registros_cpu);
 			}
 
 			else{
@@ -471,12 +493,15 @@ int INCR_ESO(t_CPU *self){
 
 		if((reg != -1)){
 
-			//list_add(parametros, (void *)registro);
-			//ejecucion_instruccion("INCR", parametros);
+			list_add(parametros, (void *)registro);
+			ejecucion_instruccion("INCR", parametros);
 
 			self->tcb->registro_de_programacion[reg]++;
 
 			log_info(self->loggerCPU, "CPU: INCR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			registros_cpu->P=self->tcb->puntero_instruccion;
+			registros_cpu.registros_programacion[reg]=self->tcb->registro_de_programacion[reg];
+			cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -514,12 +539,15 @@ int DECR_ESO(t_CPU *self){
 
 		if((reg != -1)){
 
-			//list_add(parametros, (void *)registro);
-			//ejecucion_instruccion("DECR", parametros);
+			list_add(parametros, (void *)registro);
+			ejecucion_instruccion("DECR", parametros);
 
 			self->tcb->registro_de_programacion[reg]--;
 
 			log_info(self->loggerCPU, "CPU: DECR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			registros_cpu->P=self->tcb->puntero_instruccion;
+			registros_cpu.registros_programacion[reg]=self->tcb->registro_de_programacion[reg];
+			cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -559,9 +587,9 @@ int COMP_ESO(t_CPU *self){
 
 		if((regA != -1) || (regB != -1)){
 
-			//list_add(parametros, (void *)registroA);
-			//list_add(parametros, (void *)registroB);
-			//ejecucion_instruccion("COMP", parametros);
+			list_add(parametros, (void *)registroA);
+			list_add(parametros, (void *)registroB);
+			ejecucion_instruccion("COMP", parametros);
 
 			if (self->tcb->registro_de_programacion[regA] == self->tcb->registro_de_programacion[regB])
 				self->tcb->registro_de_programacion[0] = 1;
@@ -570,7 +598,9 @@ int COMP_ESO(t_CPU *self){
 				self->tcb->registro_de_programacion[0] = 0;
 
 			log_info(self->loggerCPU, "CPU: COMPR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-
+			registros_cpu->P=self->tcb->puntero_instruccion;
+			registros_cpu.registros_programacion[0]=self->tcb->registro_de_programacion[0];
+			cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -610,9 +640,9 @@ int CGEQ_ESO(t_CPU *self){
 
 		if((regA != -1) || (regB != -1)){
 
-			//list_add(parametros, (void *)registroA);
-			//list_add(parametros, (void *)registroB);
-			//ejecucion_instruccion("CGEQ", parametros);
+			list_add(parametros, (void *)registroA);
+			list_add(parametros, (void *)registroB);
+			ejecucion_instruccion("CGEQ", parametros);
 
 			if (self->tcb->registro_de_programacion[regA] >= self->tcb->registro_de_programacion[regB])
 				self->tcb->registro_de_programacion[0] = 1;
@@ -621,7 +651,9 @@ int CGEQ_ESO(t_CPU *self){
 				self->tcb->registro_de_programacion[0] = 0;
 
 			log_info(self->loggerCPU, "CPU: CGEQ ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-
+			registros_cpu->P=self->tcb->puntero_instruccion;
+			registros_cpu.registros_programacion[0]=self->tcb->registro_de_programacion[0];
+			cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -661,9 +693,9 @@ int CLEQ_ESO(t_CPU *self){
 
 		if((regA != -1) || (regB != -1)){
 
-			//list_add(parametros, (void *)registroA);
-			//list_add(parametros, (void *)registroB);
-			//ejecucion_instruccion("CLEQ", parametros);
+			list_add(parametros, (void *)registroA);
+			list_add(parametros, (void *)registroB);
+			ejecucion_instruccion("CLEQ", parametros);
 
 			if (self->tcb->registro_de_programacion[regA] <= self->tcb->registro_de_programacion[regB])
 				self->tcb->registro_de_programacion[0] = 1;
@@ -672,6 +704,9 @@ int CLEQ_ESO(t_CPU *self){
 				self->tcb->registro_de_programacion[0] = 0;
 
 			log_info(self->loggerCPU, "CPU: CLEQ ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			registros_cpu->P=self->tcb->puntero_instruccion;
+			registros_cpu.registros_programacion[0]=self->tcb->registro_de_programacion[0];
+			cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -709,12 +744,15 @@ int GOTO_ESO(t_CPU *self){
 
 		if((reg != -1)){
 
-			//list_add(parametros, (void *)registro);
-			//ejecucion_instruccion("GOTO", parametros);
+			list_add(parametros, (void *)registro);
+			ejecucion_instruccion("GOTO", parametros);
 
 			if((self->tcb->base_segmento_codigo + self->tcb->registro_de_programacion[reg]) <= self->tcb->tamanio_segmento_codigo){
 				self->tcb->puntero_instruccion = self->tcb->registro_de_programacion[reg];
 				log_info(self->loggerCPU, "CPU: GOTO ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+
+				registros_cpu.P=self->tcb->puntero_instruccion;
+				cambio_registros(registros_cpu);
 			}
 
 			else
@@ -750,14 +788,16 @@ int JMPZ_ESO(t_CPU *self){
 
 		memcpy(&(direccion), lecturaDeMSP, sizeof(uint32_t));
 
-		//list_add(parametros, (void *)direccion);
-		//ejecucion_instruccion("JMPZ", parametros);
+		list_add(parametros, (void *)direccion);
+		ejecucion_instruccion("JMPZ", parametros);
 
 		if(self->tcb->registro_de_programacion[0] == 0){
 
 			if((self->tcb->base_segmento_codigo + direccion) <= self->tcb->tamanio_segmento_codigo){
 				self->tcb->puntero_instruccion = direccion;
 				log_info(self->loggerCPU, "CPU: JMPZ ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+				registros_cpu.P=self->tcb->puntero_instruccion;
+				cambio_registros(registros_cpu);
 			}
 
 			else
@@ -790,14 +830,16 @@ int JPNZ_ESO(t_CPU *self){
 
 		memcpy(&(direccion), lecturaDeMSP, sizeof(uint32_t));
 
-		//list_add(parametros, (void *)direccion);
-		//ejecucion_instruccion("JPNZ", parametros);
+		list_add(parametros, (void *)direccion);
+		ejecucion_instruccion("JPNZ", parametros);
 
 		if(self->tcb->registro_de_programacion[0] != 0){
 
 			if((self->tcb->base_segmento_codigo + direccion) <= self->tcb->tamanio_segmento_codigo){
 				self->tcb->puntero_instruccion = direccion;
 				log_info(self->loggerCPU, "CPU: JPNZ ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+				registros_cpu.P=self->tcb->puntero_instruccion;
+				cambio_registros(registros_cpu);
 			}
 
 			else
@@ -829,8 +871,11 @@ int INTE_ESO(t_CPU *self){
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion INTE");
 
 		memcpy(&(direccion), lecturaDeMSP, sizeof(uint32_t));
-		//list_add(parametros, (void *)direccion);
-		//ejecucion_instruccion("INTE", parametros);
+		list_add(parametros, (void *)direccion);
+		ejecucion_instruccion("INTE", parametros);
+
+		registros_cpu->P=self->tcb->puntero_instruccion;
+		cambio_registros(registros_cpu);
 
 		cpuEnviaInterrupcion(self, direccion);
 
@@ -872,9 +917,9 @@ int SHIF_ESO(t_CPU *self){
 
 		if((reg != -1)){
 
-			//list_add(parametros, (void *)numero);
-			//list_add(parametros, (void *)registro);
-			//ejecucion_instruccion("SHIF", parametros);
+			list_add(parametros, (void *)numero);
+			list_add(parametros, (void *)registro);
+			ejecucion_instruccion("SHIF", parametros);
 
 			if(numero > 0)
 				self->tcb->registro_de_programacion[reg]>>=numero;
@@ -882,7 +927,9 @@ int SHIF_ESO(t_CPU *self){
 				self->tcb->registro_de_programacion[reg]<<=numero;
 
 			log_info(self->loggerCPU, "CPU: SHIF ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-
+			registros_cpu->P=self->tcb->puntero_instruccion;
+			registros_cpu.registros_programacion[reg]=self->tcb->registro_de_programacion[reg];
+			cambio_registros(registros_cpu);
 		}
 
 	}
@@ -923,9 +970,9 @@ int PUSH_ESO(t_CPU *self){
 
 		if((reg != -1)){
 
-			//list_add(parametros, (void *)numero);
-			//list_add(parametros, (void *)registro);
-			//ejecucion_instruccion("PUSH", parametros);
+			list_add(parametros, (void *)numero);
+			list_add(parametros, (void *)registro);
+			ejecucion_instruccion("PUSH", parametros);
 
 			if(numero <= sizeof(uint32_t)){
 
@@ -939,6 +986,9 @@ int PUSH_ESO(t_CPU *self){
 				if (estado_bloque == SIN_ERRORES){
 					self->tcb->cursor_stack += numero;
 					log_info(self->loggerCPU, "CPU: PUSH ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+					registros_cpu->P=self->tcb->puntero_instruccion;
+					registros_cpu.S=self->tcb->cursor_stack;
+					cambio_registros(registros_cpu);
 				}
 			}
 		}
@@ -972,9 +1022,9 @@ int TAKE_ESO(t_CPU *self){
 
 		if((reg != -1)){
 
-			//list_add(parametros, (void *)numero);
-			//list_add(parametros, (void *)registro);
-			//ejecucion_instruccion("TAKE", parametros);
+			list_add(parametros, (void *)numero);
+			list_add(parametros, (void *)registro);
+			ejecucion_instruccion("TAKE", parametros);
 
 			if(numero <= sizeof(uint32_t)){
 
@@ -988,6 +1038,9 @@ int TAKE_ESO(t_CPU *self){
 					self->tcb->registro_de_programacion[reg] = (int32_t)lecturaDeMSP2;
 					self->tcb->cursor_stack -= numero;
 					log_info(self->loggerCPU, "CPU: TAKE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+					registros_cpu.registros_programacion[reg]=self->tcb->registro_de_programacion[reg];
+					registros_cpu.P=self->tcb->puntero_instruccion;
+					cambio_registros(registros_cpu);
 				}
 
 				free(lecturaDeMSP2);
@@ -1042,6 +1095,8 @@ int MALC_ESO(t_CPU *self){
 	default:
 		self->tcb->registro_de_programacion[0] = estado_malc;
 		log_info(self->loggerCPU, "CPU: MALC ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		registros_cpu.registros_programacion[0]=self->tcb->registro_de_programacion[0];
+		cambio_registros(registros_cpu);
 		return SIN_ERRORES;
 	}
 }
@@ -1080,6 +1135,9 @@ int INNN_ESO(t_CPU *self){
 			log_info(self->loggerCPU, "CPU: INNN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			self->tcb->registro_de_programacion[0]=(int)paquete_KERNEL;
 			estado_innn = ENTRADA_ESTANDAR;
+
+			registros_cpu.registros_programacion[0]=self->tcb->registro_de_programacion[0];
+			cambio_registros(registros_cpu);
 		} else {
 			log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado de MSP: %d", paquete_KERNEL->header.type);
 			estado_innn = ERROR_POR_CODIGO_INESPERADO;
