@@ -81,6 +81,6 @@ t_hilo_log* hilo_log;
 
 //FUNCIONES
 void verificar_argumentosCPU(int argc, char* argv[]);
-
+void printTCBCPU(t_TCB_CPU* unTCB);
 
 #endif /* CPU_H_ */

@@ -131,10 +131,20 @@ void atenderCPU(t_kernel* self,t_cpu* cpu, fd_set* master){
 	t_socket_paquete *paqueteCPUAtendido = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 	socket_recvPaquete(cpu->socket, paqueteCPUAtendido);
 
+	printf("Valor para el switch: %d\n",paqueteCPUAtendido->header.type);
 	switch(paqueteCPUAtendido->header.type){
 	case CAMBIO_DE_CONTEXTO:
 		log_info(self->loggerPlanificador, "Planificador: recibe un CAMBIO_DE_CONTEXTO" );
-		ejecutar_UN_CAMBIO_DE_CONTEXTO(self, paqueteCPUAtendido->data);
+
+		t_TCB_Kernel* tcbCPU= (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
+		tcbCPU = (t_TCB_Kernel*) paqueteCPUAtendido->data;
+
+		printf("Valor para el switch: %d\n",paqueteCPUAtendido->header.type);
+		printf("TCB PID: %d \n", tcbCPU->pid);
+		printf("TCB TID: %d \n", tcbCPU->tid);
+		//printTCBKernel(tcbCPU);
+		//ejecutar_UN_CAMBIO_DE_CONTEXTO(self,tcbCPU);
+		free(tcbCPU);
 		break;
 	case MENSAJE_DE_ERROR:
 		log_info(self->loggerPlanificador, "Planificador: recibe un MENSAJE_DE_ERROR" );

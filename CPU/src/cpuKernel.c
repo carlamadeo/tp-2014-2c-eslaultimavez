@@ -53,32 +53,13 @@ void cpuRecibirTCB(t_CPU *self){
 	if(socket_recvPaquete(self->socketPlanificador->socket, paquetePlanificadorTCB) >= 0){
 
 		//printf("TCB_NUEVO %d \n", paquetePlanificadorTCB->header.type);   //no Borrar sirve para como debug Jorge
-
 		if(paquetePlanificadorTCB->header.type == TCB_NUEVO){
 
 			unTCBNuevo = (t_TCB_CPU*) paquetePlanificadorTCB->data;
-
 			self->tcb = unTCBNuevo;
-
-			log_debug(self->loggerCPU, "CPU: recibio un TCB_NUEVO con PID: %d TID:%d KM:%d", self->tcb->pid, self->tcb->tid, self->tcb->km);
-			//printf("TCB_NUEVO TID %d \n", self->tcb->tid );  //no Borrar sirve para como debug Jorge
-			//printf("TCB_NUEVO PID %d \n", self->tcb->pid);   //no Borrar sirve para como debug Jorge
-
-			//				registros_cpu->I = (uint32_t)nuevo_tcb->tcb->pid;
-			//				registros_cpu->K = (uint32_t)nuevo_tcb->tcb->km;
-			//				registros_cpu->M = nuevo_tcb->tcb->base_segmento_codigo;
-			//				registros_cpu->P = nuevo_tcb->tcb->puntero_instruccion;
-			//				registros_cpu->S = nuevo_tcb->tcb->cursor_stack;
-			//				registros_cpu->X = nuevo_tcb->tcb->base_stack;
-			//				int i;
-			//				for(i=0; i<=4; i++){
-			//					registros_cpu->registros_programacion[i]=nuevo_tcb->tcb->registro_de_programacion[i];
-			//				}
-			//hilo_log = (t_hilo_log *) nuevo_tcb->tcb;
-			//
-		}
-
-		else
+			printTCBCPU(self->tcb);
+			//log_debug(self->loggerCPU, "CPU: recibio un TCB_NUEVO con PID: %d TID:%d KM:%d", self->tcb->pid, self->tcb->tid, self->tcb->km);
+		}else
 			log_error(self->loggerCPU, "CPU: error al recibir de planificador TCB_NUEVO");
 	}
 	else

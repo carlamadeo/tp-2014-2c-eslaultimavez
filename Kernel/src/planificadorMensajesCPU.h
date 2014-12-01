@@ -46,7 +46,7 @@ typedef struct {
 
 void agregarEnListaDeCPU(int id,  t_socket* socketCPU);
 void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente);
-void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, void* paquete);
+void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self,t_TCB_Kernel* tcb);
 void ejecutar_UNA_INTERRUPCION(t_kernel* self);
 void ejecutar_UNA_ENTRADA_STANDAR(t_kernel* self);
 void ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self);
@@ -54,5 +54,6 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self);
 void ejecutar_UN_JOIN_HILO(t_kernel* self);
 void ejecutar_UN_BLOK_HILO(t_kernel* self);
 void ejecutar_UN_WAKE_HILO(t_kernel* self);
+void printTCBKernel(t_TCB_Kernel* unTCB);
 
 #endif // PLANIFICADOR_MENSAJE_H_

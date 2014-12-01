@@ -59,7 +59,8 @@ int main(int argc, char** argv) {
 			tcbProcesado = self->tcb;
 
 			//se mande un TCB a CPU
-			socket_sendPaquete(self->socketPlanificador->socket, TCB_NUEVO,sizeof(t_TCB_CPU), tcbProcesado);
+			printTCBCPU(tcbProcesado);
+			socket_sendPaquete(self->socketPlanificador->socket, CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU), tcbProcesado);
 			log_info(self->loggerCPU, "CPU: envia un CAMBIO_DE_CONTEXTO");
 
 			free(tcbProcesado);
@@ -117,4 +118,24 @@ void verificar_argumentosCPU(int argc, char* argv[]){
 		perror("CPU no recibio las configuraciones");
 		exit (EXIT_FAILURE);
 	}
+}
+
+void printTCBCPU(t_TCB_CPU* unTCB){
+
+	printf("TCB PID: %d \n", unTCB->pid);
+	printf("TCB TID: %d \n", unTCB->tid);
+	printf("TCB  KM: %d \n", unTCB->km);
+
+	printf("Base Segmento:   %0.8p \n",unTCB->base_segmento_codigo);
+	printf("Tamanio Segmento: %d \n",unTCB->tamanio_segmento_codigo);
+	printf("Puntero a Instruccion: %0.8p \n",unTCB->puntero_instruccion);
+
+	printf("Base Stack:   %0.8p \n",unTCB->base_stack);
+	printf("Cursor Stack: %0.8p \n",unTCB->cursor_stack);
+
+	printf("Regristros 0: %d\n", unTCB->registro_de_programacion[0]);
+	printf("Regristros 1: %d\n", unTCB->registro_de_programacion[1]);
+	printf("Regristros 2: %d\n", unTCB->registro_de_programacion[2]);
+	printf("Regristros 3: %d\n", unTCB->registro_de_programacion[3]);
+
 }

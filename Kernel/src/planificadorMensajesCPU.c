@@ -16,28 +16,19 @@ void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente
 	log_info(self->loggerPlanificador, "Planificador: envia CPU_SEGUI_EJECUTANDO");
 }
 
-void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, void* paqueteContexto ){
-/*
+void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_TCB_Kernel* tcb){
+
 	//1) Primer paso, se recibe un TCB
-
-	//t_socket_paquete *paqueteContexto = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-	t_TCB_Kernel* unTCBPadre = (t_TCB_Kernel*) malloc(sizeof(t_crea_hiloKernel));
-
-	//if(socket_recvPaquete(self->socketCPU, paqueteContexto) >= 0){
-		unTCBPadre = (t_TCB_Kernel*) paqueteContexto;
-
-	//}else
-		//log_error(self->loggerPlanificador, "Planificador: error al rebicir UN_CAMBIO_DE_CONTEXTO");
 
 
 	log_info(self->loggerPlanificador, "Planificador: sin error");
 	// se lo pone a final de READY
 
-	list_add(cola_ready,unTCBPadre);
+	list_add(cola_ready,tcb);
 
 	//2) Segundo paso, se verifica que la cola de READY no esta vacia
 	log_info(self->loggerPlanificador, "test1");
-	if(list_size(cola_ready)>0){
+	/*	if(list_size(cola_ready)>0){
 		log_info(self->loggerPlanificador, "test2");
 		// se remueve el primer elemento de ready
 		t_TCB_Kernel* tcbReady = malloc(sizeof(t_TCB_Kernel));
@@ -471,4 +462,27 @@ void ejecutar_UN_WAKE_HILO(t_kernel* self){
 
 	free(tcbDespertar);
 	socket_freePaquete(paqueteDespetar);
+}
+
+
+
+
+void printTCBKernel(t_TCB_Kernel* unTCB){
+
+	printf("TCB PID: %d \n", unTCB->pid);
+	printf("TCB TID: %d \n", unTCB->tid);
+	printf("TCB  KM: %d \n", unTCB->km);
+
+	printf("Base Segmento:   %0.8p \n",unTCB->base_segmento_codigo);
+	printf("Tamanio Segmento: %d \n",unTCB->tamanio_segmento_codigo);
+	printf("Puntero a Instruccion: %0.8p \n",unTCB->puntero_instruccion);
+
+	printf("Base Stack:   %0.8p \n",unTCB->base_stack);
+	printf("Cursor Stack: %0.8p \n",unTCB->cursor_stack);
+
+	printf("Regristros 0: %d\n", unTCB->registro_de_programacion[0]);
+	printf("Regristros 1: %d\n", unTCB->registro_de_programacion[1]);
+	printf("Regristros 2: %d\n", unTCB->registro_de_programacion[2]);
+	printf("Regristros 3: %d\n", unTCB->registro_de_programacion[3]);
+
 }
