@@ -16,6 +16,60 @@ void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente
 	log_info(self->loggerPlanificador, "Planificador: envia CPU_SEGUI_EJECUTANDO");
 }
 
+void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, void* paqueteContexto ){
+/*
+	//1) Primer paso, se recibe un TCB
+
+	//t_socket_paquete *paqueteContexto = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+	t_TCB_Kernel* unTCBPadre = (t_TCB_Kernel*) malloc(sizeof(t_crea_hiloKernel));
+
+	//if(socket_recvPaquete(self->socketCPU, paqueteContexto) >= 0){
+		unTCBPadre = (t_TCB_Kernel*) paqueteContexto;
+
+	//}else
+		//log_error(self->loggerPlanificador, "Planificador: error al rebicir UN_CAMBIO_DE_CONTEXTO");
+
+
+	log_info(self->loggerPlanificador, "Planificador: sin error");
+	// se lo pone a final de READY
+
+	list_add(cola_ready,unTCBPadre);
+
+	//2) Segundo paso, se verifica que la cola de READY no esta vacia
+	log_info(self->loggerPlanificador, "test1");
+	if(list_size(cola_ready)>0){
+		log_info(self->loggerPlanificador, "test2");
+		// se remueve el primer elemento de ready
+		t_TCB_Kernel* tcbReady = malloc(sizeof(t_TCB_Kernel));
+		tcbReady = list_remove(cola_ready, 0); //SE REMUEVE EL PRIMER PROGRAMA DE NEW
+
+		t_QUAMTUM* unQuamtum = malloc(sizeof(t_QUAMTUM));
+		unQuamtum->quamtum = self->quamtum;
+
+		//se manda un QUAMTUM a CPU
+		socket_sendPaquete(self->socketCPU, QUAMTUM,sizeof(t_QUAMTUM), unQuamtum);
+		log_debug(self->loggerPlanificador, "Planificador: envia un quamtum: %d", unQuamtum->quamtum);
+
+		//se mande un TCB a CPU
+		socket_sendPaquete(self->socketCPU, TCB_NUEVO,sizeof(t_TCB_Kernel), tcbReady);
+		log_debug(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID: %d TID:%d KM:%d", tcbReady->pid,tcbReady->tid,tcbReady->km );
+		free(unQuamtum);
+		free(tcbReady);
+
+	}else{
+		log_info(self->loggerPlanificador, "test3");
+		// si no corresponde se queda bloqueado
+		log_debug(self->loggerPlanificador, "Planificador: bloqueado, sin Programas Beso. Error, jorge");
+		sem_wait(&mutex_new);
+
+	}
+
+
+	free(unTCBPadre);
+	//socket_freePaquete(paqueteContexto);
+	 *
+	 */
+}
 
 void ejecutar_UNA_INTERRUPCION(t_kernel* self){
 

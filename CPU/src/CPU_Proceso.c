@@ -54,7 +54,15 @@ int main(int argc, char** argv) {
 
 		case SIN_ERRORES:
 			cpuEnviarPaqueteAPlanificador(self, CAMBIO_DE_CONTEXTO);
+
+			t_TCB_CPU* tcbProcesado = malloc(sizeof(t_TCB_CPU));
+			tcbProcesado = self->tcb;
+
+			//se mande un TCB a CPU
+			socket_sendPaquete(self->socketPlanificador->socket, TCB_NUEVO,sizeof(t_TCB_CPU), tcbProcesado);
 			log_info(self->loggerCPU, "CPU: envia un CAMBIO_DE_CONTEXTO");
+
+			free(tcbProcesado);
 			break;
 		case INTERRUPCION:
 			cpuEnviarPaqueteAPlanificador(self, INTERRUPCION);

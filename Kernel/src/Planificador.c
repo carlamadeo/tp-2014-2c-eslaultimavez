@@ -134,6 +134,7 @@ void atenderCPU(t_kernel* self,t_cpu* cpu, fd_set* master){
 	switch(paqueteCPUAtendido->header.type){
 	case CAMBIO_DE_CONTEXTO:
 		log_info(self->loggerPlanificador, "Planificador: recibe un CAMBIO_DE_CONTEXTO" );
+		ejecutar_UN_CAMBIO_DE_CONTEXTO(self, paqueteCPUAtendido->data);
 		break;
 	case MENSAJE_DE_ERROR:
 		log_info(self->loggerPlanificador, "Planificador: recibe un MENSAJE_DE_ERROR" );
