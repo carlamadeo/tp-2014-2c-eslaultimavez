@@ -67,6 +67,11 @@ uint32_t crearSegmentoConSusPaginas(int pid, int cantidadPaginas, int tamanio){
 
 	if(programa != NULL){
 
+		//Agrego este porque si estoy en la mitad de creacion del segmento, y a su vez me piden escribir ese segmento
+		//no voy a tener cargados todos los datos y se va a generar un error
+
+		pthread_rwlock_wrlock(&rw_memoria);
+
 		//Si el programa no tiene segmentos, a numero de segmento le pongo 0
 		if(list_is_empty(programa->tablaSegmentos))
 			segmento->numero = 0;
@@ -96,6 +101,7 @@ uint32_t crearSegmentoConSusPaginas(int pid, int cantidadPaginas, int tamanio){
 		else
 			log_info(self->logMSP, "Segmento creado correctamente. PID: %d, Tamanio: %d, Direccion base: %0.8p", pid, tamanio, direccionBase);
 
+		pthread_rwlock_unlock(&rw_memoria);
 
 		return direccionBase;
 	}
@@ -103,6 +109,7 @@ uint32_t crearSegmentoConSusPaginas(int pid, int cantidadPaginas, int tamanio){
 	else{
 		log_error(self->logMSP, "No existe el programa con PID %d. No se hace nada.", pid);
 		log_info(self->logMSP, "Finalizando...");
+
 		return -1;
 	}
 }
@@ -141,6 +148,8 @@ int mspDestruirSegmento(int pid, uint32_t direccionBase){
 
 			if(segmento != NULL){
 
+				pthread_rwlock_wrlock(&rw_memoria);
+
 				borrarPaginasDeMemoriaSecundariaYPrimaria(pid, segmento);
 
 				eliminarSegmentoDeListaDelPrograma(programa, direccionReal.numeroSegmento);
@@ -149,6 +158,8 @@ int mspDestruirSegmento(int pid, uint32_t direccionBase){
 					log_info(self->logMSP, "Segmento destruido correctamente. PID: %d, Direccion Base: 0x00000000, Numero de Segmento: %d", pid, direccionReal.numeroSegmento);
 				else
 					log_info(self->logMSP, "Segmento destruido correctamente. PID: %d, Direccion Base: %0.8p, Numero de Segmento: %d", pid, direccionBase, direccionReal.numeroSegmento);
+
+				pthread_rwlock_unlock(&rw_memoria);
 			}
 
 			else{
@@ -464,7 +475,7 @@ int mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido)
 
 	//Creo una lista con todas las paginas que debo pasar a memoria
 	paginasAMemoria = crearListaPaginasAPasarAMemoria(cantidadPaginas, pagina, segmento->tablaPaginas);
-	
+
 	pthread_rwlock_rdlock(&rw_memoria);
 	buscarPaginasYLeerMemoria(pid, direccionReal, paginasAMemoria, tamanio, leido);
 	pthread_rwlock_unlock(&rw_memoria);
@@ -672,108 +683,62 @@ t_marco *sustituirPaginaPorFIFO(){
 
 
 t_marco *sustituirPaginaPorCLOCK_MODIFICADO(){
-	
+
 	int pid;
 	int numeroSegmento;
 	int numeroPagina;
-	int encontrado =0;
 	t_marco *marco;
-	t_marco *marco_aux;
-	
+
 	log_info(self->logMSP, "Comienzo de sustitucion de pagina por CLOCK MODIFICADO...");
-	
+
 	bool marcoNoRefNoMod(t_marco *unMarco){
-	return unMarco->categoriaClockModificado == NOREFERENCIADA_NOMODIFICADA;
+		return unMarco->categoriaClockModificado == NOREFERENCIADA_NOMODIFICADA;
 	}
-	bool marcoNoRefMod(t_marco *unMarco){
-	return unMarco->categoriaClockModificado == NOREFERENCIADA_MODIFICADA;
+
+	marco = list_find(self->marcosOcupados, marcoNoRefNoMod);
+
+	if(marco == NULL){
+		bool marcoNoRefMod(t_marco *unMarco){
+			return unMarco->categoriaClockModificado == NOREFERENCIADA_MODIFICADA;
+		}
+
+		marco = list_find(self->marcosOcupados, marcoNoRefMod);
+
+		if(marco == NULL){
+			bool marcoRefNoMod(t_marco *unMarco){
+				return unMarco->categoriaClockModificado == REFERENCIADA_NOMODIFICADA;
+			}
+
+			marco = list_find(self->marcosOcupados, marcoRefNoMod);
+
+			if(marco == NULL){
+				bool marcoRefMod(t_marco *unMarco){
+					return unMarco->categoriaClockModificado == REFERENCIADA_MODIFICADA;
+				}
+
+				marco = list_find(self->marcosOcupados, marcoRefMod);
+			}
+		}
 	}
-	
+
 	bool matchMarco(t_marco *unMarco){
-	return unMarco->numero == marco->numero;
+		return unMarco->numero == marco->numero;
 	}
-	bool marcoRefNoMod(t_marco *unMarco){
-	return unMarco->categoriaClockModificado == REFERENCIADA_NOMODIFICADA;
-	}
-	bool marcoRefMod(t_marco *unMarco){
-	return unMarco->categoriaClockModificado == REFERENCIADA_MODIFICADA;
-	}
-	
-	
-	while(encontrado!=1)
-	{
-		marco = list_find(self->marcosOcupados, marcoNoRefNoMod); //Busco por 0,0
-	
-		if(marco == NULL){ //Si no hay (0,0), busco por (0,1) y mientras avanzo pongo el bit de referencia en 0. (0,x)
-	
-			marco = list_find(self->marcosOcupados, marcoNoRefMod); //busco por (0,1)
-	
-			if(marco == NULL){ //Debo comenzar nuevamente, pero antes actualizo todos los bit de referencia en 0.
-				int i=0;
-				marco_aux = list_get(self->marcosOcupados,i);
-				while (marco_aux!=NULL)
-				{
-	
-					switch (marco_aux->categoriaClockModificado){
-						case REFERENCIADA_MODIFICADA:
-						marco_aux->categoriaClockModificado=NOREFERENCIADA_MODIFICADA;
-						break;
-						case REFERENCIADA_NOMODIFICADA:
-						marco_aux->categoriaClockModificado=NOREFERENCIADA_NOMODIFICADA;
-						break;
-					}
-					i++;
-					marco_aux = list_get(self->marcosOcupados,i);
-				}
-	
-			}
-			else //encontre, pongo el bit de referencia en 0 de todos los anteriores al encontrado.
-			{
-				int i=0;
-				t_marco *marco_aux = list_get(self->marcosOcupados,i);
-				while (marco_aux->numero != marco->numero && marco_aux!=NULL) //avanzo hasta el marco encontrado
-				{
-			
-					switch (marco_aux->categoriaClockModificado){
-						case REFERENCIADA_MODIFICADA:
-						marco_aux->categoriaClockModificado=NOREFERENCIADA_MODIFICADA;
-						break;
-						case REFERENCIADA_NOMODIFICADA:
-						marco_aux->categoriaClockModificado=NOREFERENCIADA_NOMODIFICADA;
-						break;
-					}
-					i++;
-					marco_aux = list_get(self->marcosOcupados,i);
-				}
-				encontrado=1; //Encontre un 0,1 y se elige para reemplazo.
-	
-			}
-		}
-		else //encontre (0,0)
-		{
-			encontrado=1;
-		}
-	
-	}
-
-
 
 	//Busco la pagina que corresponde al marco para poder eliminarla del disco (necesito pid, numeroSegmento, numeroPagina)
 	corresponderMarcoAPagina(marco, &pid, &numeroSegmento, &numeroPagina);
 	log_info(self->logMSP, "Se reemplazara el marco %d...", marco->numero);
 	llevarPaginaADisco(marco, pid, numeroSegmento, numeroPagina);
-	
+
 	//Remuevo el marco de la lista de marcos ocupados
 	list_remove_by_condition(self->marcosOcupados, matchMarco);
 	//Agrego el marco en la ultima posicion de la lista de marcos ocupados (para FIFO)
 	list_add(self->marcosOcupados, marco);
-	
+
 	log_info(self->logMSP, "Se sustituyo correctamente la Pagina %d del Segmento %d del PID %d al Marco %d por CLOCK MODIFICADO", numeroPagina, numeroSegmento, pid, marco->numero);
-	
+
 	return marco;
-
 }
-
 
 void borrarMarcoDeMemoria(t_marco *marco){
 	memset(self->memoria + marco->inicio, 0, TAMANIO_PAGINA);
@@ -781,13 +746,13 @@ void borrarMarcoDeMemoria(t_marco *marco){
 
 void seReferencioElMarco(t_marco *marco){
 
-	if(marco->categoriaClockModificado == NOREFERENCIADA_NOMODIFICADA){
+	if(marco->categoriaClockModificado == NOREFERENCIADA_NOMODIFICADA)
 		marco->categoriaClockModificado = REFERENCIADA_NOMODIFICADA;
-	}
 
-	if(marco->categoriaClockModificado == NOREFERENCIADA_MODIFICADA){
+	if(marco->categoriaClockModificado == NOREFERENCIADA_MODIFICADA)
 		marco->categoriaClockModificado = REFERENCIADA_MODIFICADA;
-	}
+
+
 }
 
 
@@ -798,6 +763,7 @@ void seModificoElMarco(t_marco *marco){
 
 	if(marco->categoriaClockModificado == REFERENCIADA_NOMODIFICADA)
 		marco->categoriaClockModificado = REFERENCIADA_MODIFICADA;
+
 }
 
 
