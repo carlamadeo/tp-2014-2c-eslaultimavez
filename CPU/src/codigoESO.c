@@ -1078,7 +1078,7 @@ int XXXX_ESO(t_CPU *self){
 	memcpy(data, self->tcb, sizeof(t_TCB_CPU));
 	int estado = cpuFinalizarProgramaExitoso(self, data);
 
-	log_info(self->loggerCPU, "CPU: TAKE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+	log_info(self->loggerCPU, "CPU: XXXX ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 	free(data);
 	return estado;
 

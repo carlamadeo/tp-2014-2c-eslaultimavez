@@ -19,21 +19,17 @@ char *instrucciones_eso[] = {"LOAD", "GETM", "SETM", "MOVR", "ADDR", "SUBR", "MU
 
 int cpuProcesarTCB(t_CPU *self,t_ServiciosAlPlanificador* serviciosAlPlanificador){
 
-	int estado_ejecucion_instruccion;
-	int estado;
 	int tamanio = sizeof(char) * 4;
 	char *datosDeMSP = malloc(sizeof(tamanio) + 1);
-	int encontrado;
-	int indice;
+	int estado_ejecucion_instruccion, estado, encontrado, indice, indiceAnterior;
 
-	//int terminarLinea;
 	//COPIO LA ESTRUCTURA DEL TCB AL hilo_log
-	hilo_log=(t_hilo_log *)self->tcb;
+	hilo_log = (t_hilo_log *) self->tcb;
 	ejecucion_hilo(hilo_log, self->quantum);
 
 	log_info(self->loggerCPU, "CPU: Comienzo a procesar el TCB de pid: %d", self->tcb->pid);
 
-	while((self->quantum > 0) || (self->tcb->km == 1)){
+	while(((self->quantum > 0) || (self->tcb->km == 1)) && (indiceAnterior != XXXX)){
 		encontrado = 0;
 		indice = 0;
 
@@ -46,7 +42,7 @@ int cpuProcesarTCB(t_CPU *self,t_ServiciosAlPlanificador* serviciosAlPlanificado
 		//estado puede ser SIN_ERRORES o ERROR_POR_SEGMENTATION_FAULT
 		//TODO Ver manejo de errores con el Kernel!!!
 
-		while ((encontrado==0) && (indice <= CANTIDAD_INSTRUCCIONES)){
+		while ((encontrado == 0) && (indice <= CANTIDAD_INSTRUCCIONES)){
 
 			if(strncmp(instrucciones_eso[indice], datosDeMSP, 4) == 0){
 				encontrado = 1;
@@ -55,9 +51,12 @@ int cpuProcesarTCB(t_CPU *self,t_ServiciosAlPlanificador* serviciosAlPlanificado
 			indice++;
 		}
 
-		self->quantum = self->quantum - 1;
-		log_info(self->loggerCPU, "CPU: --------------------QUANTUM = %d------------------", self->quantum);
+		indiceAnterior = indice - 1;
 
+		self->quantum = self->quantum - 1;
+
+		if(indiceAnterior != XXXX)
+			log_info(self->loggerCPU, "CPU: --------------------QUANTUM = %d------------------", self->quantum);
 	}
 
 	return estado_ejecucion_instruccion;
