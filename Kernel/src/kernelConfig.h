@@ -2,7 +2,7 @@
 #ifndef KERNELCONFIG_H_
 #define KERNELCONFIG_H_
 #include "Kernel.h"
-#include <stdbool.h>
+#include "commons/config.h"
 
 bool cargarConfiguracionKernel(char *config_file, t_kernel* self, t_config *configKernel);
 

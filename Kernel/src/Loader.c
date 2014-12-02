@@ -1,19 +1,18 @@
 
 #include "Loader.h"
 #include "kernelMSP.h"
+#include "commons/protocolStructInBigBang.h"
 #include <errno.h>
-#include <string.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 int unPIDGlobal = 1;
 int unTIDGlobal = 1;
 
+t_list *listaDeProgramasDisponibles;
 
 void kernel_comenzar_Loader(t_kernel* self){
 
 	t_socket *socketEscucha, *socketNuevaConexion;
-	listaDeProgramasDisponibles = list_create();
 	fd_set master;   //conjunto maestro de descriptores de fichero
 	fd_set read_fds; //conjunto temporal de descriptores de fichero para select()
 	int fdmax,i;

@@ -6,9 +6,8 @@
  */
 
 #include "kernelConfig.h"
-#include "commons/config.h"
 #include "commons/string.h"
-#include <stdlib.h>
+#include "commons/config.h"
 
 const char configProperties[][25] = {"PUERTO_LOADER", "PUERTO_PLANIFICADOR", "IP_MSP", "PUERTO_MSP", "QUANTUM", "SYSCALLS", "TAMANIOSTACK"};
 
@@ -29,7 +28,7 @@ bool cargarConfiguracionKernel(char *config_file, t_kernel* self, t_config *conf
 	self->puertoPlanificador = config_get_int_value(configKernel, "PUERTO_PLANIFICADOR");
 	self->ipMsp = string_duplicate(config_get_string_value(configKernel, "IP_MSP"));
 	self->puertoMsp = config_get_int_value(configKernel, "PUERTO_MSP");
-	self->quamtum = config_get_int_value(configKernel, "QUANTUM");
+	self->quantum = config_get_int_value(configKernel, "QUANTUM");
 	self->systemCalls  = string_duplicate(config_get_string_value(configKernel, "SYSCALLS"));
 	self->tamanioStack = config_get_int_value(configKernel, "TAMANIOSTACK");
 

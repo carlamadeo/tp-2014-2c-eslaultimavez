@@ -1,7 +1,6 @@
 #include "planificadorMensajesCPU.h"
+#include "commons/protocolStructInBigBang.h"
 #include <errno.h>
-#include <string.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 
@@ -106,20 +105,20 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 		t_TCB_Kernel* unTCBaCPU = malloc(sizeof(t_TCB_Kernel));
 		unTCBaCPU = unTCBCOLA->programaTCB;
 
-		t_QUAMTUM* unQuamtum = malloc(sizeof(t_QUAMTUM));
-		unQuamtum->quamtum = self->quamtum;
+		t_QUANTUM* unQuantum = malloc(sizeof(t_QUANTUM));
+		unQuantum->quantum = self->quantum;
 
-		//se manda un QUAMTUM a CPU
-		socket_sendPaquete(socketNuevoCliente, QUAMTUM,sizeof(t_QUAMTUM), unQuamtum);
-		log_debug(self->loggerPlanificador, "Planificador: envia un quamtum: %d", unQuamtum->quamtum);
+		//se manda un QUANTUM a CPU
+		socket_sendPaquete(socketNuevoCliente, QUANTUM, sizeof(t_QUANTUM), unQuantum);
+		log_debug(self->loggerPlanificador, "Planificador: envia un quantum: %d", unQuantum->quantum);
 
 		//se mande un TCB a CPU
 		socket_sendPaquete(socketNuevoCliente, TCB_NUEVO,sizeof(t_TCB_Kernel), unTCBaCPU);
 		log_debug(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID: %d TID:%d KM:%d", unTCBaCPU->pid,unTCBaCPU->tid,unTCBaCPU->km );
 
 		printTCBKernel(unTCBaCPU);
-		free(unQuamtum);
-		free(unTCBaCPU);
+		free(unQuantum);
+		//free(unTCBaCPU);
 	}
 
 	socket_freePaquete(paquete);

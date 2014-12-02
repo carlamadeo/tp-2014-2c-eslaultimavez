@@ -12,11 +12,11 @@
 #include "Loader.h"
 #include "Planificador.h"
 #include "boot.h"
-#include "commons/config.h"
 #include "kernelMSP.h"
-#include "kernelConfig.h"
-#include <stdlib.h>
+#include "commons/config.h"
 #include <pthread.h>
+
+t_list *listaDeProgramasDisponibles;
 
 int main(int argc, char** argv) {
 
@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
 	cola_block = list_create();
 	listaDeCPUExec = list_create();
 	listaDeCPULibres = list_create();
-	listaDeProgramasDisponibles= list_create();
+	listaDeProgramasDisponibles = list_create();
 
 
 	//se inician los semaforos

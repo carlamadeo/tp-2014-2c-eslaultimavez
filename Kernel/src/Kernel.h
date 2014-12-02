@@ -2,12 +2,9 @@
 #define KERNEL_H_
 
 #include <semaphore.h>
-#include <arpa/inet.h>
 #include <commons/collections/list.h>
 #include "commons/log.h"
-#include "commons/config.h"
 #include "commons/socketInBigBang.h"
-#include "commons/protocolStructInBigBang.h"
 
 /*----------------------Estructuras del Kernel----------------------------------------*/
 #define MAXDATASIZE 1024
@@ -27,8 +24,8 @@ typedef struct {
 } t_TCB_Kernel;
 
 typedef struct {
-	int quamtum;
-} t_QUAMTUM;
+	int quantum;
+} t_QUANTUM;
 
 
 typedef struct {
@@ -42,7 +39,7 @@ typedef struct {
 	int puertoPlanificador;
 	char* ipMsp;
 	int puertoMsp;
-	int quamtum;
+	int quantum;
 	char* systemCalls;
 	int tamanioStack;
 	t_TCB_Kernel* tcbKernel;
@@ -82,9 +79,6 @@ t_list* listaDeCPULibres;
 t_list* listaCpu;
 t_list* listaSystemCall;
 t_list* listaDeEsperaRecurso;
-
-//Guardan solo TCB para el loader
-t_list* listaDeProgramasDisponibles;
 
 
 // Semaforos

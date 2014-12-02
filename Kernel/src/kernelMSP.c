@@ -1,15 +1,5 @@
-/*
- * kernelMSP.c
- *
- *  Created on: 18/11/2014
- *      Author: utnso
- */
-
-#include "Kernel.h"
 #include "kernelMSP.h"
-#include "kernelConfig.h"
 #include "commons/protocolStructInBigBang.h"
-#include <stdlib.h>
 
 void hacer_conexion_con_msp(t_kernel *self) {
 
