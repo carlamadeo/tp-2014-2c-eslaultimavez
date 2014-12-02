@@ -56,7 +56,7 @@ void crearTCBKERNEL(t_kernel* self){
 
 int obtenerTamanioArchivo(t_kernel *self, FILE *archivoBesoSystemCall){
 
-	archivoBesoSystemCall = fopen("../Resources/besoSystemCall.bc", "r");
+	archivoBesoSystemCall = fopen(self->systemCalls, "r");
 
 	if(archivoBesoSystemCall == 0){
 		log_error(self->loggerKernel, "Kernel: Error al abrir el archivo besoSystemCall");
@@ -72,7 +72,7 @@ int obtenerTamanioArchivo(t_kernel *self, FILE *archivoBesoSystemCall){
 
 char *obtenerCodigoArchivo(t_kernel *self, FILE *archivoBesoSystemCall, int tamanio){
 
-	archivoBesoSystemCall = fopen("../Resources/besoSystemCall.bc", "r");
+	archivoBesoSystemCall = fopen(self->systemCalls, "r");
 
 	if(archivoBesoSystemCall == 0){
 		log_error(self->loggerKernel, "Kernel: Error al abrir el archivo besoSystemCall");
