@@ -19,7 +19,7 @@ void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente
 	log_info(self->loggerPlanificador, "Planificador: envia CPU_SEGUI_EJECUTANDO");
 }
 
-void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_TCB_Kernel* tcb){
+void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self,t_socket *socketNuevaConexionCPU, t_TCB_Kernel* tcb){
 
 	//1) Primer paso, se lo pone a final de READY
 	t_programaEnKernel *unProgramaCPU = obtenerProgramaDeReady(tcb);
@@ -29,7 +29,6 @@ void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_TCB_Kernel* tcb){
 
 		//2) Segundo paso, se verifica que la cola de READY no esta vacia
 
-		printf("Que tiene lista: %d", list_size(cola_ready));
 		if(list_size(cola_ready) > 0){
 			//log_info(self->loggerPlanificador, "test2");
 
@@ -41,11 +40,11 @@ void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_TCB_Kernel* tcb){
 			unQuamtum->quantum = self->quantum;
 
 			//se manda un QUANTUM a CPU
-			socket_sendPaquete(self->socketCPU, QUANTUM,sizeof(t_QUANTUM), unQuamtum);
+			socket_sendPaquete(socketNuevaConexionCPU, QUANTUM, sizeof(t_QUANTUM), unQuamtum);
 			log_info(self->loggerPlanificador, "Planificador: envia un quantum: %d", unQuamtum->quantum);
 
 			//se mande un TCB a CPU
-			socket_sendPaquete(self->socketCPU, TCB_NUEVO,sizeof(t_TCB_Kernel), tcbReady);
+			socket_sendPaquete(socketNuevaConexionCPU, TCB_NUEVO,sizeof(t_TCB_Kernel), tcbReady);
 			log_info(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID: %d TID:%d KM:%d", tcbReady->pid,tcbReady->tid,tcbReady->km );
 
 		}

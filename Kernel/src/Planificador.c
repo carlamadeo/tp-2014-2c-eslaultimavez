@@ -61,7 +61,7 @@ void kernel_comenzar_Planificador(t_kernel* self){
 						log_debug(self->loggerPlanificador, "Planificador:Mensaje del Programa descriptor= %d.", i);
 						t_cpu* cpuCliente = obtenerCPUSegunDescriptor(self,i);
 						log_debug(self->loggerPlanificador, "Planificador: Mensaje del CPU: %d", cpuCliente->socket->descriptor);
-						atenderCPU(self,cpuCliente, &master);
+						atenderCPU(self,socketNuevaConexionCPU,cpuCliente, &master);
 					}
 				}//fin del if FD_ISSET
 			}// fin del for de las i
@@ -71,7 +71,7 @@ void kernel_comenzar_Planificador(t_kernel* self){
 }
 
 
-void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set* master, int* fdmax){
+void atenderNuevaConexionCPU(t_kernel* self, t_socket* socketNuevoCliente, fd_set* master, int* fdmax){
 
 	t_socket_paquete *paquete = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 	if ((socket_recvPaquete(socketNuevoCliente, paquete)) < 0) {
@@ -125,7 +125,7 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 }
 
 
-void atenderCPU(t_kernel* self,t_cpu* cpu, fd_set* master){
+void atenderCPU(t_kernel* self,t_socket *socketNuevaConexionCPU, t_cpu* cpu, fd_set* master){
 
 	log_info(self->loggerPlanificador, "Planificador: LISTO PARA ATENDER CPUs" );
 
@@ -145,7 +145,7 @@ void atenderCPU(t_kernel* self,t_cpu* cpu, fd_set* master){
 			if(paqueteTCB->header.type == TCB_NUEVO){
 				unTCBNuevo = (t_TCB_Kernel*) paqueteTCB->data;
 				printTCBKernel(unTCBNuevo);
-				ejecutar_UN_CAMBIO_DE_CONTEXTO(self,unTCBNuevo);
+				ejecutar_UN_CAMBIO_DE_CONTEXTO(self, socketNuevaConexionCPU, unTCBNuevo);
 			}else
 				log_error(self->loggerPlanificador, "CPU: error al recibir de planificador TCB_NUEVO");
 		}
