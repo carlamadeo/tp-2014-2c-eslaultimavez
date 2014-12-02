@@ -14,6 +14,7 @@
 #include "commons/protocolStructInBigBang.h"
 #include "commons/log.h"
 #include "mspConfig.h"
+#include "mspConsola.h"
 #include <stdlib.h>
 #include <pthread.h>
 #include <string.h>
@@ -43,38 +44,44 @@ int main(int argc, char *argv[]){
 	}
 
 	//IMPORTANTE CONSOLAAAAAAAAA!!!!
-	//	int mspConsolathreadNum = pthread_create(&mspConsolaHilo, NULL, &mspLanzarhiloConsola, NULL);
-	//	if(mspConsolathreadNum) {
-	//		log_error(self->logMSP, "Error - pthread_create() return code: %d\n", mspConsolathreadNum);
-	//		exit(EXIT_FAILURE);
-	//	}
+//	int mspConsolathreadNum = pthread_create(&mspConsolaHilo, NULL, &mspLanzarhiloConsola, NULL);
+//	if(mspConsolathreadNum) {
+//		log_error(self->logMSP, "Error - pthread_create() return code: %d\n", mspConsolathreadNum);
+//		exit(EXIT_FAILURE);
+//	}
 
 	crearHilosConexiones();
 
 	pthread_rwlock_init(&rw_memoria, NULL);
 
-	log_info(self->logMSP, "Finalizando la consola de la MSP...");
 	//pthread_join(mspConsolathreadNum, NULL);
+	log_info(self->logMSP, "Finalizando la MSP...");
+
 	destruirConfiguracionMSP();
+
 	pthread_rwlock_destroy(&rw_memoria);
 
-	log_destroy(self->logMSP);
 	return EXIT_SUCCESS;
 
 }
 
-void crearHilosConexiones(){
+
+int crearHilosConexiones(){
 
 	log_info(self->logMSP, "Creando un hilo escucha...");
 	sockets = malloc(sizeof(t_sockets));
 
 	sockets->socketMSP = socket_createServer(self->puerto);
 
-	if (sockets->socketMSP == NULL)
-		log_error(self->logMSP, "MSP: Error al crear socket para el kernel.");
+	if (sockets->socketMSP == NULL){
+		log_error(self->logMSP, "MSP: Error al crear socket para el Kernel.");
+		return EXIT_SUCCESS;
+	}
 
-	if(!socket_listen(sockets->socketMSP))
-		log_error(self->logMSP, "MSP: Error al poner a escuchar al Loader: %s", strerror(errno));
+	if(!socket_listen(sockets->socketMSP)){
+		log_error(self->logMSP, "MSP: Error al poner a escuchar a la MSP: %s", strerror(errno));
+		return EXIT_SUCCESS;
+	}
 
 	else
 		log_info(self->logMSP, "MSP: Escuchando conexiones entrantes en el puerto: %d", self->puerto);
@@ -88,7 +95,7 @@ void crearHilosConexiones(){
 		int mspHiloKernelInt = pthread_create(&mspHiloKernel, NULL, (void *)mspLanzarHiloKernel, NULL);
 		if(mspHiloKernelInt){
 			log_error(self->logMSP, "Error - pthread_create() return code: %d\n", mspHiloKernelInt);
-			exit(EXIT_FAILURE);
+			return EXIT_SUCCESS;
 		}
 	}
 
@@ -105,15 +112,15 @@ void crearHilosConexiones(){
 			int mspHiloCPUInt = pthread_create(&mspHiloCpus[contadorCpu], NULL, (void *)mspLanzarHiloCPU, socketClienteCPU);
 			if(mspHiloCPUInt){
 				log_error(self->logMSP, "Error - pthread_create() return code: %d\n", mspHiloCPUInt);
-				exit(EXIT_FAILURE);
+				return EXIT_SUCCESS;
 			}
 
+			//TODO ELIMINAR PARA LA ENTREGA
 			log_debug(self->logMSP, "MSP: cantidad de CPUs conectadas: %d", contadorCpu);
 		}
 		contadorCpu++;
-	}//fin del while
+	}
 
+	return EXIT_SUCCESS;
 	free(sockets);
 }
-
-

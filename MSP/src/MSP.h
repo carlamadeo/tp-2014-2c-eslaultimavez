@@ -32,7 +32,7 @@ pthread_t *mspConsolaHilo;
 
 void mspLanzarhiloMSPCONSOLA();
 void mspLanzarConexiones();
-void crearHilosConexiones();
+int crearHilosConexiones();
 
 
 #endif /* MSP_H_ */

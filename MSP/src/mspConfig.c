@@ -58,6 +58,8 @@ bool cargarConfiguracionMSP(char *config) {
 
 	cargarMarcos(self->marcosLibres);
 
+	config_destroy(MSPConfig);
+
 	return true;
 }
 
@@ -102,5 +104,4 @@ void destruirConfiguracionMSP(){
 	list_destroy_and_destroy_elements(self->marcosOcupados, free);
 
 	free(self);
-	config_destroy(MSPConfig);
 }
