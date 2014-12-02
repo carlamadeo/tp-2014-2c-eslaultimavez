@@ -131,10 +131,11 @@ void printTCBCPU(t_TCB_CPU* unTCB){
 	printf("Base Stack:   %0.8p \n",unTCB->base_stack);
 	printf("Cursor Stack: %0.8p \n",unTCB->cursor_stack);
 
-	printf("Regristros 0: %d\n", unTCB->registro_de_programacion[0]);
-	printf("Regristros 1: %d\n", unTCB->registro_de_programacion[1]);
-	printf("Regristros 2: %d\n", unTCB->registro_de_programacion[2]);
-	printf("Regristros 3: %d\n", unTCB->registro_de_programacion[3]);
+	printf("Regristros A: %d\n", unTCB->registro_de_programacion[0]);
+	printf("Regristros B: %d\n", unTCB->registro_de_programacion[1]);
+	printf("Regristros C: %d\n", unTCB->registro_de_programacion[2]);
+	printf("Regristros D: %d\n", unTCB->registro_de_programacion[3]);
+	printf("Regristros E: %d\n", unTCB->registro_de_programacion[4]);
 
 }
 

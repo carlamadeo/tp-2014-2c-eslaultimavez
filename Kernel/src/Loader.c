@@ -235,6 +235,7 @@ t_TCB_Kernel* loaderCrearTCB(t_kernel* self, char *programaBeso, t_socket* socke
 	unTCB->registro_de_programacion[1]=0;
 	unTCB->registro_de_programacion[2]=0;
 	unTCB->registro_de_programacion[3]=0;
+	unTCB->registro_de_programacion[4]=0;
 	return unTCB;
 }
 

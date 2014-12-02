@@ -7,7 +7,7 @@ void agregarEnListaDeCPU(int id,  t_socket* socketCPU){
 	unaCpu->id = id;
 	unaCpu->socket = socketCPU;
 	list_add(listaDeCPULibres,unaCpu);
-	free(unaCpu);
+	//free(unaCpu);
 }
 
 void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente){
@@ -480,9 +480,10 @@ void printTCBKernel(t_TCB_Kernel* unTCB){
 	printf("Base Stack:   %0.8p \n",unTCB->base_stack);
 	printf("Cursor Stack: %0.8p \n",unTCB->cursor_stack);
 
-	printf("Regristros 0: %d\n", unTCB->registro_de_programacion[0]);
-	printf("Regristros 1: %d\n", unTCB->registro_de_programacion[1]);
-	printf("Regristros 2: %d\n", unTCB->registro_de_programacion[2]);
-	printf("Regristros 3: %d\n", unTCB->registro_de_programacion[3]);
+	printf("Regristros A: %d\n", unTCB->registro_de_programacion[0]);
+	printf("Regristros B: %d\n", unTCB->registro_de_programacion[1]);
+	printf("Regristros C: %d\n", unTCB->registro_de_programacion[2]);
+	printf("Regristros D: %d\n", unTCB->registro_de_programacion[3]);
+	printf("Regristros E: %d\n", unTCB->registro_de_programacion[4]);
 
 }

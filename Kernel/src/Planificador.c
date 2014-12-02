@@ -198,6 +198,8 @@ t_cpu* obtenerCPUSegunDescriptor(t_kernel* self,int descriptor){
 		sem_post(&mutex_cpuLibre);
 	}
 	log_info(self->loggerPlanificador,"Planificador: Se encontro CPU ID: %d",cpuBuscado->id);
+
+	cpuBuscado->socket = descriptor;
 	return cpuBuscado;
 }
 
