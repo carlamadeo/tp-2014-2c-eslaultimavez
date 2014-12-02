@@ -61,7 +61,7 @@ void kernel_comenzar_Planificador(t_kernel* self){
 					}else{ //sino no es una nueva conexion busca un programa en la lista
 						log_debug(self->loggerPlanificador, "Planificador:Mensaje del Programa descriptor= %d.", i);
 						t_cpu* cpuCliente = obtenerCPUSegunDescriptor(self,i);
-						log_debug(self->loggerPlanificador, "Planificador: Mensaje del CPU.", cpuCliente->id);
+						log_debug(self->loggerPlanificador, "Planificador: Mensaje del CPU: %d", cpuCliente->socket->descriptor);
 						atenderCPU(self,cpuCliente, &master);
 					}
 				}//fin del if FD_ISSET
@@ -197,9 +197,9 @@ t_cpu* obtenerCPUSegunDescriptor(t_kernel* self,int descriptor){
 		cpuBuscado = list_find(listaDeCPULibres, (void*)_esCPUDescriptor);
 		sem_post(&mutex_cpuLibre);
 	}
-	log_info(self->loggerPlanificador,"Planificador: Se encontro CPU ID: %d",cpuBuscado->id);
+	log_info(self->loggerPlanificador,"Planificador: Se encontro CPU con descriptor: %d",cpuBuscado->socket->descriptor);
 
-	cpuBuscado->socket = descriptor;
+	cpuBuscado->socket->descriptor = descriptor;
 	return cpuBuscado;
 }
 
