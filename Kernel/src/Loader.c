@@ -197,7 +197,7 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 		}
 
 		//free(unPrograma);
-		free(programaBeso);
+		//free(programaBeso);
 	}//fin de else
 
 	socket_freePaquete(paquete);
