@@ -196,7 +196,7 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 			*fdmax = socketNuevoCliente->descriptor; /*actualizar el máximo*/
 		}
 
-		free(unPrograma);
+		//free(unPrograma);
 		free(programaBeso);
 	}//fin de else
 

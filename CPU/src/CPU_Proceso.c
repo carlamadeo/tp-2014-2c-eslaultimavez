@@ -54,7 +54,6 @@ int main(int argc, char** argv) {
 
 		case SIN_ERRORES:
 			cpuEnviarPaqueteAPlanificador(self, CAMBIO_DE_CONTEXTO);
-
 			t_TCB_CPU* tcbProcesado = malloc(sizeof(t_TCB_CPU));
 			tcbProcesado = self->tcb;
 
@@ -62,7 +61,6 @@ int main(int argc, char** argv) {
 			printTCBCPU(tcbProcesado);
 			socket_sendPaquete(self->socketPlanificador->socket, CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU), tcbProcesado);
 			log_info(self->loggerCPU, "CPU: envia un CAMBIO_DE_CONTEXTO");
-
 			free(tcbProcesado);
 			break;
 		case INTERRUPCION:
@@ -139,3 +137,21 @@ void printTCBCPU(t_TCB_CPU* unTCB){
 	printf("Regristros 3: %d\n", unTCB->registro_de_programacion[3]);
 
 }
+
+t_registros_cpu* cpuInicializarRegistrosCPU(t_CPU* self, t_registros_cpu* registros){
+
+	registros->I = (uint32_t)self->tcb->pid;
+	registros->K = (uint32_t)self->tcb->km;
+	registros->M = self->tcb->base_segmento_codigo;
+	registros->P = self->tcb->puntero_instruccion;
+	registros->S = self->tcb->cursor_stack;
+	registros->X = self->tcb->base_stack;
+
+	int i;
+	for(i=0;i<5;i++){
+		registros->registros_programacion[i] = self->tcb->registro_de_programacion[i];
+	}
+
+	return registros;
+}
+

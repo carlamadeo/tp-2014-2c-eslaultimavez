@@ -38,13 +38,14 @@ int LOAD_ESO(t_CPU *self){
 		//printf("test2:%d\n", self->tcb->puntero_instruccion);
 		list_add(parametros, &registro);
 		list_add(parametros, &numero);
-		//ejecucion_instruccion("LOAD", parametros);
+		ejecucion_instruccion("LOAD", parametros);
 
 		self->tcb->registro_de_programacion[reg] = numero;
 
 		//printf("valor en self->tcb->puntero_instruccion: %d", self->tcb->puntero_instruccion);
 		registros_cpu->P=self->tcb->puntero_instruccion;
 		registros_cpu->registros_programacion[reg]=self->tcb->registro_de_programacion[reg];
+		cpuInicializarRegistrosCPU(self, registros_cpu);
 		cambio_registros(registros_cpu);
 
 		log_info(self->loggerCPU, "CPU: LOAD ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
@@ -99,6 +100,7 @@ int GETM_ESO(t_CPU *self){
 			self->tcb->registro_de_programacion[regA]=(int32_t)lecturaMSP;
 			registros_cpu->P=self->tcb->puntero_instruccion;
 			registros_cpu->registros_programacion[regA]=self->tcb->registro_de_programacion[regA];
+			cpuInicializarRegistrosCPU(self, registros_cpu);
 			cambio_registros(registros_cpu);
 
 			estado_bloque = estado_lectura;
@@ -119,6 +121,7 @@ int GETM_ESO(t_CPU *self){
 
 
 int SETM_ESO(t_CPU *self){
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 
 	int tamanio = 6;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
@@ -131,7 +134,8 @@ int SETM_ESO(t_CPU *self){
 	if (estado_lectura == SIN_ERRORES){
 
 		self->tcb->puntero_instruccion += tamanio;
-
+		cpuInicializarRegistrosCPU(self, registros_cpu);
+		cambio_registros(registros_cpu);
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion SETM");
 
 		memcpy(&(numero), lecturaDeMSP, sizeof(int));
@@ -147,7 +151,7 @@ int SETM_ESO(t_CPU *self){
 
 				list_add(parametros, &registroA);
 				list_add(parametros, &registroB);
-				list_add(parametros, (void *)numero);
+				list_add(parametros, &numero);
 				ejecucion_instruccion("SETM", parametros);
 
 				char* byte_a_escribir = malloc(sizeof(int32_t));
@@ -168,7 +172,7 @@ int SETM_ESO(t_CPU *self){
 		}
 
 	}
-
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 }
@@ -177,6 +181,7 @@ int SETM_ESO(t_CPU *self){
 int MOVR_ESO(t_CPU *self){
 
 	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
@@ -206,8 +211,7 @@ int MOVR_ESO(t_CPU *self){
 			self->tcb->registro_de_programacion[regA] = self->tcb->registro_de_programacion[regB];
 
 			log_info(self->loggerCPU, "CPU: MOVR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			registros_cpu->P=self->tcb->puntero_instruccion;
-			registros_cpu->registros_programacion[regA]=self->tcb->registro_de_programacion[regA];
+			cpuInicializarRegistrosCPU(self, registros_cpu);
 			cambio_registros(registros_cpu);
 		}
 
@@ -217,6 +221,7 @@ int MOVR_ESO(t_CPU *self){
 		}
 	}
 
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 }
@@ -225,6 +230,7 @@ int MOVR_ESO(t_CPU *self){
 int ADDR_ESO(t_CPU *self){
 
 	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
@@ -253,8 +259,7 @@ int ADDR_ESO(t_CPU *self){
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] + self->tcb->registro_de_programacion[regB];
 
 			log_info(self->loggerCPU, "CPU: ADDR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			registros_cpu->P=self->tcb->puntero_instruccion;
-			registros_cpu->registros_programacion[0]=self->tcb->registro_de_programacion[0];
+			cpuInicializarRegistrosCPU(self, registros_cpu);
 			cambio_registros(registros_cpu);
 		}
 
@@ -264,7 +269,7 @@ int ADDR_ESO(t_CPU *self){
 		}
 
 	}
-
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 }
@@ -273,6 +278,7 @@ int ADDR_ESO(t_CPU *self){
 int SUBR_ESO(t_CPU *self){
 
 	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
@@ -302,8 +308,7 @@ int SUBR_ESO(t_CPU *self){
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] - self->tcb->registro_de_programacion[regB];
 
 			log_info(self->loggerCPU, "CPU: SUBR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			registros_cpu->P=self->tcb->puntero_instruccion;
-			registros_cpu->registros_programacion[0]=self->tcb->registro_de_programacion[0];
+			cpuInicializarRegistrosCPU(self, registros_cpu);
 			cambio_registros(registros_cpu);
 		}
 
@@ -313,7 +318,7 @@ int SUBR_ESO(t_CPU *self){
 		}
 
 	}
-
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 
@@ -322,6 +327,7 @@ int SUBR_ESO(t_CPU *self){
 int MULR_ESO(t_CPU *self){
 
 	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
@@ -351,8 +357,7 @@ int MULR_ESO(t_CPU *self){
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] * self->tcb->registro_de_programacion[regB];
 
 			log_info(self->loggerCPU, "CPU: MULR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			registros_cpu->P=self->tcb->puntero_instruccion;
-			registros_cpu->registros_programacion[0]=self->tcb->registro_de_programacion[0];
+			cpuInicializarRegistrosCPU(self, registros_cpu);
 			cambio_registros(registros_cpu);
 		}
 
@@ -362,7 +367,7 @@ int MULR_ESO(t_CPU *self){
 		}
 
 	}
-
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 
@@ -372,6 +377,7 @@ int MULR_ESO(t_CPU *self){
 int MODR_ESO(t_CPU *self){
 
 	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
@@ -401,8 +407,7 @@ int MODR_ESO(t_CPU *self){
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] % self->tcb->registro_de_programacion[regB];
 
 			log_info(self->loggerCPU, "CPU: MODR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			registros_cpu->P=self->tcb->puntero_instruccion;
-			registros_cpu->registros_programacion[0]=self->tcb->registro_de_programacion[0];
+			cpuInicializarRegistrosCPU(self, registros_cpu);
 			cambio_registros(registros_cpu);
 		}
 
@@ -412,7 +417,7 @@ int MODR_ESO(t_CPU *self){
 		}
 
 	}
-
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 
@@ -422,6 +427,7 @@ int MODR_ESO(t_CPU *self){
 int DIVR_ESO(t_CPU *self){
 
 	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
@@ -453,12 +459,9 @@ int DIVR_ESO(t_CPU *self){
 			if (self->tcb->registro_de_programacion[regB] != 0){
 				self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] / self->tcb->registro_de_programacion[regB];
 				log_info(self->loggerCPU, "CPU: DIVR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-				registros_cpu->P=self->tcb->puntero_instruccion;
-				registros_cpu->registros_programacion[0]=self->tcb->registro_de_programacion[0];
+				cpuInicializarRegistrosCPU(self, registros_cpu);
 				cambio_registros(registros_cpu);
-			}
-
-			else{
+			}else{
 				log_error(self->loggerCPU, "CPU: error de intento de division por cero");
 				estado_bloque = ERROR_POR_EJECUCION_ILICITA; //TODO No se que poner, no podemos poner un error por cada cosa, ver como solucionarlo!!
 			}
@@ -470,7 +473,7 @@ int DIVR_ESO(t_CPU *self){
 		}
 
 	}
-
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 
@@ -506,8 +509,7 @@ int INCR_ESO(t_CPU *self){
 			self->tcb->registro_de_programacion[reg]++;
 
 			log_info(self->loggerCPU, "CPU: INCR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			registros_cpu->P=self->tcb->puntero_instruccion;
-			registros_cpu->registros_programacion[reg]=self->tcb->registro_de_programacion[reg];
+			cpuInicializarRegistrosCPU(self, registros_cpu);
 			cambio_registros(registros_cpu);
 		}
 
@@ -517,7 +519,7 @@ int INCR_ESO(t_CPU *self){
 		}
 
 	}
-
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 
@@ -553,8 +555,7 @@ int DECR_ESO(t_CPU *self){
 			self->tcb->registro_de_programacion[reg]--;
 
 			log_info(self->loggerCPU, "CPU: DECR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			registros_cpu->P=self->tcb->puntero_instruccion;
-			registros_cpu->registros_programacion[reg]=self->tcb->registro_de_programacion[reg];
+			cpuInicializarRegistrosCPU(self, registros_cpu);
 			cambio_registros(registros_cpu);
 		}
 
@@ -564,7 +565,7 @@ int DECR_ESO(t_CPU *self){
 		}
 
 	}
-
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 
@@ -574,6 +575,7 @@ int DECR_ESO(t_CPU *self){
 int COMP_ESO(t_CPU *self){
 
 	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
@@ -607,8 +609,7 @@ int COMP_ESO(t_CPU *self){
 				self->tcb->registro_de_programacion[0] = 0;
 
 			log_info(self->loggerCPU, "CPU: COMPR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			registros_cpu->P=self->tcb->puntero_instruccion;
-			registros_cpu->registros_programacion[0]=self->tcb->registro_de_programacion[0];
+			cpuInicializarRegistrosCPU(self, registros_cpu);
 			cambio_registros(registros_cpu);
 		}
 
@@ -618,7 +619,7 @@ int COMP_ESO(t_CPU *self){
 		}
 
 	}
-
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 
@@ -661,8 +662,7 @@ int CGEQ_ESO(t_CPU *self){
 				self->tcb->registro_de_programacion[0] = 0;
 
 			log_info(self->loggerCPU, "CPU: CGEQ ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			registros_cpu->P=self->tcb->puntero_instruccion;
-			registros_cpu->registros_programacion[0]=self->tcb->registro_de_programacion[0];
+			cpuInicializarRegistrosCPU(self, registros_cpu);
 			cambio_registros(registros_cpu);
 		}
 
@@ -672,7 +672,7 @@ int CGEQ_ESO(t_CPU *self){
 		}
 
 	}
-
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 
@@ -716,8 +716,7 @@ int CLEQ_ESO(t_CPU *self){
 				self->tcb->registro_de_programacion[0] = 0;
 
 			log_info(self->loggerCPU, "CPU: CLEQ ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			registros_cpu->P=self->tcb->puntero_instruccion;
-			registros_cpu->registros_programacion[0]=self->tcb->registro_de_programacion[0];
+			cpuInicializarRegistrosCPU(self, registros_cpu);
 			cambio_registros(registros_cpu);
 		}
 
@@ -727,7 +726,7 @@ int CLEQ_ESO(t_CPU *self){
 		}
 
 	}
-
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 
@@ -763,8 +762,7 @@ int GOTO_ESO(t_CPU *self){
 			if((self->tcb->base_segmento_codigo + self->tcb->registro_de_programacion[reg]) <= self->tcb->tamanio_segmento_codigo){
 				self->tcb->puntero_instruccion = self->tcb->registro_de_programacion[reg];
 				log_info(self->loggerCPU, "CPU: GOTO ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-
-				registros_cpu->P=self->tcb->puntero_instruccion;
+				cpuInicializarRegistrosCPU(self, registros_cpu);
 				cambio_registros(registros_cpu);
 			}
 
@@ -778,7 +776,7 @@ int GOTO_ESO(t_CPU *self){
 		}
 
 	}
-
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 
@@ -810,7 +808,7 @@ int JMPZ_ESO(t_CPU *self){
 			if((self->tcb->base_segmento_codigo + direccion) <= self->tcb->tamanio_segmento_codigo){
 				self->tcb->puntero_instruccion = direccion;
 				log_info(self->loggerCPU, "CPU: JMPZ ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-				registros_cpu->P=self->tcb->puntero_instruccion;
+				cpuInicializarRegistrosCPU(self, registros_cpu);
 				cambio_registros(registros_cpu);
 			}
 
@@ -820,7 +818,7 @@ int JMPZ_ESO(t_CPU *self){
 		}
 
 	}
-
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 
@@ -853,7 +851,7 @@ int JPNZ_ESO(t_CPU *self){
 			if((self->tcb->base_segmento_codigo + direccion) <= self->tcb->tamanio_segmento_codigo){
 				self->tcb->puntero_instruccion = direccion;
 				log_info(self->loggerCPU, "CPU: JPNZ ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-				registros_cpu->P=self->tcb->puntero_instruccion;
+				cpuInicializarRegistrosCPU(self, registros_cpu);
 				cambio_registros(registros_cpu);
 			}
 
@@ -863,14 +861,14 @@ int JPNZ_ESO(t_CPU *self){
 		}
 
 	}
-
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 
 }
 
 
-int INTE_ESO(t_CPU *self){
+int INTE_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
 
 	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 4;
@@ -890,7 +888,7 @@ int INTE_ESO(t_CPU *self){
 		list_add(parametros, &direccion);
 		ejecucion_instruccion("INTE", parametros);
 
-		registros_cpu->P=self->tcb->puntero_instruccion;
+		cpuInicializarRegistrosCPU(self, registros_cpu);
 		cambio_registros(registros_cpu);
 
 		cpuEnviaInterrupcion(self, direccion);
@@ -898,7 +896,7 @@ int INTE_ESO(t_CPU *self){
 		log_info(self->loggerCPU, "CPU: INTE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
 	}
-
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 
@@ -944,13 +942,12 @@ int SHIF_ESO(t_CPU *self){
 				self->tcb->registro_de_programacion[reg]<<=numero;
 
 			log_info(self->loggerCPU, "CPU: SHIF ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			registros_cpu->P=self->tcb->puntero_instruccion;
-			registros_cpu->registros_programacion[reg]=self->tcb->registro_de_programacion[reg];
+			cpuInicializarRegistrosCPU(self, registros_cpu);
 			cambio_registros(registros_cpu);
 		}
 
 	}
-
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 
@@ -1004,14 +1001,13 @@ int PUSH_ESO(t_CPU *self){
 				if (estado_bloque == SIN_ERRORES){
 					self->tcb->cursor_stack += numero;
 					log_info(self->loggerCPU, "CPU: PUSH ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-					registros_cpu->P=self->tcb->puntero_instruccion;
-					registros_cpu->S=self->tcb->cursor_stack;
+					cpuInicializarRegistrosCPU(self, registros_cpu);
 					cambio_registros(registros_cpu);
 				}
 			}
 		}
 	}
-
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 }
@@ -1057,8 +1053,7 @@ int TAKE_ESO(t_CPU *self){
 					self->tcb->registro_de_programacion[reg] = (int32_t)lecturaDeMSP2;
 					self->tcb->cursor_stack -= numero;
 					log_info(self->loggerCPU, "CPU: TAKE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-					registros_cpu->registros_programacion[reg]=self->tcb->registro_de_programacion[reg];
-					registros_cpu->P=self->tcb->puntero_instruccion;
+					cpuInicializarRegistrosCPU(self, registros_cpu);
 					cambio_registros(registros_cpu);
 				}
 
@@ -1069,7 +1064,7 @@ int TAKE_ESO(t_CPU *self){
 		else
 			log_error(self->loggerCPU, "CPU: Error registro de programacion no encontrado %d", self->tcb->pid);
 	}
-
+	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
 }
@@ -1099,28 +1094,35 @@ int MALC_ESO(t_CPU *self){
 	switch(estado_malc){
 	case ERROR_POR_TAMANIO_EXCEDIDO:
 		log_info(self->loggerCPU, "CPU: MALC ERROR_POR_TAMANIO_EXCEDIDO  para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		free(registros_cpu);
 		return ERROR_POR_TAMANIO_EXCEDIDO;
 	case ERROR_POR_MEMORIA_LLENA:
 		log_info(self->loggerCPU, "CPU: MALC ERROR_POR_MEMORIA_LLENA  para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		free(registros_cpu);
 		return ERROR_POR_MEMORIA_LLENA;
 	case ERROR_POR_NUMERO_NEGATIVO:
 		log_info(self->loggerCPU, "CPU: MALC ERROR_POR_MEMORIA_LLENA  para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		free(registros_cpu);
 		return ERROR_POR_NUMERO_NEGATIVO;
 	case ERROR_POR_SEGMENTO_INVALIDO:
 		log_info(self->loggerCPU, "CPU: MALC ERROR_POR_MEMORIA_LLENA  para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		free(registros_cpu);
 		return ERROR_POR_SEGMENTO_INVALIDO;
 	case ERROR_POR_SEGMENTATION_FAULT:
 		log_info(self->loggerCPU, "CPU: MALC ERROR_POR_MEMORIA_LLENA  para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		free(registros_cpu);
 		return ERROR_POR_SEGMENTATION_FAULT;
 	default:
 		self->tcb->registro_de_programacion[0] = estado_malc;
 		log_info(self->loggerCPU, "CPU: MALC ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		registros_cpu->registros_programacion[0]=self->tcb->registro_de_programacion[0];
+		cpuInicializarRegistrosCPU(self, registros_cpu);
 		cambio_registros(registros_cpu);
+		free(registros_cpu);
 		return SIN_ERRORES;
 	}
 }
 int FREE_ESO(t_CPU *self){
+
 	int estado_free;
 	int direccionVirtual = self->tcb->registro_de_programacion[0];
 
@@ -1134,46 +1136,48 @@ int FREE_ESO(t_CPU *self){
 	return estado_free;
 }
 
-int INNN_ESO(t_CPU *self){
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
-	int estado_innn;
-	t_entrada_estandar* entrada_estandar = malloc(sizeof(t_entrada_estandar));
-	entrada_estandar->pid = self->tcb->pid;
-	entrada_estandar->tamanio = sizeof(int);
-	entrada_estandar->tipo = 1;
+int INNN_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador ){
 
-	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR,sizeof(t_entrada_estandar), entrada_estandar)<=0){
+	//1) declara la estructura para mostrar los registros de cpu: logs de la catedra.
+	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	//2) declara la variable de control que devuelve el estado del bloque funcion.
+	int estado_innn;
+	//3) carga los datos para enviar al planificador el servicio requerido.
+	serviciosAlPlanificador->entradaEstandar->pid = self->tcb->pid;
+	serviciosAlPlanificador->entradaEstandar->tamanio = sizeof(int);
+	serviciosAlPlanificador->entradaEstandar->tipo = 1;
+
+	//4) envia al planificador la estructura con ENTRADA_ESTANDAR
+	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR,sizeof(t_ServiciosAlPlanificador), serviciosAlPlanificador)<=0){
 		log_info(self->loggerCPU, "CPU: INNN ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 		estado_innn = MENSAJE_DE_ERROR;
 	}
-
+	//5) recibe del planificador el numero entero requerido.
 	t_socket_paquete *paquete_KERNEL = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	if(socket_recvPaquete(self->socketPlanificador->socket, paquete_KERNEL) > 0){
 		if(paquete_KERNEL->header.type == ENTRADA_ESTANDAR){
 			log_info(self->loggerCPU, "CPU: INNN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			self->tcb->registro_de_programacion[0]=(int)paquete_KERNEL;
+			self->tcb->registro_de_programacion[0]=(int32_t)paquete_KERNEL;
 			estado_innn = ENTRADA_ESTANDAR;
-
-			registros_cpu->registros_programacion[0]=self->tcb->registro_de_programacion[0];
+			//5) muestra los cambio_registros, logs de la catedra.
+			cpuInicializarRegistrosCPU(self, registros_cpu);
 			cambio_registros(registros_cpu);
 		} else {
 			log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado de MSP: %d", paquete_KERNEL->header.type);
 			estado_innn = ERROR_POR_CODIGO_INESPERADO;
-
-		}
+			}
 	}else{
 		log_info(self->loggerCPU, "CPU: INNN ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 		printf("CPU: MSP ha cerrado su conexion\n");
 
 	}
-
+	free(registros_cpu);
 	free(paquete_KERNEL);
-	free(entrada_estandar);
 	return estado_innn;
 
 }
 
-int INNC_ESO(t_CPU *self){
+int INNC_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
 	int estado_innc;
 	t_entrada_estandar* pedir_cadena = malloc(sizeof(t_entrada_estandar));
 
@@ -1213,7 +1217,7 @@ int INNC_ESO(t_CPU *self){
 }
 
 
-int OUTN_ESO(t_CPU *self){
+int OUTN_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
 
 	t_salida_estandar* salida_estandar = malloc(sizeof(t_salida_estandar));
 	salida_estandar->pid = self->tcb->pid;
@@ -1226,7 +1230,7 @@ int OUTN_ESO(t_CPU *self){
 	return SALIDA_ESTANDAR;
 }
 
-int OUTC_ESO(t_CPU* self){
+int OUTC_ESO(t_CPU* self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
 
 	int estado_outc;
 	char* lecturaDeMSP = malloc(self->tcb->registro_de_programacion[1]);
@@ -1249,7 +1253,7 @@ int OUTC_ESO(t_CPU* self){
 	return estado_outc;
 
 }
-int CREA_ESO(t_CPU *self){ 	// CREA un hilo hijo de TCB
+int CREA_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){ 	// CREA un hilo hijo de TCB
 	int estado_crea;
 	t_crea_hilo* crear_hilo = malloc(sizeof(t_crea_hilo));
 	crear_hilo->tcb = self->tcb;
@@ -1263,7 +1267,7 @@ int CREA_ESO(t_CPU *self){ 	// CREA un hilo hijo de TCB
 	return estado_crea;
 
 }
-int JOIN_ESO(t_CPU *self){
+int JOIN_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
 	int estado_join;
 	t_join* joinear = malloc(sizeof(t_join));
 	joinear->tid_llamador = self->tcb->tid;
@@ -1280,7 +1284,7 @@ int JOIN_ESO(t_CPU *self){
 }
 
 
-int BLOK_ESO(t_CPU *self){
+int BLOK_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
 	int estado_blok;
 	t_bloquear* blocker = malloc(sizeof(t_bloquear));
 	blocker->tcb = self->tcb;
@@ -1297,7 +1301,7 @@ int BLOK_ESO(t_CPU *self){
 
 }
 
-int WAKE_ESO(t_CPU *self){
+int WAKE_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
 	int estado_wake;
 	if (socket_sendPaquete(self->socketPlanificador->socket, WAKE_HILO ,sizeof(int32_t), &(self->tcb->registro_de_programacion[1]))<=0){
 		log_info(self->loggerCPU, "CPU: WAKE ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);

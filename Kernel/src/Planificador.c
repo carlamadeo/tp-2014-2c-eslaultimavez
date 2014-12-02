@@ -116,6 +116,8 @@ void atenderNuevaConexionCPU(t_kernel* self,t_socket* socketNuevoCliente, fd_set
 		//se mande un TCB a CPU
 		socket_sendPaquete(socketNuevoCliente, TCB_NUEVO,sizeof(t_TCB_Kernel), unTCBaCPU);
 		log_debug(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID: %d TID:%d KM:%d", unTCBaCPU->pid,unTCBaCPU->tid,unTCBaCPU->km );
+
+		printTCBKernel(unTCBaCPU);
 		free(unQuamtum);
 		free(unTCBaCPU);
 	}
