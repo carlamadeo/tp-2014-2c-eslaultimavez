@@ -9,7 +9,8 @@ int unPIDGlobal = 1;
 int unTIDGlobal = 1;
 
 t_list *listaDeProgramasDisponibles;
-
+t_list* cola_new;
+t_list* cola_ready;
 void kernel_comenzar_Loader(t_kernel* self){
 
 	t_socket *socketEscucha, *socketNuevaConexion;

@@ -3,7 +3,7 @@
 #include "commons/protocolStructInBigBang.h"
 
 t_list *listaDeProgramasDisponibles;
-
+t_list* cola_ready;
 void agregarEnListaDeCPU(int id,  t_socket* socketCPU){
 	t_cpu* unaCpu;
 	unaCpu = malloc( sizeof(t_cpu) );
@@ -19,10 +19,27 @@ void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente
 	log_info(self->loggerPlanificador, "Planificador: envia CPU_SEGUI_EJECUTANDO");
 }
 
-void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self,t_socket *socketNuevaConexionCPU, t_TCB_Kernel* tcb){
+void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self,t_socket *socketNuevaConexionCPU){
 
 	//1) Primer paso, se lo pone a final de READY
-	t_programaEnKernel *unProgramaCPU = obtenerProgramaDeReady(tcb);
+	t_socket_paquete *paqueteTCB = (t_socket_paquete*) malloc(sizeof(t_socket_paquete));
+	t_TCB_Kernel* unTCBNuevo = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
+
+
+	if(socket_recvPaquete(socketNuevaConexionCPU, paqueteTCB) >= 0){
+
+		if(paqueteTCB->header.type == TCB_NUEVO){
+			unTCBNuevo = (t_TCB_Kernel*) paqueteTCB->data;
+			//printTCBKernel(unTCBNuevo);
+
+		}else
+			log_error(self->loggerPlanificador, "CPU: error al recibir de planificador TCB_NUEVO");
+	}
+	else
+		log_error(self->loggerPlanificador, "CPU: Error al recibir un paquete del planificador");
+
+
+	t_programaEnKernel *unProgramaCPU = obtenerProgramaDeReady(unTCBNuevo);
 
 	if(unProgramaCPU != NULL){
 		list_add(cola_ready,unProgramaCPU);
@@ -39,13 +56,14 @@ void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self,t_socket *socketNuevaConexion
 			t_QUANTUM* unQuamtum = malloc(sizeof(t_QUANTUM));
 			unQuamtum->quantum = self->quantum;
 
+			printTCBKernel(tcbReady);
 			//se manda un QUANTUM a CPU
-			socket_sendPaquete(socketNuevaConexionCPU, QUANTUM, sizeof(t_QUANTUM), unQuamtum);
-			log_info(self->loggerPlanificador, "Planificador: envia un quantum: %d", unQuamtum->quantum);
+			//socket_sendPaquete(socketNuevaConexionCPU, QUANTUM, sizeof(t_QUANTUM), unQuamtum);
+			//log_info(self->loggerPlanificador, "Planificador: envia un quantum: %d", unQuamtum->quantum);
 
 			//se mande un TCB a CPU
-			socket_sendPaquete(socketNuevaConexionCPU, TCB_NUEVO,sizeof(t_TCB_Kernel), tcbReady);
-			log_info(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID: %d TID:%d KM:%d", tcbReady->pid,tcbReady->tid,tcbReady->km );
+			//socket_sendPaquete(socketNuevaConexionCPU, TCB_NUEVO,sizeof(t_TCB_Kernel), tcbReady);
+			//log_info(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID: %d TID:%d KM:%d", tcbReady->pid,tcbReady->tid,tcbReady->km );
 
 		}
 
@@ -59,7 +77,6 @@ void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self,t_socket *socketNuevaConexion
 
 	//free(unTCBPadre);
 	//socket_freePaquete(paqueteContexto);
-
 }
 
 void ejecutar_UNA_INTERRUPCION(t_kernel* self){

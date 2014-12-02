@@ -3,7 +3,8 @@
 #include <errno.h>
 #include <unistd.h>
 
-
+t_list* cola_new;
+t_list* cola_ready;
 int idCPU=250;
 void kernel_comenzar_Planificador(t_kernel* self){
 
@@ -139,18 +140,7 @@ void atenderCPU(t_kernel* self,t_socket *socketNuevaConexionCPU, t_cpu* cpu, fd_
 
 	switch(paqueteCPUAtendido->header.type){
 	case CAMBIO_DE_CONTEXTO:
-
-		if(socket_recvPaquete(cpu->socket, paqueteTCB) >= 0){
-
-			if(paqueteTCB->header.type == TCB_NUEVO){
-				unTCBNuevo = (t_TCB_Kernel*) paqueteTCB->data;
-				printTCBKernel(unTCBNuevo);
-				ejecutar_UN_CAMBIO_DE_CONTEXTO(self, socketNuevaConexionCPU, unTCBNuevo);
-			}else
-				log_error(self->loggerPlanificador, "CPU: error al recibir de planificador TCB_NUEVO");
-		}
-		else
-			log_error(self->loggerPlanificador, "CPU: Error al recibir un paquete del planificador");
+			ejecutar_UN_CAMBIO_DE_CONTEXTO(self, socketNuevaConexionCPU);
 		break;
 	case MENSAJE_DE_ERROR:
 		log_info(self->loggerPlanificador, "Planificador: recibe un MENSAJE_DE_ERROR" );
