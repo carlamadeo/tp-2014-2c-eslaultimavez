@@ -18,18 +18,17 @@ void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente
 
 void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_TCB_Kernel* tcb){
 
-	//1) Primer paso, se recibe un TCB
+	//1) Primer paso, se lo pone a final de READY
 
-
-	log_info(self->loggerPlanificador, "Planificador: sin error");
-	// se lo pone a final de READY
-
-	list_add(cola_ready,tcb);
+	t_programaEnKernel *unProgramaCPU = obtenerProgramaDeReady(tcb);
+	list_add(cola_ready,unProgramaCPU);
 
 	//2) Segundo paso, se verifica que la cola de READY no esta vacia
-	log_info(self->loggerPlanificador, "test1");
-	/*	if(list_size(cola_ready)>0){
-		log_info(self->loggerPlanificador, "test2");
+
+	printf("Que tiene lista: %d", list_size(cola_ready));
+	if(list_size(cola_ready)>0){
+		//log_info(self->loggerPlanificador, "test2");
+
 		// se remueve el primer elemento de ready
 		t_TCB_Kernel* tcbReady = malloc(sizeof(t_TCB_Kernel));
 		tcbReady = list_remove(cola_ready, 0); //SE REMUEVE EL PRIMER PROGRAMA DE NEW
@@ -39,13 +38,12 @@ void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_TCB_Kernel* tcb){
 
 		//se manda un QUAMTUM a CPU
 		socket_sendPaquete(self->socketCPU, QUAMTUM,sizeof(t_QUAMTUM), unQuamtum);
-		log_debug(self->loggerPlanificador, "Planificador: envia un quamtum: %d", unQuamtum->quamtum);
+		log_info(self->loggerPlanificador, "Planificador: envia un quamtum: %d", unQuamtum->quamtum);
 
 		//se mande un TCB a CPU
 		socket_sendPaquete(self->socketCPU, TCB_NUEVO,sizeof(t_TCB_Kernel), tcbReady);
-		log_debug(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID: %d TID:%d KM:%d", tcbReady->pid,tcbReady->tid,tcbReady->km );
-		free(unQuamtum);
-		free(tcbReady);
+		log_info(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID: %d TID:%d KM:%d", tcbReady->pid,tcbReady->tid,tcbReady->km );
+
 
 	}else{
 		log_info(self->loggerPlanificador, "test3");
@@ -56,10 +54,9 @@ void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_TCB_Kernel* tcb){
 	}
 
 
-	free(unTCBPadre);
+	//free(unTCBPadre);
 	//socket_freePaquete(paqueteContexto);
-	 *
-	 */
+
 }
 
 void ejecutar_UNA_INTERRUPCION(t_kernel* self){
@@ -486,4 +483,20 @@ void printTCBKernel(t_TCB_Kernel* unTCB){
 	printf("Regristros D: %d\n", unTCB->registro_de_programacion[3]);
 	printf("Regristros E: %d\n", unTCB->registro_de_programacion[4]);
 
+}
+
+t_programaEnKernel* obtenerProgramaDeReady(t_TCB_Kernel* tcb){
+
+	//se lo remueve de la lista cola Ready
+	t_programaEnKernel* unTcbProsesado = malloc(sizeof(t_programaEnKernel));
+	printf("condicion PID: %d TID:%d\n",tcb->pid,tcb->tid);
+	bool _esTCBBuscadoReady(t_TCB_Kernel* tcbReady) {
+		return ((tcbReady->tid == tcb->tid) &&(tcbReady->pid == tcb->pid));
+	}
+
+	printf("listaDeProgramasDisponibles cantidad: %d \n ", list_size(listaDeProgramasDisponibles));
+	unTcbProsesado = list_remove_by_condition(listaDeProgramasDisponibles, (void*)_esTCBBuscadoReady);
+
+	printf("Planificador: un TCB encontrado en READY: PID:%d  TID:%d \n", unTcbProsesado->programaTCB->pid, unTcbProsesado->programaTCB->tid);
+	return unTcbProsesado;
 }

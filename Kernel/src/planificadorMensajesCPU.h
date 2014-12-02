@@ -55,5 +55,6 @@ void ejecutar_UN_JOIN_HILO(t_kernel* self);
 void ejecutar_UN_BLOK_HILO(t_kernel* self);
 void ejecutar_UN_WAKE_HILO(t_kernel* self);
 void printTCBKernel(t_TCB_Kernel* unTCB);
+t_programaEnKernel* obtenerProgramaDeReady(t_TCB_Kernel* tcb);
 
 #endif // PLANIFICADOR_MENSAJE_H_

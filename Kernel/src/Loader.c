@@ -184,6 +184,7 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 
 		sem_wait(&mutex_new);
 		list_add(cola_new,unPrograma);
+		list_add(listaDeProgramasDisponibles,unPrograma);
 		sem_post(&mutex_new);
 		log_info(self->loggerLoader,"Loader: Agrego un elemento a la Cola New con el PID:%d  TID:%d ", unTCBenLoader->pid, unTCBenLoader->tid);
 		sem_post(&mutex_BloqueoPlanificador);

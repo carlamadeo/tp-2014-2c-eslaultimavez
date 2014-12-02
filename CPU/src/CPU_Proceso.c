@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
 
 			//se mande un TCB a CPU
 			printTCBCPU(tcbProcesado);
-			socket_sendPaquete(self->socketPlanificador->socket, CAMBIO_DE_CONTEXTO,sizeof(t_TCB_CPU), tcbProcesado);
+			socket_sendPaquete(self->socketPlanificador->socket, TCB_NUEVO,sizeof(t_TCB_CPU), tcbProcesado);
 			log_info(self->loggerCPU, "CPU: envia un CAMBIO_DE_CONTEXTO");
 			free(tcbProcesado);
 			break;

@@ -40,6 +40,7 @@ int main(int argc, char** argv) {
 	cola_block = list_create();
 	listaDeCPUExec = list_create();
 	listaDeCPULibres = list_create();
+	listaDeProgramasDisponibles= list_create();
 
 
 	//se inician los semaforos

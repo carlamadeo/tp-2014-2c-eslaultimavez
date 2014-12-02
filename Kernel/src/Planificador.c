@@ -134,19 +134,24 @@ void atenderCPU(t_kernel* self,t_cpu* cpu, fd_set* master){
 	socket_recvPaquete(cpu->socket, paqueteCPUAtendido);
 
 	printf("Valor para el switch: %d\n",paqueteCPUAtendido->header.type);
+	t_socket_paquete *paqueteTCB = (t_socket_paquete*) malloc(sizeof(t_socket_paquete));
+	t_TCB_Kernel* unTCBNuevo = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
+
+
 	switch(paqueteCPUAtendido->header.type){
 	case CAMBIO_DE_CONTEXTO:
-		log_info(self->loggerPlanificador, "Planificador: recibe un CAMBIO_DE_CONTEXTO" );
 
-		t_TCB_Kernel* tcbCPU= (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
-		tcbCPU = (t_TCB_Kernel*) paqueteCPUAtendido->data;
+		if(socket_recvPaquete(cpu->socket, paqueteTCB) >= 0){
 
-		printf("Valor para el switch: %d\n",paqueteCPUAtendido->header.type);
-		printf("TCB PID: %d \n", tcbCPU->pid);
-		printf("TCB TID: %d \n", tcbCPU->tid);
-		//printTCBKernel(tcbCPU);
-		//ejecutar_UN_CAMBIO_DE_CONTEXTO(self,tcbCPU);
-		free(tcbCPU);
+			if(paqueteTCB->header.type == TCB_NUEVO){
+				unTCBNuevo = (t_TCB_Kernel*) paqueteTCB->data;
+				printTCBKernel(unTCBNuevo);
+				ejecutar_UN_CAMBIO_DE_CONTEXTO(self,unTCBNuevo);
+			}else
+				log_error(self->loggerPlanificador, "CPU: error al recibir de planificador TCB_NUEVO");
+		}
+		else
+			log_error(self->loggerPlanificador, "CPU: Error al recibir un paquete del planificador");
 		break;
 	case MENSAJE_DE_ERROR:
 		log_info(self->loggerPlanificador, "Planificador: recibe un MENSAJE_DE_ERROR" );
@@ -199,7 +204,7 @@ t_cpu* obtenerCPUSegunDescriptor(t_kernel* self,int descriptor){
 	}
 	log_info(self->loggerPlanificador,"Planificador: Se encontro CPU con descriptor: %d",cpuBuscado->socket->descriptor);
 
-	cpuBuscado->socket->descriptor = descriptor;
+	//cpuBuscado->socket->descriptor = descriptor;
 	return cpuBuscado;
 }
 
@@ -208,7 +213,7 @@ t_programaEnKernel* obtenerTCBdeReady(t_kernel* self){
 
 	sem_wait(&mutex_BloqueoPlanificador);
 
-	log_info(self->loggerPlanificador," Cantidad de elemento en la cola New: %d" ,list_size(cola_new));
+	log_error(self->loggerPlanificador," Cantidad de elemento en la cola New: %d" ,list_size(cola_new));
 	if (list_size(cola_new)>0){
 		sem_wait(&mutex_new);
 		t_programaEnKernel* programa =list_remove(cola_new, 0); //SE REMUEVE EL PRIMER PROGRAMA DE NEW
