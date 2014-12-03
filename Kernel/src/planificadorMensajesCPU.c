@@ -20,6 +20,43 @@ void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente
 	log_info(self->loggerPlanificador, "Planificador: envia CPU_SEGUI_EJECUTANDO");
 }
 
+void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket *socketNuevaConexionCPU){
+
+	log_info(self->loggerPlanificador, "Planificador: recibe un FINALIZAR_PROGRAMA_EXITO" );
+
+	//1) Primer paso, se recibe un TCB
+
+	t_socket_paquete *paqueteFinalizado = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+	t_TCB_Kernel* tcbFinalizado = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
+
+	if(socket_recvPaquete(socketNuevaConexionCPU, paqueteFinalizado) >= 0){
+		tcbFinalizado = (t_TCB_Kernel*) paqueteFinalizado->data;
+		//printTCBKernel(tcbFinalizado);
+	}else
+		log_error(self->loggerPlanificador, "Planificador: error al rebicir FINALIZAR_PROGRAMA_EXITO.");
+
+
+	//2) Segundo se obtiene el socket del programaBeso
+	//printf("COLA_EXIT:Buscar PID: %d TID: %d\n",tcbFinalizado->pid,tcbFinalizado->tid);
+
+	bool _tcbParaExit(t_programaEnKernel* tcb) {
+		return ((tcb->programaTCB->tid == tcbFinalizado->tid) && (tcb->programaTCB->pid == tcbFinalizado->pid));
+	}
+
+	//printf("listaDeProgramasDisponibles Cantidad: %d\n", list_size(listaDeProgramasDisponibles));
+	t_programaEnKernel* unTcbProcesado = list_find(listaDeProgramasDisponibles, (void*)_tcbParaExit);
+	//printf("COLA_EXIT:Buscar PID: %d TID: %d\n",unTcbProcesado->programaTCB->pid,unTcbProcesado->programaTCB->tid);
+
+
+	//3) Tercero, mando un mensja
+	socket_sendPaquete(unTcbProcesado->socketProgramaConsola, FINALIZAR_PROGRAMA_EXITO, 0 , NULL);
+
+	//4) Se carga en la COLA_EXIT
+	list_add(cola_exit,unTcbProcesado);
+	printf("COLA_EXIT: Guarda PID: %d TID: %d\n",unTcbProcesado->programaTCB->pid,unTcbProcesado->programaTCB->tid);
+}
+
+
 void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_socket *socketNuevaConexionCPU){
 
 	//1) Primer paso, se lo pone a final de READY
@@ -77,41 +114,37 @@ void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_socket *socketNuevaConexio
 	//socket_freePaquete(paqueteContexto);
 }
 
-void ejecutar_UNA_INTERRUPCION(t_kernel* self){
+void ejecutar_UNA_INTERRUPCION(t_kernel* self,t_socket *socketNuevaConexionCPU){
 
 	//1) Primer paso, poner el TCB Recibido en cola BLOCK
 
 	t_socket_paquete *paqueteCPU = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_interrupcionKernel* unaInterrupcion = (t_interrupcionKernel*) malloc(sizeof(t_interrupcionKernel));
+	unaInterrupcion->tcb = malloc(sizeof(t_TCB_Kernel));
 
-	if(socket_recvPaquete(self->socketCPU, paqueteCPU) >= 0){
+	if(socket_recvPaquete(socketNuevaConexionCPU, paqueteCPU) >= 0){
 		unaInterrupcion = (t_interrupcionKernel*) paqueteCPU->data;
 
+		printTCBKernel(unaInterrupcion->tcb);
 		//se lo remueve de la lista listaDeCPULibres
-		bool _esTCBBuscado(t_TCB_Kernel* tcbProcesado) {
-			return ((tcbProcesado->pid == unaInterrupcion->tcb->pid) && ((tcbProcesado->tid == unaInterrupcion->tcb->tid)));   //ver esta parte importante
-		}
-		t_TCB_Kernel* unTcbProsesado = list_remove_by_condition(listaDeCPULibres, (void*)_esTCBBuscado);
-
-		//Se borrar el TCB encontrado, hacer funcion que libere recursos
-		unTcbProsesado->pid = -1;
-		unTcbProsesado->tid = -1;
-
-
-		//se lo agrega en la lista de Sistem Call
-		list_add(listaSystemCall,unTcbProsesado);
+//		bool _esTCBBuscado(t_programaEnKernel* tcbProcesado) {
+//			return ((tcbProcesado->programaTCB->pid == unaInterrupcion->tcb->pid) && ((tcbProcesado->programaTCB->tid == unaInterrupcion->tcb->tid)));   //ver esta parte importante
+//		}
+//		t_programaEnKernel* unTcbProsesado = list_find(cola_ready, (void*)_esTCBBuscado);
+//
+//		//se lo agrega en la lista de Sistem Call
+//		list_add(listaSystemCall,unTcbProsesado);
 
 
-	}else{
-		unaInterrupcion->tcb = NULL;
-		unaInterrupcion->direccion= 0;
+	}else
 		log_error(self->loggerPlanificador, "Planificador: error en recibir una INTERRUPCION" );
-	}
+
 
 	socket_freePaquete(paqueteCPU);
 	log_info(self->loggerPlanificador, "Planificador: recibe una INTERRUPCION");
-	log_info(self->loggerPlanificador, "Planificador: TCB PID:%d  TCB TID:%d DIRECCION:%d", unaInterrupcion->tcb->pid,unaInterrupcion->tcb->tid,unaInterrupcion->direccion);
+	//log_info(self->loggerPlanificador, "Planificador: TCB PID:%d  TCB TID:%d DIRECCION:%d", unaInterrupcion->tcb->pid,unaInterrupcion->tcb->tid,unaInterrupcion->direccion);
 
+	/*
 
 	//2) Segundo paso, se busca el TCB kernel en la cola_Block
 
@@ -131,6 +164,7 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self){
 	tcbKernel->registro_de_programacion[1]= unaInterrupcion->tcb->registro_de_programacion[1];
 	tcbKernel->registro_de_programacion[2]= unaInterrupcion->tcb->registro_de_programacion[2];
 	tcbKernel->registro_de_programacion[3]= unaInterrupcion->tcb->registro_de_programacion[3];
+	tcbKernel->registro_de_programacion[4]= unaInterrupcion->tcb->registro_de_programacion[4];
 
 	//4) Cuarto paso, se agrega el TCB kernel en la lista de CPU Libres
 
@@ -203,7 +237,7 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self){
 		unTcbSystemCall->registro_de_programacion[1] = tcbKernelModificado->registro_de_programacion[1];
 		unTcbSystemCall->registro_de_programacion[2] = tcbKernelModificado->registro_de_programacion[2];
 		unTcbSystemCall->registro_de_programacion[3] = tcbKernelModificado->registro_de_programacion[3];
-
+		unTcbSystemCall->registro_de_programacion[4] = tcbKernelModificado->registro_de_programacion[4];
 	}
 
 	else
@@ -220,6 +254,7 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self){
 	socket_freePaquete(paqueteKernelTCB);
 	free(tcbKernelModificado);
 	free(unTcbSystemCall);
+	*/
 }
 
 
@@ -346,6 +381,7 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self){
 	tcbHiloSecundario->tcb->registro_de_programacion[1] = unTCBPadre->tcb->registro_de_programacion[1];
 	tcbHiloSecundario->tcb->registro_de_programacion[2] = unTCBPadre->tcb->registro_de_programacion[2];
 	tcbHiloSecundario->tcb->registro_de_programacion[3] = unTCBPadre->tcb->registro_de_programacion[3];
+	tcbHiloSecundario->tcb->registro_de_programacion[4] = unTCBPadre->tcb->registro_de_programacion[4];
 
 	//3) Tercer paso, se manda a Ready para planificarlo
 	list_add(cola_ready,tcbHiloSecundario);

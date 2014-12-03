@@ -47,7 +47,8 @@ typedef struct {
 void agregarEnListaDeCPU(int id,  t_socket* socketCPU);
 void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente);
 void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self,t_socket *socketNuevaConexionCPU);
-void ejecutar_UNA_INTERRUPCION(t_kernel* self);
+void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket *socketNuevaConexionCPU);
+void ejecutar_UNA_INTERRUPCION(t_kernel* self,t_socket *socketNuevaConexionCPU);
 void ejecutar_UNA_ENTRADA_STANDAR(t_kernel* self);
 void ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self);
 void ejecutar_UN_CREAR_HILO(t_kernel* self);

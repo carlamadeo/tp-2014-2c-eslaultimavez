@@ -134,19 +134,19 @@ void atenderCPU(t_kernel* self,t_socket *socketNuevaConexionCPU, t_cpu* cpu, fd_
 	socket_recvPaquete(cpu->socket, paqueteCPUAtendido);
 
 	printf("Valor para el switch: %d\n",paqueteCPUAtendido->header.type);
-	t_socket_paquete *paqueteTCB = (t_socket_paquete*) malloc(sizeof(t_socket_paquete));
-	t_TCB_Kernel* unTCBNuevo = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
-
 
 	switch(paqueteCPUAtendido->header.type){
 	case CAMBIO_DE_CONTEXTO:
 		ejecutar_UN_CAMBIO_DE_CONTEXTO(self, socketNuevaConexionCPU);
 		break;
+	case FINALIZAR_PROGRAMA_EXITO:
+		ejecutar_FINALIZAR_PROGRAMA_EXITO(self, socketNuevaConexionCPU);
+		break;
 	case MENSAJE_DE_ERROR:
 		log_info(self->loggerPlanificador, "Planificador: recibe un MENSAJE_DE_ERROR" );
 		break;
 	case INTERRUPCION:
-		ejecutar_UNA_INTERRUPCION(self);
+		ejecutar_UNA_INTERRUPCION(self, socketNuevaConexionCPU);
 		break;
 	case ENTRADA_ESTANDAR:
 		ejecutar_UNA_ENTRADA_STANDAR(self);

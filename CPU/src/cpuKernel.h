@@ -115,8 +115,8 @@ int cpuRecibirTCB(t_CPU *self);
 int cpuRecibirQuantum(t_CPU *self);
 void cpuEnviarPaqueteAPlanificador(t_CPU *self, int paquete);
 void cpuCambioContexto(t_CPU *self);
-void cpuEnviaInterrupcion(t_CPU *self, uint32_t direccion);
-int cpuFinalizarProgramaExitoso(t_CPU *self, char *algo);
+void cpuEnviaInterrupcion(t_CPU *self);
+int cpuFinalizarProgramaExitoso(t_CPU *self, t_TCB_CPU* algo);
 
 
 #endif /* CPUKERNEL_H_ */

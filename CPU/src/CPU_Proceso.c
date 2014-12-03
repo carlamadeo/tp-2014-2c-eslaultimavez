@@ -51,9 +51,13 @@ int main(int argc, char** argv) {
 			valorCPU = cpuProcesarTCB(self, serviciosAlPlanificador);
 
 			log_info(self->loggerCPU, "CPU: valorCPU == %d",valorCPU);
-
+			int num;
 			switch(valorCPU){
 
+			case FINALIZAR_PROGRAMA_EXITO:
+				num = cpuFinalizarProgramaExitoso(self, self->tcb);
+				log_error(self->loggerCPU, "CPU: manda al Kernel FINALIZAR_PROGRAMA_EXITO");
+				break;
 			case SIN_ERRORES:
 				//ALE: si el tcb ya fue enviado por XXXX aca lo vuelve a enviar!!! NO CONTEPLA ESE CASO
 
@@ -69,14 +73,7 @@ int main(int argc, char** argv) {
 				break;
 			case INTERRUPCION:
 				cpuEnviarPaqueteAPlanificador(self, INTERRUPCION);
-				//ALE: el send lo hace en la instruccion INTE_ESO (linea: 894 archivo: codigoESO.c)
-				//se crea una estructura interrupcion para mandar
-				//t_interrupcion* unaInterrupcion= malloc(sizeof(t_interrupcion));
-				//unaInterrupcion->tcb= serviciosAlPlanificador->instruccion->tcb;
-				//unaInterrupcion->direccion = serviciosAlPlanificador->instruccion->direccion;
-
-				//se manda una INTERRUPCION
-				//socket_sendPaquete(self->socketPlanificador->socket,INTERRUPCION,sizeof(t_interrupcion), unaInterrupcion);
+				cpuEnviaInterrupcion(self);
 				//log_info(self->loggerCPU, "CPU: envia una INTERRUPCION");
 				break;
 			case ENTRADA_ESTANDAR:

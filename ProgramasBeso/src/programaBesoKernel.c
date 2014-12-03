@@ -65,17 +65,21 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_datosKernel* datosAKernel = malloc(sizeof(t_datosKernel));
-	t_datosMostrarConsola* datosDeKernel = (t_datosMostrarConsola*) (paquete->data);
 
 	datosAKernel->codigoBeso = self->codigo;
 
 	log_info(self->loggerProgramaBESO, "Consola: Espera respuesta del kernel");
 
-	while(1){
+	int fin= 0;
+	while(fin == 0){
 		if (socket_recvPaquete(self->socketKernel->socket, paquete) >= 0){
 
-			switch(datosDeKernel->codigo){
+			switch(paquete->header.type){
 
+			case FINALIZAR_PROGRAMA_EXITO:
+				log_info(self->loggerProgramaBESO,"Consola: FINALIZA CON EXITO, vamos los pibes!!!");
+				fin=1;
+				break;
 			case ERROR_POR_TAMANIO_EXCEDIDO:
 				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error por tamaño de segmento excedido");
 				break;
@@ -92,7 +96,7 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error del tipo Segmentation Fault");
 				break;
 			default:
-				log_info(self->loggerProgramaBESO,"Consola: Recibe OK: %s",datosDeKernel->mensaje);
+				log_info(self->loggerProgramaBESO,"Consola: Recibe OK");
 				break;
 
 			}// fin del switch
@@ -105,8 +109,9 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 		}
 	}
 
-	free(datosAKernel->codigoBeso);
+	//free(datosAKernel->codigoBeso);
 	free(datosAKernel);
 	socket_freePaquete(paquete);
+	close(self->socketKernel->socket->descriptor);
 }
 

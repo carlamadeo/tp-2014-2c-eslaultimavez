@@ -891,7 +891,9 @@ int INTE_ESO(t_CPU *self){
 		cpuInicializarRegistrosCPU(self, registros_cpu);
 		cambio_registros(registros_cpu);
 
-		cpuEnviaInterrupcion(self, direccion);
+		estado_bloque = INTERRUPCION;
+		self->unaDireccion = direccion;
+		//cpuEnviaInterrupcion(self, direccion);
 
 		log_info(self->loggerCPU, "CPU: INTE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
@@ -1074,13 +1076,13 @@ int XXXX_ESO(t_CPU *self){
 
 	fin_ejecucion();
 
-	char *data = malloc(sizeof(t_TCB_CPU));
-	memcpy(data, self->tcb, sizeof(t_TCB_CPU));
-	int estado = cpuFinalizarProgramaExitoso(self, data);
+	//char *data = malloc(sizeof(t_TCB_CPU));
+	//memcpy(data, self->tcb, sizeof(t_TCB_CPU));
+	//int estado = cpuFinalizarProgramaExitoso(self, data);
 
 	log_info(self->loggerCPU, "CPU: XXXX ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-	free(data);
-	return estado;
+	//free(data);
+	return FINALIZAR_PROGRAMA_EXITO;
 
 }
 
