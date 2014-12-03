@@ -67,30 +67,86 @@ int main(int argc, char** argv) {
 				break;
 			case INTERRUPCION:
 				cpuEnviarPaqueteAPlanificador(self, INTERRUPCION);
+
+				//se crea una estructura interrupcion para mandar
+				t_interrupcion* unaInterrupcion= malloc(sizeof(t_interrupcion));
+				unaInterrupcion->tcb= serviciosAlPlanificador->instruccion->tcb;
+				unaInterrupcion->direccion = serviciosAlPlanificador->instruccion->direccion;
+
+				//se manda una INTERRUPCION
+				socket_sendPaquete(self->socketPlanificador->socket,INTERRUPCION,sizeof(t_interrupcion), unaInterrupcion);
 				log_info(self->loggerCPU, "CPU: envia una INTERRUPCION");
 				break;
 			case ENTRADA_ESTANDAR:
 				cpuEnviarPaqueteAPlanificador(self, ENTRADA_ESTANDAR);
+
+				//se crea una estructura Entrada para mandar
+				t_entrada_estandar* unaEntrada= malloc(sizeof(t_entrada_estandar));
+				unaEntrada->pid = serviciosAlPlanificador->entradaEstandar->pid;
+				unaEntrada->tamanio = serviciosAlPlanificador->entradaEstandar->tamanio;
+				unaEntrada->tipo = serviciosAlPlanificador->entradaEstandar->tipo;
+
+				//se manda una Entrada
+				socket_sendPaquete(self->socketPlanificador->socket,ENTRADA_ESTANDAR,sizeof(t_entrada_estandar), unaEntrada);
 				log_info(self->loggerCPU, "CPU: envia una ENTRADA_ESTANDAR");
 				break;
 			case SALIDA_ESTANDAR:
 				cpuEnviarPaqueteAPlanificador(self, SALIDA_ESTANDAR);
+
+				//se crea una estructura Salida para mandar
+				t_salida_estandar* unaSalida= malloc(sizeof(t_salida_estandar));
+				unaSalida->pid = serviciosAlPlanificador->salidaEstandar->pid;
+				unaSalida->cadena = serviciosAlPlanificador->salidaEstandar->cadena;
+
+				//se manda una SALIDA_ESTANDAR
+				socket_sendPaquete(self->socketPlanificador->socket,SALIDA_ESTANDAR,sizeof(t_salida_estandar), unaSalida);
 				log_info(self->loggerCPU, "CPU: envia una SALIDA_ESTANDAR");
 				break;
 			case CREAR_HILO:
 				cpuEnviarPaqueteAPlanificador(self, CREAR_HILO);
+
+				//se crea una estructura CREAR HIJO para mandar
+				t_crea_hilo* unCrearHilo= malloc(sizeof(t_crea_hilo));
+				unCrearHilo->tcb = serviciosAlPlanificador->crearHijo->tcb;
+
+				//se manda un CrearHILO
+				socket_sendPaquete(self->socketPlanificador->socket,CREAR_HILO,sizeof(t_crea_hilo), unCrearHilo);
 				log_info(self->loggerCPU, "CPU: envia un CREAR_HILO");
 				break;
 			case JOIN_HILO:
 				cpuEnviarPaqueteAPlanificador(self, JOIN_HILO);
+
+				//se crea una estructura JOIN HIJO para mandar
+				t_join* unJoin= malloc(sizeof(t_join));
+				unJoin->tid_esperar = serviciosAlPlanificador->join->tid_esperar;
+				unJoin->tid_llamador = serviciosAlPlanificador->join->tid_llamador;
+
+				//se manda un JOIN
+				socket_sendPaquete(self->socketPlanificador->socket,JOIN_HILO,sizeof(t_join), unJoin);
 				log_info(self->loggerCPU, "CPU: envia un JOIN_HILO");
 				break;
 			case BLOK_HILO:
 				cpuEnviarPaqueteAPlanificador(self, BLOK_HILO);
+
+				//se crea una estructura Block para mandar
+				t_bloquear* unBlock= malloc(sizeof(t_bloquear));
+				unBlock->id_recurso = serviciosAlPlanificador->bloquear->id_recurso;
+				unBlock->tcb = serviciosAlPlanificador->bloquear->tcb;
+
+
+				//se manda un Block
+				socket_sendPaquete(self->socketPlanificador->socket,BLOK_HILO,sizeof(t_bloquear), unBlock);
 				log_info(self->loggerCPU, "CPU: envia un BLOK_HILO");
 				break;
 			case WAKE_HILO:
 				cpuEnviarPaqueteAPlanificador(self, WAKE_HILO);
+
+				//se crea una estructura Block para mandar
+				t_despertar* unDespertar= malloc(sizeof(t_despertar));
+				unDespertar->id_recurso = serviciosAlPlanificador->despear->id_recurso;
+
+				//se manda un WAKE
+				socket_sendPaquete(self->socketPlanificador->socket,WAKE_HILO,sizeof(t_despertar), unDespertar);
 				log_info(self->loggerCPU, "CPU: envia un WAKE_HILO");
 				break;
 			default:
