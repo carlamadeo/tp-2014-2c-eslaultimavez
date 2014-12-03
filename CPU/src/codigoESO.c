@@ -245,12 +245,12 @@ int ADDR_ESO(t_CPU *self){
 
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion ADDR");
 
-		memcpy(&(registroA), (lecturaDeMSP), sizeof(char));
-		memcpy(&(registroB), (lecturaDeMSP) + sizeof(char), sizeof(char));
+		memcpy(&(registroA), (lecturaDeMSP), 1);
+		memcpy(&(registroB), (lecturaDeMSP) + 1, 1);
 		regA = determinar_registro(registroA);
 		regB = determinar_registro(registroB);
 
-		if((regA != -1) || (regB != -1)){
+		if((regA != -1) && (regB != -1)){
 
 			list_add(parametros, &registroA);
 			list_add(parametros, &registroB);
@@ -299,7 +299,7 @@ int SUBR_ESO(t_CPU *self){
 		regA = determinar_registro(registroA);
 		regB = determinar_registro(registroB);
 
-		if((regA != -1) || (regB != -1)){
+		if((regA != -1) && (regB != -1)){
 
 			list_add(parametros, &registroA);
 			list_add(parametros, &registroB);
@@ -348,7 +348,7 @@ int MULR_ESO(t_CPU *self){
 		regA = determinar_registro(registroA);
 		regB = determinar_registro(registroB);
 
-		if((regA != -1) || (regB != -1)){
+		if((regA != -1) && (regB != -1)){
 
 			list_add(parametros, &registroA);
 			list_add(parametros, &registroB);
@@ -398,7 +398,7 @@ int MODR_ESO(t_CPU *self){
 		regA = determinar_registro(registroA);
 		regB = determinar_registro(registroB);
 
-		if((regA != -1) || (regB != -1)){
+		if((regA != -1) && (regB != -1)){
 
 			list_add(parametros, &registroA);
 			list_add(parametros, &registroB);
@@ -448,7 +448,7 @@ int DIVR_ESO(t_CPU *self){
 		regA = determinar_registro(registroA);
 		regB = determinar_registro(registroB);
 
-		if((regA != -1) || (regB != -1)){
+		if((regA != -1) && (regB != -1)){
 
 			list_add(parametros, &registroA);
 			list_add(parametros, &registroB);
@@ -596,7 +596,7 @@ int COMP_ESO(t_CPU *self){
 		regA = determinar_registro(registroA);
 		regB = determinar_registro(registroB);
 
-		if((regA != -1) || (regB != -1)){
+		if((regA != -1) && (regB != -1)){
 
 			list_add(parametros, &registroA);
 			list_add(parametros, &registroB);
@@ -649,7 +649,7 @@ int CGEQ_ESO(t_CPU *self){
 		regA = determinar_registro(registroA);
 		regB = determinar_registro(registroB);
 
-		if((regA != -1) || (regB != -1)){
+		if((regA != -1) && (regB != -1)){
 
 			list_add(parametros, &registroA);
 			list_add(parametros, &registroB);
@@ -703,7 +703,7 @@ int CLEQ_ESO(t_CPU *self){
 		regA = determinar_registro(registroA);
 		regB = determinar_registro(registroB);
 
-		if((regA != -1) || (regB != -1)){
+		if((regA != -1) && (regB != -1)){
 
 			list_add(parametros, &registroA);
 			list_add(parametros, &registroB);
@@ -868,7 +868,7 @@ int JPNZ_ESO(t_CPU *self){
 }
 
 
-int INTE_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
+int INTE_ESO(t_CPU *self){
 
 	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 4;
@@ -1136,22 +1136,25 @@ int FREE_ESO(t_CPU *self){
 	return estado_free;
 }
 
-int INNN_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador ){
+int INNN_ESO(t_CPU *self){
 
 	//1) declara la estructura para mostrar los registros de cpu: logs de la catedra.
 	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	//2) declara la variable de control que devuelve el estado del bloque funcion.
 	int estado_innn;
 	//3) carga los datos para enviar al planificador el servicio requerido.
-	serviciosAlPlanificador->entradaEstandar->pid = self->tcb->pid;
-	serviciosAlPlanificador->entradaEstandar->tamanio = sizeof(int);
-	serviciosAlPlanificador->entradaEstandar->tipo = 1;
+	t_entrada_estandar* entradaEstandar = malloc(sizeof(t_entrada_estandar));
 
-	//4) envia al planificador la estructura con ENTRADA_ESTANDAR
-	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR,sizeof(t_ServiciosAlPlanificador), serviciosAlPlanificador)<=0){
+	entradaEstandar->pid = self->tcb->pid;
+	entradaEstandar->tamanio = sizeof(int);
+	entradaEstandar->tipo = 1;
+
+	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR,sizeof(t_entrada_estandar), entradaEstandar)<=0){  //22 corresponde a interrupcion
 		log_info(self->loggerCPU, "CPU: INNN ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 		estado_innn = MENSAJE_DE_ERROR;
 	}
+	free(entradaEstandar);
+
 	//5) recibe del planificador el numero entero requerido.
 	t_socket_paquete *paquete_KERNEL = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	if(socket_recvPaquete(self->socketPlanificador->socket, paquete_KERNEL) > 0){
@@ -1171,24 +1174,27 @@ int INNN_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador ){
 		printf("CPU: MSP ha cerrado su conexion\n");
 
 	}
+
 	free(registros_cpu);
 	free(paquete_KERNEL);
 	return estado_innn;
 
 }
 
-int INNC_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
+int INNC_ESO(t_CPU *self){
 	int estado_innc;
-	t_entrada_estandar* pedir_cadena = malloc(sizeof(t_entrada_estandar));
 
-	pedir_cadena->pid = self->tcb->pid;
-	pedir_cadena->tamanio = self->tcb->registro_de_programacion[1];
-	pedir_cadena->tipo  = 2; //2 es un string
+	t_entrada_estandar* entradaEstandar = malloc(sizeof(t_entrada_estandar));
 
-	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR,sizeof(t_entrada_estandar), pedir_cadena)<=0){  //22 corresponde a interrupcion
+	entradaEstandar->pid = self->tcb->pid;
+	entradaEstandar->tamanio = self->tcb->registro_de_programacion[1];
+	entradaEstandar->tipo = 2;
+
+
+	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR,sizeof(t_entrada_estandar), entradaEstandar)<=0){  //22 corresponde a interrupcion
 		log_info(self->loggerCPU, "CPU: INNC ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 	}
-	free(pedir_cadena);
+	free(entradaEstandar);
 
 	t_socket_paquete *paquete_KERNEL = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	if(socket_recvPaquete(self->socketPlanificador->socket, paquete_KERNEL) > 0){
@@ -1217,20 +1223,22 @@ int INNC_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
 }
 
 
-int OUTN_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
-
+int OUTN_ESO(t_CPU *self){
+	int estado_outn;
 	t_salida_estandar* salida_estandar = malloc(sizeof(t_salida_estandar));
 	salida_estandar->pid = self->tcb->pid;
+
 	salida_estandar->cadena = string_itoa(self->tcb->registro_de_programacion[0]);
 	if (socket_sendPaquete(self->socketPlanificador->socket, SALIDA_ESTANDAR,sizeof(t_salida_estandar), salida_estandar)<=0){  //22 corresponde a interrupcion
 		log_info(self->loggerCPU, "CPU: OUTN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		return MENSAJE_DE_ERROR;
+		estado_outn = MENSAJE_DE_ERROR;
 	}
 	free(salida_estandar);
-	return SALIDA_ESTANDAR;
+	estado_outn = SALIDA_ESTANDAR;
+	return estado_outn;
 }
 
-int OUTC_ESO(t_CPU* self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
+int OUTC_ESO(t_CPU* self){
 
 	int estado_outc;
 	char* lecturaDeMSP = malloc(self->tcb->registro_de_programacion[1]);
@@ -1253,7 +1261,7 @@ int OUTC_ESO(t_CPU* self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
 	return estado_outc;
 
 }
-int CREA_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){ 	// CREA un hilo hijo de TCB
+int CREA_ESO(t_CPU *self){ 	// CREA un hilo hijo de TCB
 	int estado_crea;
 	t_crea_hilo* crear_hilo = malloc(sizeof(t_crea_hilo));
 	crear_hilo->tcb = self->tcb;
@@ -1267,7 +1275,7 @@ int CREA_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){ 	
 	return estado_crea;
 
 }
-int JOIN_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
+int JOIN_ESO(t_CPU *self){
 	int estado_join;
 	t_join* joinear = malloc(sizeof(t_join));
 	joinear->tid_llamador = self->tcb->tid;
@@ -1284,7 +1292,7 @@ int JOIN_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
 }
 
 
-int BLOK_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
+int BLOK_ESO(t_CPU *self){
 	int estado_blok;
 	t_bloquear* blocker = malloc(sizeof(t_bloquear));
 	blocker->tcb = self->tcb;
@@ -1301,9 +1309,11 @@ int BLOK_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
 
 }
 
-int WAKE_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
+int WAKE_ESO(t_CPU *self){
 	int estado_wake;
-	if (socket_sendPaquete(self->socketPlanificador->socket, WAKE_HILO ,sizeof(int32_t), &(self->tcb->registro_de_programacion[1]))<=0){
+	t_despertar* despertar = malloc(sizeof(t_despertar));
+	despertar->id_recurso = self->tcb->registro_de_programacion[1];
+	if (socket_sendPaquete(self->socketPlanificador->socket, WAKE_HILO ,sizeof(t_despertar), despertar)<=0){
 		log_info(self->loggerCPU, "CPU: WAKE ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 		estado_wake = MENSAJE_DE_ERROR;
 
@@ -1311,6 +1321,7 @@ int WAKE_ESO(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
 		log_info(self->loggerCPU, "CPU: WAKE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 		estado_wake = WAKE_HILO;
 	}
+	free(despertar);
 	return estado_wake;
 }
 

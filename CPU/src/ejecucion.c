@@ -55,7 +55,7 @@ int cpuProcesarTCB(t_CPU *self,t_ServiciosAlPlanificador* serviciosAlPlanificado
 
 		self->quantum = self->quantum - 1;
 
-		if(indiceAnterior != XXXX)
+		if(indiceAnterior != XXXX) //ALE: si ya se ejecuto el XXXX entonces el tcb ya le llego al planificador...en estado_ejecucion_instruccion = SIN_ERRORES
 			log_info(self->loggerCPU, "CPU: --------------------QUANTUM = %d------------------", self->quantum);
 	}
 
@@ -165,7 +165,7 @@ int ejecutar_instruccion(t_CPU *self, int linea, t_ServiciosAlPlanificador* serv
 		break;
 
 	case INTE:
-		estado = INTE_ESO(self, serviciosAlPlanificador);
+		estado = INTE_ESO(self);
 		break;
 
 	case SHIF:
@@ -214,7 +214,7 @@ int ejecutar_instruccion(t_CPU *self, int linea, t_ServiciosAlPlanificador* serv
 
 	case INNN:
 		if(self->tcb->km==1){
-			estado = INNN_ESO(self, serviciosAlPlanificador);
+			estado = INNN_ESO(self);
 		}else{
 			estado = ERROR_POR_EJECUCION_ILICITA;
 			break;
@@ -222,7 +222,7 @@ int ejecutar_instruccion(t_CPU *self, int linea, t_ServiciosAlPlanificador* serv
 		break;
 	case INNC:
 		if(self->tcb->km==1){
-			estado = INNC_ESO(self, serviciosAlPlanificador);
+			estado = INNC_ESO(self);
 		}else{
 			estado = ERROR_POR_EJECUCION_ILICITA;
 			break;
@@ -230,7 +230,7 @@ int ejecutar_instruccion(t_CPU *self, int linea, t_ServiciosAlPlanificador* serv
 		break;
 	case OUTN:
 		if(self->tcb->km==1){
-			estado = OUTN_ESO(self, serviciosAlPlanificador);
+			estado = OUTN_ESO(self);
 		}else{
 			estado = ERROR_POR_EJECUCION_ILICITA;
 			break;
@@ -239,7 +239,7 @@ int ejecutar_instruccion(t_CPU *self, int linea, t_ServiciosAlPlanificador* serv
 
 	case OUTC:
 		if(self->tcb->km==1){
-			estado = OUTC_ESO(self, serviciosAlPlanificador);
+			estado = OUTC_ESO(self);
 		}else{
 			estado = ERROR_POR_EJECUCION_ILICITA;
 			break;
@@ -249,7 +249,7 @@ int ejecutar_instruccion(t_CPU *self, int linea, t_ServiciosAlPlanificador* serv
 	case CREA:
 
 		if(self->tcb->km==1){
-			estado = CREA_ESO(self, serviciosAlPlanificador);
+			estado = CREA_ESO(self);
 		}else{
 			estado = ERROR_POR_EJECUCION_ILICITA;
 			break;
@@ -258,7 +258,7 @@ int ejecutar_instruccion(t_CPU *self, int linea, t_ServiciosAlPlanificador* serv
 
 	case JOIN:
 		if(self->tcb->km==1){
-			estado = JOIN_ESO(self, serviciosAlPlanificador);
+			estado = JOIN_ESO(self);
 		}else{
 			estado = ERROR_POR_EJECUCION_ILICITA;
 			break;
@@ -268,7 +268,7 @@ int ejecutar_instruccion(t_CPU *self, int linea, t_ServiciosAlPlanificador* serv
 	case BLOK:
 
 		if(self->tcb->km==1){
-			estado = BLOK_ESO(self, serviciosAlPlanificador);
+			estado = BLOK_ESO(self);
 		}else{
 			estado = ERROR_POR_EJECUCION_ILICITA;
 			break;
@@ -278,7 +278,7 @@ int ejecutar_instruccion(t_CPU *self, int linea, t_ServiciosAlPlanificador* serv
 	case WAKE:
 
 		if(self->tcb->km==1){
-			estado = WAKE_ESO(self, serviciosAlPlanificador);
+			estado = WAKE_ESO(self);
 		}else{
 			estado = ERROR_POR_EJECUCION_ILICITA;
 			break;
