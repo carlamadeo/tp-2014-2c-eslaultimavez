@@ -259,7 +259,8 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self,t_socket *socketNuevaConexionCPU){
 		ejecutar_UNA_ENTRADA_STANDAR(self,socketNuevaConexionCPU);
 		break;
 	case SALIDA_ESTANDAR:
-		ejecutar_UNA_SALIDA_ESTANDAR(self);
+		ejecutar_UNA_SALIDA_ESTANDAR(self,socketNuevaConexionCPU);
+		break;
 		break;
 	case CREAR_HILO:
 		ejecutar_UN_CREAR_HILO(self);
@@ -423,14 +424,14 @@ void ejecutar_UNA_ENTRADA_STANDAR(t_kernel* self, t_socket *socketNuevaConexionC
 
 
 
-void ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self){
+void ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self, t_socket *socketNuevaConexionCPU){
 
 	//1) Primer paso, se recibe un PID y una cadena de texto
 
 	t_socket_paquete *paqueteSalida = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_salida_estandarKernel* unaSalida = (t_salida_estandarKernel*) malloc(sizeof(t_salida_estandarKernel));
 
-	if(socket_recvPaquete(self->socketCPU, paqueteSalida) >= 0)
+	if(socket_recvPaquete(socketNuevaConexionCPU, paqueteSalida) >= 0)
 		unaSalida = (t_salida_estandarKernel*) paqueteSalida->data;
 
 	else
@@ -441,7 +442,7 @@ void ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self){
 		return (programaEnLista->programaTCB->pid == unaSalida->pid);
 	}
 
-	t_programaEnKernel* unProgramaSalida = list_find(cola_exec, (void*)esProgramaSalida);
+	t_programaEnKernel* unProgramaSalida = list_find(listaDeProgramasDisponibles, (void*)esProgramaSalida);
 
 	//3) Terce paso, se manda un mensaje a la consola
 	socket_sendPaquete(unProgramaSalida->socketProgramaConsola, SALIDA_ESTANDAR,sizeof(t_salida_estandarKernel), unaSalida);

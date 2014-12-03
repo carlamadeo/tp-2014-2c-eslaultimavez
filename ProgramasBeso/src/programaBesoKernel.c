@@ -120,8 +120,10 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 						unTexto->texto = texto;
 
 						//se manda un texto al planificador
-						socket_sendPaquete(self->socketKernel->socket, QUANTUM, sizeof(t_entrada_texto), unTexto);
-						log_info(self->loggerProgramaBESO, "Consola: envia un texto: %s", unTexto->texto);
+						if(socket_sendPaquete(self->socketKernel->socket, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_texto), unTexto)>0){
+							log_info(self->loggerProgramaBESO, "Consola: envia un texto:");
+						}else
+							log_info(self->loggerProgramaBESO, "Consola: error al enviar un texto.");
 
 					}else
 						log_error(self->loggerProgramaBESO, "Consola: error al rebicir el mensaje UNA_ENTRADA_STANDAR.");

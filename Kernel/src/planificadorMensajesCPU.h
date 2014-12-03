@@ -66,7 +66,7 @@ void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket *socketNuevaCone
 void ejecutar_UNA_INTERRUPCION(t_kernel* self,t_socket *socketNuevaConexionCPU);
 void printfEntradaStandar(t_entrada_estandarKenel* entrada);
 void ejecutar_UNA_ENTRADA_STANDAR(t_kernel* self, t_socket *socketNuevaConexionCPU);
-void ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self);
+void ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self, t_socket *socketNuevaConexionCPU);
 void ejecutar_UN_CREAR_HILO(t_kernel* self);
 void ejecutar_UN_JOIN_HILO(t_kernel* self);
 void ejecutar_UN_BLOK_HILO(t_kernel* self);
