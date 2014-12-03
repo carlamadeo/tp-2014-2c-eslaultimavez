@@ -42,61 +42,64 @@ int main(int argc, char** argv) {
 
 	while(1){
 		//1) Paso, recibir Quantum
-		cpuRecibirQuantum(self);
-		//2) Paso, recibir TCB
-		cpuRecibirTCB(self);
-		//3) Paso, Procesa TCB
-		valorCPU = cpuProcesarTCB(self, serviciosAlPlanificador);
-
-		log_info(self->loggerCPU, "CPU: valorCPU == %d",valorCPU);
-
-		switch(valorCPU){
-
-		case SIN_ERRORES:
-			cpuEnviarPaqueteAPlanificador(self, CAMBIO_DE_CONTEXTO);
-			t_TCB_CPU* tcbProcesado = malloc(sizeof(t_TCB_CPU));
-			tcbProcesado = self->tcb;
-
-			//se mande un TCB a CPU
-			printTCBCPU(tcbProcesado);
-			socket_sendPaquete(self->socketPlanificador->socket, TCB_NUEVO,sizeof(t_TCB_CPU), tcbProcesado);
-			log_info(self->loggerCPU, "CPU: envia un CAMBIO_DE_CONTEXTO");
-			free(tcbProcesado);
-			break;
-		case INTERRUPCION:
-			cpuEnviarPaqueteAPlanificador(self, INTERRUPCION);
-			log_info(self->loggerCPU, "CPU: envia una INTERRUPCION");
-			break;
-		case ENTRADA_ESTANDAR:
-			cpuEnviarPaqueteAPlanificador(self, ENTRADA_ESTANDAR);
-			log_info(self->loggerCPU, "CPU: envia una ENTRADA_ESTANDAR");
-			break;
-		case SALIDA_ESTANDAR:
-			cpuEnviarPaqueteAPlanificador(self, SALIDA_ESTANDAR);
-			log_info(self->loggerCPU, "CPU: envia una SALIDA_ESTANDAR");
-			break;
-		case CREAR_HILO:
-			cpuEnviarPaqueteAPlanificador(self, CREAR_HILO);
-			log_info(self->loggerCPU, "CPU: envia un CREAR_HILO");
-			break;
-		case JOIN_HILO:
-			cpuEnviarPaqueteAPlanificador(self, JOIN_HILO);
-			log_info(self->loggerCPU, "CPU: envia un JOIN_HILO");
-			break;
-		case BLOK_HILO:
-			cpuEnviarPaqueteAPlanificador(self, BLOK_HILO);
-			log_info(self->loggerCPU, "CPU: envia un BLOK_HILO");
-			break;
-		case WAKE_HILO:
-			cpuEnviarPaqueteAPlanificador(self, WAKE_HILO);
-			log_info(self->loggerCPU, "CPU: envia un WAKE_HILO");
-			break;
-		default:
-			cpuEnviarPaqueteAPlanificador(self, MENSAJE_DE_ERROR);
-			log_error(self->loggerCPU, "CPU: envia un MENSAJE_DE_ERROR");
-			return MENSAJE_DE_ERROR;
+		if (cpuRecibirQuantum(self) || cpuRecibirTCB(self)){
+			log_info(self->loggerCPU, "Finalizando CPU..");
+			return EXIT_FAILURE;
 		}
 
+		else{
+			valorCPU = cpuProcesarTCB(self, serviciosAlPlanificador);
+
+			log_info(self->loggerCPU, "CPU: valorCPU == %d",valorCPU);
+
+			switch(valorCPU){
+
+			case SIN_ERRORES:
+				cpuEnviarPaqueteAPlanificador(self, CAMBIO_DE_CONTEXTO);
+				t_TCB_CPU* tcbProcesado = malloc(sizeof(t_TCB_CPU));
+				tcbProcesado = self->tcb;
+
+				//se mande un TCB a CPU
+				printTCBCPU(tcbProcesado);
+				socket_sendPaquete(self->socketPlanificador->socket, TCB_NUEVO,sizeof(t_TCB_CPU), tcbProcesado);
+				log_info(self->loggerCPU, "CPU: envia un CAMBIO_DE_CONTEXTO");
+				free(tcbProcesado);
+				break;
+			case INTERRUPCION:
+				cpuEnviarPaqueteAPlanificador(self, INTERRUPCION);
+				log_info(self->loggerCPU, "CPU: envia una INTERRUPCION");
+				break;
+			case ENTRADA_ESTANDAR:
+				cpuEnviarPaqueteAPlanificador(self, ENTRADA_ESTANDAR);
+				log_info(self->loggerCPU, "CPU: envia una ENTRADA_ESTANDAR");
+				break;
+			case SALIDA_ESTANDAR:
+				cpuEnviarPaqueteAPlanificador(self, SALIDA_ESTANDAR);
+				log_info(self->loggerCPU, "CPU: envia una SALIDA_ESTANDAR");
+				break;
+			case CREAR_HILO:
+				cpuEnviarPaqueteAPlanificador(self, CREAR_HILO);
+				log_info(self->loggerCPU, "CPU: envia un CREAR_HILO");
+				break;
+			case JOIN_HILO:
+				cpuEnviarPaqueteAPlanificador(self, JOIN_HILO);
+				log_info(self->loggerCPU, "CPU: envia un JOIN_HILO");
+				break;
+			case BLOK_HILO:
+				cpuEnviarPaqueteAPlanificador(self, BLOK_HILO);
+				log_info(self->loggerCPU, "CPU: envia un BLOK_HILO");
+				break;
+			case WAKE_HILO:
+				cpuEnviarPaqueteAPlanificador(self, WAKE_HILO);
+				log_info(self->loggerCPU, "CPU: envia un WAKE_HILO");
+				break;
+			default:
+				cpuEnviarPaqueteAPlanificador(self, MENSAJE_DE_ERROR);
+				log_error(self->loggerCPU, "CPU: envia un MENSAJE_DE_ERROR");
+				return MENSAJE_DE_ERROR;
+			}
+
+		}
 	}
 
 	log_info(self->loggerCPU, "Se desconecto la CPU. Elimino todo");

@@ -19,6 +19,7 @@
 t_list *listaDeProgramasDisponibles;
 t_list* cola_new;
 t_list* cola_ready;
+
 int main(int argc, char** argv) {
 
 	verificar_argumentosKernel(argc, argv);

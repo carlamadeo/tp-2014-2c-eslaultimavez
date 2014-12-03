@@ -140,7 +140,7 @@ void atenderCPU(t_kernel* self,t_socket *socketNuevaConexionCPU, t_cpu* cpu, fd_
 
 	switch(paqueteCPUAtendido->header.type){
 	case CAMBIO_DE_CONTEXTO:
-			ejecutar_UN_CAMBIO_DE_CONTEXTO(self, socketNuevaConexionCPU);
+		ejecutar_UN_CAMBIO_DE_CONTEXTO(self, socketNuevaConexionCPU);
 		break;
 	case MENSAJE_DE_ERROR:
 		log_info(self->loggerPlanificador, "Planificador: recibe un MENSAJE_DE_ERROR" );
@@ -205,11 +205,11 @@ t_programaEnKernel* obtenerTCBdeReady(t_kernel* self){
 	log_error(self->loggerPlanificador," Cantidad de elemento en la cola New: %d" ,list_size(cola_new));
 	if (list_size(cola_new)>0){
 		sem_wait(&mutex_new);
-		t_programaEnKernel* programa =list_remove(cola_new, 0); //SE REMUEVE EL PRIMER PROGRAMA DE NEW
+		t_programaEnKernel* programa = list_remove(cola_new, 0); //SE REMUEVE EL PRIMER PROGRAMA DE NEW
 		sem_post(&mutex_new);
 
 		sem_wait(&mutex_ready);
-		list_add(cola_ready,programa);// SE AGREGA UN PROGRAMA EN READY
+		list_add(cola_ready, programa);// SE AGREGA UN PROGRAMA EN READY
 		sem_post(&mutex_ready);
 
 		log_info(self->loggerPlanificador," Planificador: Obtiene un elemento de la Cola Ready con PID: %d y TID:%d" ,programa->programaTCB->pid,programa->programaTCB->tid );

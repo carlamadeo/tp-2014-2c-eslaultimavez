@@ -10,7 +10,7 @@ int unTIDGlobal = 1;
 
 t_list *listaDeProgramasDisponibles;
 t_list* cola_new;
-t_list* cola_ready;
+
 void kernel_comenzar_Loader(t_kernel* self){
 
 	t_socket *socketEscucha, *socketNuevaConexion;
@@ -183,8 +183,8 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 		unPrograma->socketProgramaConsola = socketNuevoCliente;
 
 		sem_wait(&mutex_new);
-		list_add(cola_new,unPrograma);
-		list_add(listaDeProgramasDisponibles,unPrograma);
+		list_add(cola_new, unPrograma);
+		list_add(listaDeProgramasDisponibles, unPrograma);
 		sem_post(&mutex_new);
 		log_info(self->loggerLoader,"Loader: Agrego un elemento a la Cola New con el PID:%d  TID:%d ", unTCBenLoader->pid, unTCBenLoader->tid);
 		sem_post(&mutex_BloqueoPlanificador);

@@ -45,7 +45,7 @@ void cpuRealizarHandshakeConKernel(t_CPU *self){
 }
 
 
-void cpuRecibirTCB(t_CPU *self){
+int cpuRecibirTCB(t_CPU *self){
 
 	t_socket_paquete *paquetePlanificadorTCB = (t_socket_paquete*) malloc(sizeof(t_socket_paquete));
 	t_TCB_CPU* unTCBNuevo = (t_TCB_CPU*) malloc(sizeof(t_TCB_CPU));
@@ -59,17 +59,25 @@ void cpuRecibirTCB(t_CPU *self){
 			self->tcb = unTCBNuevo;
 			printTCBCPU(self->tcb);
 			//log_debug(self->loggerCPU, "CPU: recibio un TCB_NUEVO con PID: %d TID:%d KM:%d", self->tcb->pid, self->tcb->tid, self->tcb->km);
-		}else
+		}
+
+		else{
 			log_error(self->loggerCPU, "CPU: error al recibir de planificador TCB_NUEVO");
+			return 1;
+		}
 	}
-	else
+
+	else{
 		log_error(self->loggerCPU, "CPU: Error al recibir un paquete del planificador");
+		return 1;
+	}
 
 	free(paquetePlanificadorTCB);
+	return 0;
 }
 
 
-void cpuRecibirQuantum(t_CPU *self){
+int cpuRecibirQuantum(t_CPU *self){
 
 	t_socket_paquete *paquetePlanificadorQuantum = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_quantumCPU* unQuantum =  (t_quantumCPU*) malloc(sizeof(t_quantumCPU));
@@ -82,10 +90,13 @@ void cpuRecibirQuantum(t_CPU *self){
 		log_debug(self->loggerCPU, "CPU: recibe un quantum: %d",self->quantum);
 	}
 
-	else
+	else{
 		log_error(self->loggerCPU, "CPU: error al recibir un quantum");
+		return 1;
+	}
 
 	free(paquetePlanificadorQuantum);
+	return 0;
 }
 
 
