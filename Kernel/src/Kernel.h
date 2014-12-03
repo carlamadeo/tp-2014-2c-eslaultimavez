@@ -20,7 +20,7 @@ typedef struct {
 	uint32_t puntero_instruccion;
 	uint32_t base_stack;
 	uint32_t cursor_stack;
-	int32_t registro_de_programacion[4];
+	int32_t registro_de_programacion[5];
 } t_TCB_Kernel;
 
 typedef struct {
