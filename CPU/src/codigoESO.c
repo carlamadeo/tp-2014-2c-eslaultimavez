@@ -1146,21 +1146,17 @@ void printfEntradaStandarCPU(t_entrada_estandar* entrada){
 
 }
 int INNN_ESO(t_CPU *self){
-
-	log_info(self->loggerCPU, "TEST 1");
+	//log_info(self->loggerCPU, "TEST 1");
 	//1) declara la estructura para mostrar los registros de cpu: logs de la catedra.
 	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	//2) declara la variable de control que devuelve el estado del bloque funcion.
 	int estado_innn;
 	//3) carga los datos para enviar al planificador el servicio requerido.
 	t_entrada_estandar* entradaEstandar = malloc(sizeof(t_entrada_estandar));
-	log_info(self->loggerCPU, "TEST 2");
+	//log_info(self->loggerCPU, "TEST 2");
 	entradaEstandar->pid = self->tcb->pid;
 	entradaEstandar->tamanio = sizeof(int);
-	entradaEstandar->tipo = 1;
-
-	log_info(self->loggerCPU, "CPU: envia una ENTRADA_ESTANDAR");
-	printfEntradaStandarCPU(entradaEstandar);
+	entradaEstandar->tipo = ENTRADA_ESTANDAR_INT;    //JORGE ESTO ESTA MAL!!!!!!!!!!!!!!!!!!!!!!
 
 	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR,sizeof(t_entrada_estandar), entradaEstandar)<=0){  //22 corresponde a interrupcion
 		log_info(self->loggerCPU, "CPU: INNN ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
@@ -1201,8 +1197,10 @@ int INNC_ESO(t_CPU *self){
 
 	entradaEstandar->pid = self->tcb->pid;
 	entradaEstandar->tamanio = self->tcb->registro_de_programacion[1];
-	entradaEstandar->tipo = 2;
+	entradaEstandar->tipo = ENTRADA_ESTANDAR_TEXT;    //JORGE ESTO ESTA MAL!!!!!!!!!!!!!!!!!!!!!!
 
+	log_info(self->loggerCPU, "CPU: envia una ENTRADA_ESTANDAR");
+	printfEntradaStandarCPU(entradaEstandar);
 	socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR, 0, NULL);
 	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR,sizeof(t_entrada_estandar), entradaEstandar)<=0){  //22 corresponde a interrupcion
 		log_info(self->loggerCPU, "CPU: INNC ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);

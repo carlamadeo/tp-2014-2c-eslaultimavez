@@ -362,32 +362,54 @@ void ejecutar_UNA_ENTRADA_STANDAR(t_kernel* self, t_socket *socketNuevaConexionC
 
 	t_programaEnKernel* unPrograma = list_find(listaDeProgramasDisponibles, (void*)esProgramaEntrada);
 
-	log_info(self->loggerPlanificador, "Planificador: valores de la entrada:" );
 	//3) Tercer paso, se manda un mensaje a la consola
-
+	log_info(self->loggerPlanificador, "Planificador: valores de la entrada:" );
 	printfEntradaStandar(unaEntrada);
+
 	if (unaEntrada->tipo == ENTRADA_ESTANDAR_INT ){
 		socket_sendPaquete(unPrograma->socketProgramaConsola, ENTRADA_ESTANDAR_INT,sizeof(t_entrada_estandarKenel), unaEntrada);
 		log_info(self->loggerPlanificador, "Planificador: envia ENTRADA_ESTANDAR_INT");
+
+
+		//4) Cuarto paso, se recibe un paquete de consola
+		t_socket_paquete *paqueteEntradaINT = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+		t_entrada_numeroKernel* unaEntradaDevueltaINT = (t_entrada_numeroKernel*) malloc(sizeof(t_entrada_numeroKernel));
+
+		if(socket_recvPaquete(unPrograma->socketProgramaConsola, paqueteEntradaINT) >= 0){
+			unaEntradaDevueltaINT = (t_entrada_numeroKernel*) paqueteEntradaINT->data;
+			log_info(self->loggerPlanificador, "Planificador: recibe un ENTRADA_ESTANDAR_TEXT: %d ",unaEntradaDevueltaINT->numero);
+		}
+		else
+			log_error(self->loggerPlanificador, "Planificador: error al rebicir UNA_ENTRADA_STANDAR_TEXT de consola.");
+
+
 	}
 
 	else
 		if(unaEntrada->tipo == ENTRADA_ESTANDAR_TEXT){
+			socket_sendPaquete(unPrograma->socketProgramaConsola, ENTRADA_ESTANDAR_TEXT,0, NULL);
 			socket_sendPaquete(unPrograma->socketProgramaConsola, ENTRADA_ESTANDAR_TEXT,sizeof(t_entrada_estandarKenel), unaEntrada);
 			log_info(self->loggerPlanificador, "Planificador: envia ENTRADA_ESTANDAR_TEXT ");
-		}
 
-	/*	//4) Cuarto paso, se recibe un paquete de consola
-	t_socket_paquete *paqueteEntradaDevuelto = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-	t_entrada_estandarKenel* unaEntradaDevuelta = (t_entrada_estandarKenel*) malloc(sizeof(t_entrada_estandarKenel));
 
-	if(socket_recvPaquete(unPrograma->socketProgramaConsola, paqueteEntradaDevuelto) >= 0)
-		unaEntradaDevuelta = (t_entrada_estandarKenel*) paqueteEntradaDevuelto->data;
+			//4) Cuarto paso, se recibe un paquete de consola
+			t_socket_paquete *paqueteEntradaTexto = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+			t_entrada_textoKernel* unaEntradaDevueltaTexto = (t_entrada_textoKernel*) malloc(sizeof(t_entrada_textoKernel));
 
-	else
-		log_error(self->loggerPlanificador, "Planificador: error al rebicir UNA_ENTRADA_STANDAR de consola.");
+			if(socket_recvPaquete(unPrograma->socketProgramaConsola, paqueteEntradaTexto) >= 0){
+				unaEntradaDevueltaTexto = (t_entrada_textoKernel*) paqueteEntradaTexto->data;
+				log_info(self->loggerPlanificador, "Planificador: recibe un ENTRADA_ESTANDAR_TEXT: %s ",unaEntradaDevueltaTexto->texto);
+			}
+			else
+				log_error(self->loggerPlanificador, "Planificador: error al rebicir UNA_ENTRADA_STANDAR_TEXT de consola.");
 
-	//por ultimo se lo manda a la CPU
+
+
+		}else
+			log_error(self->loggerPlanificador, "Planificador: error en el tipo ENTRADA_ESTANDAR_TEXT ");
+
+
+	/*	//por ultimo se lo manda a la CPU
 	socket_sendPaquete(self->socketCPU, ENTRADA_ESTANDAR,sizeof(unaEntradaDevuelta->tamanio), unaEntradaDevuelta);
 	log_debug(self->loggerPlanificador, "Planificador: envia ");
 
@@ -395,7 +417,7 @@ void ejecutar_UNA_ENTRADA_STANDAR(t_kernel* self, t_socket *socketNuevaConexionC
 	free(unaEntrada);
 	free(unaEntradaDevuelta);
 	socket_freePaquete(paqueteEntradaDevuelto);
-	*/
+	 */
 }
 
 

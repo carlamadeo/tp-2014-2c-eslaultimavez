@@ -222,6 +222,7 @@ int ejecutar_instruccion(t_CPU *self, int linea, t_ServiciosAlPlanificador* serv
 		}
 		break;
 	case INNC:
+		//log_info(self->loggerCPU, "TEST ESTOY");
 		if(self->tcb->km==1){
 			estado = INNC_ESO(self);
 		}else{

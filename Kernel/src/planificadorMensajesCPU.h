@@ -19,6 +19,13 @@ typedef struct{
 	int tipo;
 } t_entrada_estandarKenel;
 
+typedef struct{
+	int numero;
+} t_entrada_numeroKernel;
+
+typedef struct{
+	char* texto;
+} t_entrada_textoKernel;
 
 typedef struct{
 	int pid;

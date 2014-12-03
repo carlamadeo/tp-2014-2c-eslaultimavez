@@ -38,6 +38,9 @@ void realizarHandshakeConLoader(t_programaBESO* self){
 }
 
 void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
+	int num;
+	int tamanio;
+	char *texto;
 
 	FILE *archivoBeso = fopen(parametro, "r");
 
@@ -51,7 +54,7 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 	fseek(archivoBeso, 0, SEEK_SET);	//Me coloco al principio del fichero para leerlo
 
 	off_t offset = 0;
-	int i;
+	//int i;
 	t_socket_header header;
 	header.length = sizeof(header) + sizeArchivoBeso;
 
@@ -82,9 +85,50 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 				break;
 			case ENTRADA_ESTANDAR_INT:
 				log_info(self->loggerProgramaBESO,"Consola: recibe una ENTRADA_ESTANDAR_INT");
+				printf("Ingrese el numero PID del programa: \n");
+				scanf("%d", &num);
+
+				t_entrada_numero* unNum = malloc(sizeof(t_entrada_numero));
+				unNum->numero= num;
+
+				//se manda un texto al planificador
+				socket_sendPaquete(self->socketKernel->socket, QUANTUM, sizeof(t_entrada_numero), unNum);
+				log_info(self->loggerProgramaBESO, "Consola: envia un texto: %s", unNum->numero);
+
 				break;
 			case ENTRADA_ESTANDAR_TEXT:
+
 				log_info(self->loggerProgramaBESO,"Consola: recibe una ENTRADA_ESTANDAR_TEXT");
+
+				t_socket_paquete *paqueteEntrada = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+				t_entrada_estandarConsola* entradaConsola = malloc(sizeof(t_entrada_estandarConsola));
+
+				if(paquete->header.type == ENTRADA_ESTANDAR_TEXT){
+
+					if(socket_recvPaquete(self->socketKernel->socket, paqueteEntrada) >= 0){
+						entradaConsola = (t_entrada_estandarConsola*) paqueteEntrada->data;
+
+						tamanio = entradaConsola->tamanio;
+
+						texto = malloc(sizeof(char)*tamanio + 1);
+						memset(texto, 0, tamanio);
+						printf("Ingrese lo que desea escribir: \n");
+						fgets(texto, tamanio, stdin);
+
+
+						t_entrada_texto* unTexto = malloc(sizeof(t_entrada_texto));
+						unTexto->texto = texto;
+
+						//se manda un texto al planificador
+						socket_sendPaquete(self->socketKernel->socket, QUANTUM, sizeof(t_entrada_texto), unTexto);
+						log_info(self->loggerProgramaBESO, "Consola: envia un texto: %s", unTexto->texto);
+
+					}else
+						log_error(self->loggerProgramaBESO, "Consola: error al rebicir el mensaje UNA_ENTRADA_STANDAR.");
+				}else
+					log_error(self->loggerProgramaBESO,"Consola: error al recibir el paquete ENTRADA_ESTANDAR_TEXT");
+
+
 				break;
 			case ERROR_POR_TAMANIO_EXCEDIDO:
 				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error por tamaño de segmento excedido");
@@ -115,6 +159,7 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 		}
 	}
 
+	free(texto);
 	//free(datosAKernel->codigoBeso);
 	free(datosAKernel);
 	socket_freePaquete(paquete);
