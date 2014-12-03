@@ -20,61 +20,58 @@ void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente
 	log_info(self->loggerPlanificador, "Planificador: envia CPU_SEGUI_EJECUTANDO");
 }
 
-void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self,t_socket *socketNuevaConexionCPU){
+void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_socket *socketNuevaConexionCPU){
 
 	//1) Primer paso, se lo pone a final de READY
 	t_socket_paquete *paqueteTCB = (t_socket_paquete*) malloc(sizeof(t_socket_paquete));
 	t_TCB_Kernel* unTCBNuevo = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
 
-
 	if(socket_recvPaquete(socketNuevaConexionCPU, paqueteTCB) >= 0){
 
 		if(paqueteTCB->header.type == TCB_NUEVO){
+
 			unTCBNuevo = (t_TCB_Kernel*) paqueteTCB->data;
-			//printTCBKernel(unTCBNuevo);
 
-		}else
-			log_error(self->loggerPlanificador, "CPU: error al recibir de planificador TCB_NUEVO");
+			t_programaEnKernel *unProgramaCPU = obtenerProgramaDeReady(unTCBNuevo);
+
+			if(unProgramaCPU != NULL){
+
+				list_add(cola_ready, unProgramaCPU);
+
+				//2) Segundo paso, se verifica que la cola de READY no esta vacia
+
+				if(list_size(cola_ready) > 0){
+
+					// se remueve el primer elemento de ready
+					t_programaEnKernel *unProgramaTcbReady = list_remove(cola_ready, 0); //SE REMUEVE EL PRIMER PROGRAMA DE NEW
+
+					t_QUANTUM* unQuamtum = malloc(sizeof(t_QUANTUM));
+					unQuamtum->quantum = self->quantum;
+
+					//se manda un QUANTUM a CPU
+					socket_sendPaquete(socketNuevaConexionCPU, QUANTUM, sizeof(t_QUANTUM), unQuamtum);
+					log_info(self->loggerPlanificador, "Planificador: envia un quantum: %d", unQuamtum->quantum);
+
+					//se mande un TCB a CPU
+					socket_sendPaquete(socketNuevaConexionCPU, TCB_NUEVO,sizeof(t_TCB_Kernel), unProgramaTcbReady->programaTCB);
+					log_info(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID: %d TID:%d KM:%d", unProgramaTcbReady->programaTCB->pid, unProgramaTcbReady->programaTCB->tid, unProgramaTcbReady->programaTCB->km );
+
+				}
+
+				else{
+					// si no corresponde se queda bloqueado
+					log_debug(self->loggerPlanificador, "Planificador: bloqueado, sin Programas Beso. Error, jorge");
+					sem_wait(&mutex_new);
+				}
+			}
+		}
+
+		else
+			log_error(self->loggerPlanificador, "Planificador: Error al recibir de CPU TCB_NUEVO");
 	}
+
 	else
-		log_error(self->loggerPlanificador, "CPU: Error al recibir un paquete del planificador");
-
-
-	t_programaEnKernel *unProgramaCPU = obtenerProgramaDeReady(unTCBNuevo);
-
-	if(unProgramaCPU != NULL){
-		list_add(cola_ready, unProgramaCPU);
-
-		//2) Segundo paso, se verifica que la cola de READY no esta vacia
-
-		if(list_size(cola_ready) > 0){
-			log_info(self->loggerPlanificador, "test2");
-
-			// se remueve el primer elemento de ready
-			t_programaEnKernel *unProgramaTcbReady = list_remove(cola_ready, 0); //SE REMUEVE EL PRIMER PROGRAMA DE NEW
-
-			t_QUANTUM* unQuamtum = malloc(sizeof(t_QUANTUM));
-			unQuamtum->quantum = self->quantum;
-
-			printTCBKernel(unTCBNuevo);
-
-			//se manda un QUANTUM a CPU
-			socket_sendPaquete(socketNuevaConexionCPU, QUANTUM, sizeof(t_QUANTUM), unQuamtum);
-			log_info(self->loggerPlanificador, "Planificador: envia un quantum: %d", unQuamtum->quantum);
-
-			//se mande un TCB a CPU
-			socket_sendPaquete(socketNuevaConexionCPU, TCB_NUEVO,sizeof(t_TCB_Kernel), unTCBNuevo);
-			log_info(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID: %d TID:%d KM:%d", unTCBNuevo->pid,unTCBNuevo->tid,unTCBNuevo->km );
-
-		}
-
-		else{
-			log_info(self->loggerPlanificador, "test3");
-			// si no corresponde se queda bloqueado
-			log_debug(self->loggerPlanificador, "Planificador: bloqueado, sin Programas Beso. Error, jorge");
-			sem_wait(&mutex_new);
-		}
-	}
+		log_error(self->loggerPlanificador, "Planificador: Error al recibir un paquete del CPU");
 
 	//free(unTCBPadre);
 	//socket_freePaquete(paqueteContexto);
@@ -118,9 +115,10 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self){
 
 	//2) Segundo paso, se busca el TCB kernel en la cola_Block
 
-	bool _esKMKERNEL(t_TCB_Kernel* tcb) {
+	bool _esKMKERNEL(t_TCB_Kernel* tcb){
 		return (tcb->km == 1);
 	}
+
 	t_TCB_Kernel* tcbKernel = list_remove_by_condition(cola_block, (void*)_esKMKERNEL);
 
 
@@ -137,19 +135,24 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self){
 	//4) Cuarto paso, se agrega el TCB kernel en la lista de CPU Libres
 
 	t_cpu* unaCpuKernel;
+
 	unaCpuKernel = malloc( sizeof(t_cpu) );
 	unaCpuKernel->id = 712;
 	unaCpuKernel->socket = self->socketCPU;
 	unaCpuKernel->TCB = tcbKernel;
 
 	//Se tiene que verificar si hay CPUs Libres
-	if (list_size(listaDeCPULibres)>0){
+	if (list_size(listaDeCPULibres) > 0){
+
 		list_add(listaDeCPULibres,unaCpuKernel); //sincronizar
 		log_debug(self->loggerPlanificador, "EXEC: Se carga KM=1 en el primer CPU disponible ");
-	}else
+
+	}
+
+	else
 		log_error(self->loggerPlanificador, "EXEC: error al cargar TCB Kernel NO EXISTES CPUs CONECTADAS");
 
-	//5) Quiento paso, se manda el TCB KERNEL al CPU
+	//5) Quinto paso, se manda el TCB KERNEL al CPU
 	t_TCB_Kernel* tcbKernelaCPU = malloc(sizeof(t_TCB_Kernel));
 	tcbKernelaCPU = tcbKernel;
 
@@ -162,10 +165,7 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self){
 
 	//se manda un TCB a CPU
 	socket_sendPaquete(self->socketCPU, TCB_NUEVO,sizeof(t_TCB_Kernel), tcbKernelaCPU);
-	log_debug(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID: %d TID:%d KM:%d", tcbKernelaCPU->pid,tcbKernelaCPU->tid,tcbKernelaCPU->km);
-
-
-
+	log_debug(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID: %d TID:%d KM:%d", tcbKernelaCPU->pid, tcbKernelaCPU->tid, tcbKernelaCPU->km);
 
 	//6) Sexto paso, se queda bloqueado esperando al TCB Kernel
 
@@ -173,12 +173,17 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self){
 	t_TCB_Kernel* tcbKernelModificado = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
 
 	if(socket_recvPaquete(self->socketCPU, paqueteKernelTCB) >= 0){
+
 		if(paqueteKernelTCB->header.type == TCB_NUEVO){
 			tcbKernelModificado = (t_TCB_Kernel*) paqueteKernelTCB->data;
 
-		}else
+		}
+
+		else
 			log_error(self->loggerPlanificador, "Planificador: error al recibir el TCB Kernel. ");
-	}else
+	}
+
+	else
 		log_error(self->loggerPlanificador, "Planificador: error al un Paquete de CPU, que contiene al TCB Kernel.");
 
 
@@ -187,6 +192,7 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self){
 	bool _esTCBSystemCall(t_TCB_Kernel* tcbSystemCall) {
 		return ((tcbSystemCall->pid == unaInterrupcion->tcb->pid) && ((tcbSystemCall->tid == unaInterrupcion->tcb->tid)));   //ver esta parte importante
 	}
+
 	t_TCB_Kernel* unTcbSystemCall = list_remove_by_condition(listaSystemCall, (void*)_esTCBSystemCall);
 
 	//Se cargan el TCB usuario con los valores del TCB Kernel modificado
@@ -198,7 +204,9 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self){
 		unTcbSystemCall->registro_de_programacion[2] = tcbKernelModificado->registro_de_programacion[2];
 		unTcbSystemCall->registro_de_programacion[3] = tcbKernelModificado->registro_de_programacion[3];
 
-	}else
+	}
+
+	else
 		log_error(self->loggerPlanificador, "Planificador: error al traer un TCB de la lista listaSystemCall.");
 
 	//por ultimo se lo manda a la cola de READY
@@ -225,45 +233,44 @@ void ejecutar_UNA_ENTRADA_STANDAR(t_kernel* self){
 	if(socket_recvPaquete(self->socketCPU, paqueteEntrada) >= 0){
 		unaEntrada = (t_entrada_estandarKenel*) paqueteEntrada->data;
 
-	}else
+	}
+
+	else
 		log_error(self->loggerPlanificador, "Planificador: error al rebicir UNA_ENTRADA_STANDAR.");
 
 
 	//2) Segundo paso, se busca la consola(programaBeso)
-
 	bool esProgramaEntrada(t_programaEnKernel* programaEnLista){
 		return (programaEnLista->programaTCB->pid == unaEntrada->pid);
 	}
+
 	t_programaEnKernel* unPrograma = list_find(cola_exec, (void*)esProgramaEntrada);
 
-	//3) Terce paso, se manda un mensaje a la consola
-
+	//3) Tercer paso, se manda un mensaje a la consola
 	if (unaEntrada->tipo == ENTRADA_ESTANDAR_INT ){
 		socket_sendPaquete(unPrograma->socketProgramaConsola, ENTRADA_ESTANDAR_INT,sizeof(t_entrada_estandarKenel), unaEntrada);
 		log_debug(self->loggerPlanificador, "Planificador: envia ENTRADA_ESTANDAR_INT");
-	}else
+	}
+
+	else
 		if(unaEntrada->tipo == ENTRADA_ESTANDAR_TEXT){
 			socket_sendPaquete(unPrograma->socketProgramaConsola, ENTRADA_ESTANDAR_TEXT,sizeof(t_entrada_estandarKenel), unaEntrada);
 			log_debug(self->loggerPlanificador, "Planificador: envia ENTRADA_ESTANDAR_TEXT ");
-
 		}
 
 	//4) Cuarto paso, se recibe un paquete de consola
 	t_socket_paquete *paqueteEntradaDevuelto = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_entrada_estandarKenel* unaEntradaDevuelta = (t_entrada_estandarKenel*) malloc(sizeof(t_entrada_estandarKenel));
 
-	if(socket_recvPaquete(unPrograma->socketProgramaConsola, paqueteEntradaDevuelto) >= 0){
+	if(socket_recvPaquete(unPrograma->socketProgramaConsola, paqueteEntradaDevuelto) >= 0)
 		unaEntradaDevuelta = (t_entrada_estandarKenel*) paqueteEntradaDevuelto->data;
 
-	}else
+	else
 		log_error(self->loggerPlanificador, "Planificador: error al rebicir UNA_ENTRADA_STANDAR de consola.");
 
-
 	//por ultimo se lo manda a la CPU
-
 	socket_sendPaquete(self->socketCPU, ENTRADA_ESTANDAR,sizeof(unaEntradaDevuelta->tamanio), unaEntradaDevuelta);
 	log_debug(self->loggerPlanificador, "Planificador: envia ");
-
 
 	socket_freePaquete(paqueteEntrada);
 	free(unaEntrada);
@@ -281,26 +288,22 @@ void ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self){
 	t_socket_paquete *paqueteSalida = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_salida_estandarKernel* unaSalida = (t_salida_estandarKernel*) malloc(sizeof(t_salida_estandarKernel));
 
-	if(socket_recvPaquete(self->socketCPU, paqueteSalida) >= 0){
+	if(socket_recvPaquete(self->socketCPU, paqueteSalida) >= 0)
 		unaSalida = (t_salida_estandarKernel*) paqueteSalida->data;
 
-	}else
+	else
 		log_error(self->loggerPlanificador, "Planificador: error al rebicir UNA_SALIDA_ESTANDAR.");
 
-
 	//2) Segundo paso, se busca la consola(programaBeso)
-
 	bool esProgramaSalida(t_programaEnKernel* programaEnLista){
 		return (programaEnLista->programaTCB->pid == unaSalida->pid);
 	}
+
 	t_programaEnKernel* unProgramaSalida = list_find(cola_exec, (void*)esProgramaSalida);
 
-
 	//3) Terce paso, se manda un mensaje a la consola
-
 	socket_sendPaquete(unProgramaSalida->socketProgramaConsola, SALIDA_ESTANDAR,sizeof(t_salida_estandarKernel), unaSalida);
 	log_debug(self->loggerPlanificador, "Planificador: envia UNA_SALIDA_ESTANDAR");
-
 
 	free(unaSalida);
 	socket_freePaquete(paqueteSalida);
@@ -316,17 +319,17 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self){
 	t_socket_paquete *paqueteTCBPadre = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_crea_hiloKernel* unTCBPadre = (t_crea_hiloKernel*) malloc(sizeof(t_crea_hiloKernel));
 
-	if(socket_recvPaquete(self->socketCPU, paqueteTCBPadre) >= 0){
+	if(socket_recvPaquete(self->socketCPU, paqueteTCBPadre) >= 0)
 		unTCBPadre = (t_crea_hiloKernel*) paqueteTCBPadre->data;
 
-	}else
+	else
 		log_error(self->loggerPlanificador, "Planificador: error al rebicir UN_CREAR_HILO.");
-
 
 
 	//2) Segundo paso, crear un TCB hilo
 
 	t_crea_hiloKernelSecundario* tcbHiloSecundario = malloc (sizeof(t_crea_hiloKernelSecundario));
+
 	tcbHiloSecundario->ramaDelHiloPrincipal = unTCBPadre->tcb->pid+1000;
 	tcbHiloSecundario->tcb->pid = unTCBPadre->tcb->pid;
 	tcbHiloSecundario->tcb->tid = unTCBPadre->tcb->tid;
@@ -344,9 +347,7 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self){
 	tcbHiloSecundario->tcb->registro_de_programacion[2] = unTCBPadre->tcb->registro_de_programacion[2];
 	tcbHiloSecundario->tcb->registro_de_programacion[3] = unTCBPadre->tcb->registro_de_programacion[3];
 
-
 	//3) Tercer paso, se manda a Ready para planificarlo
-
 	list_add(cola_ready,tcbHiloSecundario);
 
 	free(tcbHiloSecundario);
@@ -361,10 +362,10 @@ void ejecutar_UN_JOIN_HILO(t_kernel* self){
 	t_socket_paquete *paqueteJOIN = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_joinKernelKernel* esTBCJOIN = (t_joinKernelKernel*) malloc(sizeof(t_joinKernelKernel));
 
-	if(socket_recvPaquete(self->socketCPU, paqueteJOIN) >= 0){
+	if(socket_recvPaquete(self->socketCPU, paqueteJOIN) >= 0)
 		esTBCJOIN = (t_joinKernelKernel*) paqueteJOIN->data;
 
-	}else
+	else
 		log_error(self->loggerPlanificador, "Planificador: error al rebicir UN_JOIN.");
 
 
@@ -373,21 +374,19 @@ void ejecutar_UN_JOIN_HILO(t_kernel* self){
 	bool tidBuscadoLlamador(t_programaEnKernel* programaEnLista){
 		return (programaEnLista->programaTCB->pid == esTBCJOIN->tid_llamador);
 	}
+
 	t_programaEnKernel* unTidBuscadoLLamador = list_find(cola_ready, (void*)tidBuscadoLlamador);
 
 	list_add(cola_block,unTidBuscadoLLamador);
 
-
-
 	//3) Tercer paso,se manda un hilo a exec
-
 	bool tibBuscadoEspera(t_programaEnKernel* programaEnLista){
 		return (programaEnLista->programaTCB->pid == esTBCJOIN->tid_esperar);
 	}
+
 	t_programaEnKernel* unTidBuscadoEspera = list_find(cola_block, (void*)tibBuscadoEspera);
 
 	list_add(cola_exec,unTidBuscadoEspera);
-
 
 	//4) Cuarto paso, se espera que el hilo llamador avise que termino de ejecutar
 	t_socket_paquete *paqueteEsperar = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
@@ -403,9 +402,13 @@ void ejecutar_UN_JOIN_HILO(t_kernel* self){
 			t_TCB_Kernel* unTcbProsesado = list_remove_by_condition(cola_block, (void*)_esTCBBuscado);
 
 			list_add(cola_ready,unTcbProsesado);
-		}else
+		}
+
+		else
 			log_error(self->loggerPlanificador, "Planificador: error al rebicir un FIN_DE_ESPERAR.");
-	}else
+	}
+
+	else
 		log_error(self->loggerPlanificador, "Planificador: error al rebicir UN_JOIN de esperar.");
 
 	socket_freePaquete(paqueteEsperar);
@@ -423,12 +426,11 @@ void ejecutar_UN_BLOK_HILO(t_kernel* self){
 	t_socket_paquete *paqueteBloquear = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_bloquearKernel* tcbABloquear = (t_bloquearKernel*) malloc(sizeof(t_bloquearKernel));
 
-	if(socket_recvPaquete(self->socketCPU, paqueteBloquear) >= 0){
+	if(socket_recvPaquete(self->socketCPU, paqueteBloquear) >= 0)
 		tcbABloquear = (t_bloquearKernel*) paqueteBloquear->data;
 
-	}else
+	else
 		log_error(self->loggerPlanificador, "Planificador: error al rebicir UN_BLOK.");
-
 
 	//2) Segundo paso,se manda el TCB a block
 
@@ -449,10 +451,10 @@ void ejecutar_UN_WAKE_HILO(t_kernel* self){
 	t_socket_paquete *paqueteDespetar = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_despertarKernel* tcbDespertar = (t_despertarKernel*) malloc(sizeof(t_despertarKernel));
 
-	if(socket_recvPaquete(self->socketCPU, paqueteDespetar) >= 0){
+	if(socket_recvPaquete(self->socketCPU, paqueteDespetar) >= 0)
 		tcbDespertar = (t_despertarKernel*) paqueteDespetar->data;
 
-	}else
+	else
 		log_error(self->loggerPlanificador, "Planificador: error al rebicir UN_BLOK.");
 
 
@@ -462,20 +464,18 @@ void ejecutar_UN_WAKE_HILO(t_kernel* self){
 		return (tcbProcesado->motivo == tcbDespertar->id_recurso);
 	}
 
-	t_procesoBloquea* unTcbProsesado = list_remove_by_condition(listaDeEsperaRecurso, (void*)_esTCBDespertado);
+	t_procesoBloquea* unTcbProcesado = list_remove_by_condition(listaDeEsperaRecurso, (void*)_esTCBDespertado);
 
 
 	//3)Tercer paso, se remueve el TCB de la cola Block
 
 	bool _esTCBDesbloqueado(t_procesoBloquea* tcbProcesado) {
-		return ((tcbProcesado->tcbKernel->pid == unTcbProsesado->tcbKernel->pid)&&(tcbProcesado->tcbKernel->tid == unTcbProsesado->tcbKernel->tid));
+		return ((tcbProcesado->tcbKernel->pid == unTcbProcesado->tcbKernel->pid)&&(tcbProcesado->tcbKernel->tid == unTcbProcesado->tcbKernel->tid));
 	}
 
 	t_procesoBloquea* tcbDesbloqueado = list_remove_by_condition(cola_block, (void*)_esTCBDesbloqueado);
 
-
 	//4)Cuarto paso, se lo agrega  al final de la cola Ready
-
 	list_add(cola_ready,tcbDesbloqueado);
 
 	free(tcbDespertar);
@@ -522,6 +522,8 @@ t_programaEnKernel* obtenerProgramaDeReady(t_TCB_Kernel* tcb){
 		printf("Planificador: No se encontro el TCB\n");
 		return NULL;
 	}
+
+	unTcbProcesado->programaTCB = tcb;
 
 	printf("Planificador: Un TCB encontrado en READY: PID:%d  TID:%d \n", unTcbProcesado->programaTCB->pid, unTcbProcesado->programaTCB->tid);
 	return unTcbProcesado;
