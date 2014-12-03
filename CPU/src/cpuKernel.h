@@ -49,6 +49,9 @@ typedef struct {
 	uint32_t direccion;
 } t_interrupcion;
 
+typedef struct {
+	uint32_t direccion;
+} t_interrupcionDireccion;
 
 /*
  * Nombre: t_join

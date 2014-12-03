@@ -60,19 +60,17 @@ int main(int argc, char** argv) {
 				break;
 			case SIN_ERRORES:
 				//ALE: si el tcb ya fue enviado por XXXX aca lo vuelve a enviar!!! NO CONTEPLA ESE CASO
-
 				cpuEnviarPaqueteAPlanificador(self, CAMBIO_DE_CONTEXTO);
 				t_TCB_CPU* tcbProcesado = malloc(sizeof(t_TCB_CPU));
 				tcbProcesado = self->tcb;
 
 				//se mande un TCB a CPU
-				printTCBCPU(tcbProcesado);
+				//printTCBCPU(tcbProcesado);
 				socket_sendPaquete(self->socketPlanificador->socket, TCB_NUEVO,sizeof(t_TCB_CPU), tcbProcesado);
 				log_info(self->loggerCPU, "CPU: envia un CAMBIO_DE_CONTEXTO");
 				free(tcbProcesado);
 				break;
 			case INTERRUPCION:
-				cpuEnviarPaqueteAPlanificador(self, INTERRUPCION);
 				cpuEnviaInterrupcion(self);
 				//log_info(self->loggerCPU, "CPU: envia una INTERRUPCION");
 				break;

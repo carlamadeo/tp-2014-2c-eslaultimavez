@@ -80,7 +80,7 @@ int cpuRecibirTCB(t_CPU *self){
 int cpuRecibirQuantum(t_CPU *self){
 
 	t_socket_paquete *paquetePlanificadorQuantum = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-	t_quantumCPU* unQuantum =  (t_quantumCPU*) malloc(sizeof(t_quantumCPU));
+	//t_quantumCPU* unQuantum =  (t_quantumCPU*) malloc(sizeof(t_quantumCPU));
 
 	if(socket_recvPaquete(self->socketPlanificador->socket, paquetePlanificadorQuantum) >= 0){
 
@@ -125,19 +125,26 @@ void cpuCambioContexto(t_CPU *self){
 
 void cpuEnviaInterrupcion(t_CPU *self){
 
-	t_interrupcion *interrupcion = malloc(sizeof(t_interrupcion));
-	interrupcion->tcb = self->tcb;
-	interrupcion->direccion = self->unaDireccion;
+	//Se manda TCB
 
-	//socket_sendPaquete(self->socketPlanificador->socket, INTERRUPCION, 0, NULL);
-	log_info(self->loggerCPU, "CPU: Solicitud de Interrupcion al Kernel");
+	cpuEnviarPaqueteAPlanificador(self, INTERRUPCION);
 
-	if (socket_sendPaquete(self->socketPlanificador->socket, INTERRUPCION, sizeof(t_interrupcion), interrupcion) <= 0)
-		log_error(self->loggerCPU, "CPU: Error de Interrupcion");
+	if (socket_sendPaquete(self->socketPlanificador->socket, TCB_NUEVO, sizeof(t_TCB_CPU), self->tcb) > 0){
+		log_info(self->loggerCPU, "CPU: envia un TCB en una interrupcion.");
+		//printTCBCPU(self->tcb);
+	}else
+		log_error(self->loggerCPU, "CPU: error al envia un TCB en una interrupcion");
 
-	else
-		printTCBCPU(interrupcion->tcb);
-		log_info(self->loggerCPU, "CPU: envia INTERRUPCION");
+
+	//printf("Valor de dirrecion: %0.8p \n",self->unaDireccion);
+	t_interrupcionDireccion* unaDire = malloc(sizeof(t_interrupcionDireccion));
+	unaDire->direccion = self->unaDireccion;
+	//Se manda una dirrecion
+	if (socket_sendPaquete(self->socketPlanificador->socket, INTERRUPCION, sizeof(t_interrupcionDireccion),unaDire) > 0){
+		log_info(self->loggerCPU, "CPU: envia una dirrecion en una interrupcion.");
+	}else
+		log_error(self->loggerCPU, "CPU: error al enviar una dirreccion en una interrupcion");
+
 
 }
 

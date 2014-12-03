@@ -114,19 +114,37 @@ void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_socket *socketNuevaConexio
 	//socket_freePaquete(paqueteContexto);
 }
 
+void recibirTCB(t_kernel* self,t_socket *socketNuevaConexionCPU){
+
+	t_socket_paquete *paqueteInterrupcionTCB = (t_socket_paquete*) malloc(sizeof(t_socket_paquete));
+	t_TCB_Kernel* unTCBNuevo = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
+
+	printf("CPU manda por este descriptor: %d\n",socketNuevaConexionCPU->descriptor);
+	if(socket_recvPaquete(socketNuevaConexionCPU, paqueteInterrupcionTCB) >= 0){
+
+		printf("TCB_NUEVO %d \n", paqueteInterrupcionTCB->header.type);   //no Borrar sirve para como debug Jorge
+		if(paqueteInterrupcionTCB->header.type == TCB_NUEVO){
+
+			unTCBNuevo = (t_TCB_Kernel*) paqueteInterrupcionTCB->data;
+			printTCBKernel(unTCBNuevo);
+			//log_debug(self->loggerCPU, "CPU: recibio un TCB_NUEVO con PID: %d TID:%d KM:%d", self->tcb->pid, self->tcb->tid, self->tcb->km);
+		}else
+			log_error(self->loggerPlanificador, "CPU: error al recibir un TCB Interrupcion.");
+
+	}else
+		log_error(self->loggerPlanificador, "CPU: Error al recibir un paqueteInterrupcionTCB");
+
+	free(paqueteInterrupcionTCB);
+}
+
 void ejecutar_UNA_INTERRUPCION(t_kernel* self,t_socket *socketNuevaConexionCPU){
 
 	//1) Primer paso, poner el TCB Recibido en cola BLOCK
 
-	t_socket_paquete *paqueteCPU = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-	t_interrupcionKernel* unaInterrupcion = (t_interrupcionKernel*) malloc(sizeof(t_interrupcionKernel));
-	unaInterrupcion->tcb = malloc(sizeof(t_TCB_Kernel));
+	recibirTCB(self,socketNuevaConexionCPU);
 
-	if(socket_recvPaquete(socketNuevaConexionCPU, paqueteCPU) >= 0){
-		unaInterrupcion = (t_interrupcionKernel*) paqueteCPU->data;
-
-		printTCBKernel(unaInterrupcion->tcb);
-		//se lo remueve de la lista listaDeCPULibres
+//	printTCBKernel(unaInterrupcion->tcb);
+	//se lo remueve de la lista listaDeCPULibres
 //		bool _esTCBBuscado(t_programaEnKernel* tcbProcesado) {
 //			return ((tcbProcesado->programaTCB->pid == unaInterrupcion->tcb->pid) && ((tcbProcesado->programaTCB->tid == unaInterrupcion->tcb->tid)));   //ver esta parte importante
 //		}
@@ -136,15 +154,12 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self,t_socket *socketNuevaConexionCPU){
 //		list_add(listaSystemCall,unTcbProsesado);
 
 
-	}else
-		log_error(self->loggerPlanificador, "Planificador: error en recibir una INTERRUPCION" );
-
-
-	socket_freePaquete(paqueteCPU);
+	/*
+	//socket_freePaquete(paqueteCPU);
 	log_info(self->loggerPlanificador, "Planificador: recibe una INTERRUPCION");
 	//log_info(self->loggerPlanificador, "Planificador: TCB PID:%d  TCB TID:%d DIRECCION:%d", unaInterrupcion->tcb->pid,unaInterrupcion->tcb->tid,unaInterrupcion->direccion);
 
-	/*
+
 
 	//2) Segundo paso, se busca el TCB kernel en la cola_Block
 

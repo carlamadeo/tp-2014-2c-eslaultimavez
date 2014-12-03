@@ -44,6 +44,7 @@ typedef struct {
 	t_TCB_Kernel* tcb;
 } t_crea_hiloKernelSecundario;
 
+void recibirTCB(t_kernel* self,t_socket *socketNuevaConexionCPU);
 void agregarEnListaDeCPU(int id,  t_socket* socketCPU);
 void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente);
 void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self,t_socket *socketNuevaConexionCPU);
