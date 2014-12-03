@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
 				//log_info(self->loggerCPU, "CPU: envia una INTERRUPCION");
 				break;
 			case ENTRADA_ESTANDAR:
-				cpuEnviarPaqueteAPlanificador(self, ENTRADA_ESTANDAR);
+				//cpuEnviarPaqueteAPlanificador(self, ENTRADA_ESTANDAR);
 				//ALE: el send lo hace en la instruccion INNN e INNC en codigoESO.c
 				//se crea una estructura Entrada para mandar
 				//t_entrada_estandar* unaEntrada= malloc(sizeof(t_entrada_estandar));
@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
 
 				//se manda una Entrada
 				//socket_sendPaquete(self->socketPlanificador->socket,ENTRADA_ESTANDAR,sizeof(t_entrada_estandar), unaEntrada);
-				//log_info(self->loggerCPU, "CPU: envia una ENTRADA_ESTANDAR");
+				log_info(self->loggerCPU, "CPU: fin ENTRADA_ESTANDAR");
 				break;
 			case SALIDA_ESTANDAR:
 				cpuEnviarPaqueteAPlanificador(self, SALIDA_ESTANDAR);

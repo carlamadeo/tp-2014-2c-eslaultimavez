@@ -104,6 +104,7 @@ int FREE_ESO(t_CPU *self);  //Libera la memoria apuntada por el registro A.
 			 //Solo se podrá liberar memoria alocada por la instrucción de MALC.
 			//Destruye en la MSP el segmento indicado en el registro A.
 
+void printfEntradaStandarCPU(t_entrada_estandar* entrada);
 int INNN_ESO (t_CPU *self);
 
 int INNC_ESO(t_CPU *self); //Pide por consola del programa que se ingrese una cadena

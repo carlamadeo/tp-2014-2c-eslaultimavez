@@ -7,9 +7,10 @@ t_list* cola_new;
 t_list* cola_ready;
 int idCPU=250;
 void kernel_comenzar_Planificador(t_kernel* self){
-
+	listaSystemCall = list_create();
+	listaDeCPULibres = list_create();
 	t_socket *socketNuevaConexionCPU;
-	listaCpu = list_create();
+	//listaCpu =
 	fd_set master;   //conjunto maestro de descriptores de fichero
 	fd_set read_fds; //conjunto temporal de descriptores de fichero para select()
 	int fdmax,i;
@@ -147,24 +148,6 @@ void atenderCPU(t_kernel* self,t_socket *socketNuevaConexionCPU, t_cpu* cpu, fd_
 		break;
 	case INTERRUPCION:
 		ejecutar_UNA_INTERRUPCION(self, socketNuevaConexionCPU);
-		break;
-	case ENTRADA_ESTANDAR:
-		ejecutar_UNA_ENTRADA_STANDAR(self);
-		break;
-	case SALIDA_ESTANDAR:
-		ejecutar_UNA_SALIDA_ESTANDAR(self);
-		break;
-	case CREAR_HILO:
-		ejecutar_UN_CREAR_HILO(self);
-		break;
-	case JOIN_HILO:
-		ejecutar_UN_JOIN_HILO(self);
-		break;
-	case BLOK_HILO:
-		ejecutar_UN_BLOK_HILO(self);
-		break;
-	case WAKE_HILO:
-		ejecutar_UN_WAKE_HILO(self);
 		break;
 	default:
 		log_error(self->loggerPlanificador, "Planificador:Conexión cerrada con CPU.");

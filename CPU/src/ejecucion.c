@@ -90,6 +90,7 @@ int ejecutar_instruccion(t_CPU *self, int linea, t_ServiciosAlPlanificador* serv
 
 	log_info(self->loggerCPU, "CPU: Se ejecutara la instruccion %s", instrucciones_eso[linea]);
 	log_info(self->loggerCPU, "CPU: Retardo de %d", self->retardo);
+	log_info(self->loggerCPU, "CPU: TCB KM %d", self->tcb->km);
 	usleep(self->retardo);
 
 	//-----------------------------------INICIO SWITCH - CASE--------------------------------
@@ -247,7 +248,6 @@ int ejecutar_instruccion(t_CPU *self, int linea, t_ServiciosAlPlanificador* serv
 		break;
 
 	case CREA:
-
 		if(self->tcb->km==1){
 			estado = CREA_ESO(self);
 		}else{

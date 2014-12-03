@@ -68,7 +68,6 @@ void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_socket *socketNuevaConexio
 		if(paqueteTCB->header.type == TCB_NUEVO){
 
 			unTCBNuevo = (t_TCB_Kernel*) paqueteTCB->data;
-
 			t_programaEnKernel *unProgramaCPU = obtenerProgramaDeReady(unTCBNuevo);
 
 			if(unProgramaCPU != NULL){
@@ -114,7 +113,23 @@ void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_socket *socketNuevaConexio
 	//socket_freePaquete(paqueteContexto);
 }
 
-void recibirTCB(t_kernel* self,t_socket *socketNuevaConexionCPU){
+void recibirUnaDireccion(t_kernel* self,t_socket *socketNuevaConexionCPU,t_interrupcionKernel* unaInterripcion){
+
+	t_socket_paquete *paqueteDireInterrupcion = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+	//t_quantumCPU* unQuantum =  (t_quantumCPU*) malloc(sizeof(t_quantumCPU));
+
+	if(socket_recvPaquete(socketNuevaConexionCPU, paqueteDireInterrupcion) >= 0){
+
+		t_interrupcionDireccionKernel* unDireInterrupcion = (t_interrupcionDireccionKernel*) paqueteDireInterrupcion->data;
+		unaInterripcion->direccion = unDireInterrupcion->direccion;
+		//log_info(self->loggerPlanificador, "CPU: recibe una dirrecion %0.8p",unDireInterrupcion);
+	}else
+		log_error(self->loggerPlanificador, "CPU: error al un paqueteDireInterrupcion");
+
+	free(paqueteDireInterrupcion);
+
+}
+void recibirTCB(t_kernel* self,t_socket *socketNuevaConexionCPU,t_interrupcionKernel* unaInterripcion){
 
 	t_socket_paquete *paqueteInterrupcionTCB = (t_socket_paquete*) malloc(sizeof(t_socket_paquete));
 	t_TCB_Kernel* unTCBNuevo = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
@@ -126,8 +141,10 @@ void recibirTCB(t_kernel* self,t_socket *socketNuevaConexionCPU){
 		if(paqueteInterrupcionTCB->header.type == TCB_NUEVO){
 
 			unTCBNuevo = (t_TCB_Kernel*) paqueteInterrupcionTCB->data;
-			printTCBKernel(unTCBNuevo);
-			//log_debug(self->loggerCPU, "CPU: recibio un TCB_NUEVO con PID: %d TID:%d KM:%d", self->tcb->pid, self->tcb->tid, self->tcb->km);
+			//printTCBKernel(unTCBNuevo);
+			unaInterripcion->tcb = unTCBNuevo;
+			recibirUnaDireccion(self,socketNuevaConexionCPU,unaInterripcion);
+
 		}else
 			log_error(self->loggerPlanificador, "CPU: error al recibir un TCB Interrupcion.");
 
@@ -137,29 +154,65 @@ void recibirTCB(t_kernel* self,t_socket *socketNuevaConexionCPU){
 	free(paqueteInterrupcionTCB);
 }
 
+
+//Pregunta si estos son todos los campos!!! Cursos de Stack???
+t_TCB_Kernel* cargarTCBconOtroTCB(t_TCB_Kernel* destino, t_TCB_Kernel* origen){
+
+	destino->pid = origen->pid;
+	destino->tid = origen->tid;
+
+	destino->base_stack = origen->base_stack;
+	destino->base_segmento_codigo = origen->base_segmento_codigo;
+	destino->tamanio_segmento_codigo = origen->tamanio_segmento_codigo;
+	destino->cursor_stack = origen->cursor_stack;
+	destino->puntero_instruccion = origen->puntero_instruccion;
+	destino->registro_de_programacion[0]= origen->registro_de_programacion[0];
+	destino->registro_de_programacion[1]= origen->registro_de_programacion[1];
+	destino->registro_de_programacion[2]= origen->registro_de_programacion[2];
+	destino->registro_de_programacion[3]= origen->registro_de_programacion[3];
+	destino->registro_de_programacion[4]= origen->registro_de_programacion[4];
+
+	return destino;
+}
+
+
+void enviarTCByQUANTUMCPU(t_kernel* self,t_socket *socketNuevaConexionCPU,t_TCB_Kernel* tcbKernel){
+
+	t_QUANTUM* unQuan = malloc(sizeof(t_QUANTUM));
+	unQuan->quantum = self->quantum;
+	//se manda un QUANTUM a CPU
+	socket_sendPaquete(socketNuevaConexionCPU, QUANTUM , sizeof(t_QUANTUM), unQuan);
+	log_debug(self->loggerPlanificador, "Planificador: envia un quantum: %d", self->quantum);
+
+	//se manda un TCB a CPU
+	socket_sendPaquete(socketNuevaConexionCPU, TCB_NUEVO,sizeof(t_TCB_Kernel), tcbKernel);
+	log_debug(self->loggerPlanificador, "Planificador: envia TCB con PID: %d TID:%d KM:%d", tcbKernel->pid, tcbKernel->tid, tcbKernel->km);
+
+
+}
 void ejecutar_UNA_INTERRUPCION(t_kernel* self,t_socket *socketNuevaConexionCPU){
 
 	//1) Primer paso, poner el TCB Recibido en cola BLOCK
 
-	recibirTCB(self,socketNuevaConexionCPU);
+	t_interrupcionKernel* unaInterripcion = malloc(sizeof(t_interrupcionKernel));
+	recibirTCB(self,socketNuevaConexionCPU,unaInterripcion);
 
-//	printTCBKernel(unaInterrupcion->tcb);
+	//log_info(self->loggerPlanificador, "Planificador: recibe una dirrecion %0.8p",unaInterripcion->direccion);
+	//printTCBKernel(unaInterripcion->tcb);
+
 	//se lo remueve de la lista listaDeCPULibres
-//		bool _esTCBBuscado(t_programaEnKernel* tcbProcesado) {
-//			return ((tcbProcesado->programaTCB->pid == unaInterrupcion->tcb->pid) && ((tcbProcesado->programaTCB->tid == unaInterrupcion->tcb->tid)));   //ver esta parte importante
-//		}
-//		t_programaEnKernel* unTcbProsesado = list_find(cola_ready, (void*)_esTCBBuscado);
-//
-//		//se lo agrega en la lista de Sistem Call
-//		list_add(listaSystemCall,unTcbProsesado);
+	bool _esTCBBuscado(t_programaEnKernel* tcbProcesado) {
+		return ((tcbProcesado->programaTCB->pid == unaInterripcion->tcb->pid) && ((tcbProcesado->programaTCB->tid == unaInterripcion->tcb->tid)));   //ver esta parte importante
+	}
 
+	t_programaEnKernel* unTcbEnReady = malloc(sizeof(t_programaEnKernel));
+	unTcbEnReady = list_find(cola_ready, (void*)_esTCBBuscado);
 
-	/*
-	//socket_freePaquete(paqueteCPU);
-	log_info(self->loggerPlanificador, "Planificador: recibe una INTERRUPCION");
-	//log_info(self->loggerPlanificador, "Planificador: TCB PID:%d  TCB TID:%d DIRECCION:%d", unaInterrupcion->tcb->pid,unaInterrupcion->tcb->tid,unaInterrupcion->direccion);
+	//		se lo agrega en la lista de Sistem Call
+	list_add(listaSystemCall,unTcbEnReady);
 
-
+	//printTCBKernel(unTcbProsesado->programaTCB);
+	cargarTCBconOtroTCB(unTcbEnReady->programaTCB,unaInterripcion->tcb);
 
 	//2) Segundo paso, se busca el TCB kernel en la cola_Block
 
@@ -171,52 +224,62 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self,t_socket *socketNuevaConexionCPU){
 
 
 	//3) Tercer paso, se copia los registros del TCB usuario a TBC Kernel
+	cargarTCBconOtroTCB(tcbKernel,unaInterripcion->tcb);
+	tcbKernel->puntero_instruccion = unaInterripcion->direccion;
 
-	tcbKernel->pid = unaInterrupcion->tcb->pid;
-	tcbKernel->tid = unaInterrupcion->tcb->tid;
-	tcbKernel->puntero_instruccion = unaInterrupcion->direccion;
-	tcbKernel->registro_de_programacion[0]= unaInterrupcion->tcb->registro_de_programacion[0];
-	tcbKernel->registro_de_programacion[1]= unaInterrupcion->tcb->registro_de_programacion[1];
-	tcbKernel->registro_de_programacion[2]= unaInterrupcion->tcb->registro_de_programacion[2];
-	tcbKernel->registro_de_programacion[3]= unaInterrupcion->tcb->registro_de_programacion[3];
-	tcbKernel->registro_de_programacion[4]= unaInterrupcion->tcb->registro_de_programacion[4];
 
 	//4) Cuarto paso, se agrega el TCB kernel en la lista de CPU Libres
-
-	t_cpu* unaCpuKernel;
-
-	unaCpuKernel = malloc( sizeof(t_cpu) );
-	unaCpuKernel->id = 712;
-	unaCpuKernel->socket = self->socketCPU;
-	unaCpuKernel->TCB = tcbKernel;
-
 	//Se tiene que verificar si hay CPUs Libres
+
 	if (list_size(listaDeCPULibres) > 0){
 
-		list_add(listaDeCPULibres,unaCpuKernel); //sincronizar
+		list_add(listaDeCPULibres,tcbKernel); //sincronizar
 		log_debug(self->loggerPlanificador, "EXEC: Se carga KM=1 en el primer CPU disponible ");
-
-	}
-
-	else
+	}else
 		log_error(self->loggerPlanificador, "EXEC: error al cargar TCB Kernel NO EXISTES CPUs CONECTADAS");
 
+
 	//5) Quinto paso, se manda el TCB KERNEL al CPU
-	t_TCB_Kernel* tcbKernelaCPU = malloc(sizeof(t_TCB_Kernel));
-	tcbKernelaCPU = tcbKernel;
 
-	t_QUANTUM* unQuamtum = malloc(sizeof(t_QUANTUM));
-	unQuamtum->quantum = 0;
+	enviarTCByQUANTUMCPU(self,socketNuevaConexionCPU,tcbKernel);
 
-	//se manda un QUANTUM a CPU
-	socket_sendPaquete(self->socketCPU, QUANTUM,sizeof(t_QUANTUM), unQuamtum);
-	log_debug(self->loggerPlanificador, "Planificador: envia un quantum: %d", unQuamtum->quantum);
+	log_info(self->loggerPlanificador, "Planificador: Listo TCB KERNEL");
+	printTCBKernel(tcbKernel);
 
-	//se manda un TCB a CPU
-	socket_sendPaquete(self->socketCPU, TCB_NUEVO,sizeof(t_TCB_Kernel), tcbKernelaCPU);
-	log_debug(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID: %d TID:%d KM:%d", tcbKernelaCPU->pid, tcbKernelaCPU->tid, tcbKernelaCPU->km);
 
-	//6) Sexto paso, se queda bloqueado esperando al TCB Kernel
+	log_info(self->loggerPlanificador, "Planificador: LISTO PARA RECIBIR SYSTEM CALLS" );
+
+	t_socket_paquete *paqueteSYSTEMCALLS = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+	socket_recvPaquete(socketNuevaConexionCPU, paqueteSYSTEMCALLS);
+
+	printf("Tipo de Instruccion: %d\n",paqueteSYSTEMCALLS->header.type);
+
+	switch(paqueteSYSTEMCALLS->header.type){
+	case ENTRADA_ESTANDAR:
+		ejecutar_UNA_ENTRADA_STANDAR(self,socketNuevaConexionCPU);
+		break;
+	case SALIDA_ESTANDAR:
+		ejecutar_UNA_SALIDA_ESTANDAR(self);
+		break;
+	case CREAR_HILO:
+		ejecutar_UN_CREAR_HILO(self);
+		break;
+	case JOIN_HILO:
+		ejecutar_UN_JOIN_HILO(self);
+		break;
+	case BLOK_HILO:
+		ejecutar_UN_BLOK_HILO(self);
+		break;
+	case WAKE_HILO:
+		ejecutar_UN_WAKE_HILO(self);
+		break;
+	default:
+		log_error(self->loggerPlanificador, "Planificador:Conexión cerrada con CPU.");
+		break;
+
+	}//fin switch(paqueteCPU->header.type)
+
+	/*//6) Sexto paso, se queda bloqueado esperando al TCB Kernel
 
 	t_socket_paquete *paqueteKernelTCB = (t_socket_paquete*) malloc(sizeof(t_socket_paquete));
 	t_TCB_Kernel* tcbKernelModificado = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
@@ -269,23 +332,26 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self,t_socket *socketNuevaConexionCPU){
 	socket_freePaquete(paqueteKernelTCB);
 	free(tcbKernelModificado);
 	free(unTcbSystemCall);
-	*/
+	 */
 }
 
+void printfEntradaStandar(t_entrada_estandarKenel* entrada){
+	printf("entrada pid: %d\n",entrada->pid);
+	printf("entrada tamanio: %d\n",entrada->tamanio);
+	printf("entrada tipo: %d\n",entrada->tipo);
 
-void ejecutar_UNA_ENTRADA_STANDAR(t_kernel* self){
+}
+void ejecutar_UNA_ENTRADA_STANDAR(t_kernel* self, t_socket *socketNuevaConexionCPU){
 
 	//1) Primer paso, se recibe un PID
 
 	t_socket_paquete *paqueteEntrada = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_entrada_estandarKenel* unaEntrada = (t_entrada_estandarKenel*) malloc(sizeof(t_entrada_estandarKenel));
 
-	if(socket_recvPaquete(self->socketCPU, paqueteEntrada) >= 0){
+	if(socket_recvPaquete(socketNuevaConexionCPU, paqueteEntrada) >= 0){
 		unaEntrada = (t_entrada_estandarKenel*) paqueteEntrada->data;
 
-	}
-
-	else
+	}else
 		log_error(self->loggerPlanificador, "Planificador: error al rebicir UNA_ENTRADA_STANDAR.");
 
 
@@ -294,21 +360,24 @@ void ejecutar_UNA_ENTRADA_STANDAR(t_kernel* self){
 		return (programaEnLista->programaTCB->pid == unaEntrada->pid);
 	}
 
-	t_programaEnKernel* unPrograma = list_find(cola_exec, (void*)esProgramaEntrada);
+	t_programaEnKernel* unPrograma = list_find(listaDeProgramasDisponibles, (void*)esProgramaEntrada);
 
+	log_info(self->loggerPlanificador, "Planificador: valores de la entrada:" );
 	//3) Tercer paso, se manda un mensaje a la consola
+
+	printfEntradaStandar(unaEntrada);
 	if (unaEntrada->tipo == ENTRADA_ESTANDAR_INT ){
 		socket_sendPaquete(unPrograma->socketProgramaConsola, ENTRADA_ESTANDAR_INT,sizeof(t_entrada_estandarKenel), unaEntrada);
-		log_debug(self->loggerPlanificador, "Planificador: envia ENTRADA_ESTANDAR_INT");
+		log_info(self->loggerPlanificador, "Planificador: envia ENTRADA_ESTANDAR_INT");
 	}
 
 	else
 		if(unaEntrada->tipo == ENTRADA_ESTANDAR_TEXT){
 			socket_sendPaquete(unPrograma->socketProgramaConsola, ENTRADA_ESTANDAR_TEXT,sizeof(t_entrada_estandarKenel), unaEntrada);
-			log_debug(self->loggerPlanificador, "Planificador: envia ENTRADA_ESTANDAR_TEXT ");
+			log_info(self->loggerPlanificador, "Planificador: envia ENTRADA_ESTANDAR_TEXT ");
 		}
 
-	//4) Cuarto paso, se recibe un paquete de consola
+	/*	//4) Cuarto paso, se recibe un paquete de consola
 	t_socket_paquete *paqueteEntradaDevuelto = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_entrada_estandarKenel* unaEntradaDevuelta = (t_entrada_estandarKenel*) malloc(sizeof(t_entrada_estandarKenel));
 
@@ -326,6 +395,7 @@ void ejecutar_UNA_ENTRADA_STANDAR(t_kernel* self){
 	free(unaEntrada);
 	free(unaEntradaDevuelta);
 	socket_freePaquete(paqueteEntradaDevuelto);
+	*/
 }
 
 

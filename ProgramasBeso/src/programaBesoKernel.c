@@ -80,6 +80,12 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 				log_info(self->loggerProgramaBESO,"Consola: FINALIZA CON EXITO, vamos los pibes!!!");
 				fin=1;
 				break;
+			case ENTRADA_ESTANDAR_INT:
+				log_info(self->loggerProgramaBESO,"Consola: recibe una ENTRADA_ESTANDAR_INT");
+				break;
+			case ENTRADA_ESTANDAR_TEXT:
+				log_info(self->loggerProgramaBESO,"Consola: recibe una ENTRADA_ESTANDAR_TEXT");
+				break;
 			case ERROR_POR_TAMANIO_EXCEDIDO:
 				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error por tamaño de segmento excedido");
 				break;

@@ -131,21 +131,21 @@ void cpuEnviaInterrupcion(t_CPU *self){
 
 	if (socket_sendPaquete(self->socketPlanificador->socket, TCB_NUEVO, sizeof(t_TCB_CPU), self->tcb) > 0){
 		log_info(self->loggerCPU, "CPU: envia un TCB en una interrupcion.");
-		//printTCBCPU(self->tcb);
+		printTCBCPU(self->tcb);
+
+		printf("Valor de dirrecion: %0.8p \n",self->unaDireccion);
+		t_interrupcionDireccion* unaDire = malloc(sizeof(t_interrupcionDireccion));
+		unaDire->direccion = self->unaDireccion;
+		//Se manda una dirrecion
+		if (socket_sendPaquete(self->socketPlanificador->socket, INTERRUPCION, sizeof(t_interrupcionDireccion),unaDire) > 0){
+			log_info(self->loggerCPU, "CPU: envia una dirrecion en una interrupcion.");
+		}else
+			log_error(self->loggerCPU, "CPU: error al enviar una dirreccion en una interrupcion");
+
+
+
 	}else
 		log_error(self->loggerCPU, "CPU: error al envia un TCB en una interrupcion");
-
-
-	//printf("Valor de dirrecion: %0.8p \n",self->unaDireccion);
-	t_interrupcionDireccion* unaDire = malloc(sizeof(t_interrupcionDireccion));
-	unaDire->direccion = self->unaDireccion;
-	//Se manda una dirrecion
-	if (socket_sendPaquete(self->socketPlanificador->socket, INTERRUPCION, sizeof(t_interrupcionDireccion),unaDire) > 0){
-		log_info(self->loggerCPU, "CPU: envia una dirrecion en una interrupcion.");
-	}else
-		log_error(self->loggerCPU, "CPU: error al enviar una dirreccion en una interrupcion");
-
-
 }
 
 

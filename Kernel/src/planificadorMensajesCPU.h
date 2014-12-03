@@ -9,6 +9,10 @@ typedef struct {
 } t_interrupcionKernel;
 
 
+typedef struct {
+	uint32_t direccion;
+} t_interrupcionDireccionKernel;
+
 typedef struct{
 	int pid;
 	int32_t tamanio;
@@ -44,13 +48,17 @@ typedef struct {
 	t_TCB_Kernel* tcb;
 } t_crea_hiloKernelSecundario;
 
-void recibirTCB(t_kernel* self,t_socket *socketNuevaConexionCPU);
+
+void enviarTCByQUANTUMCPU(t_kernel* self,t_socket *socketNuevaConexionCPU,t_TCB_Kernel* tcbKernel);
+void recibirUnaDireccion(t_kernel* self,t_socket *socketNuevaConexionCPU,t_interrupcionKernel* unaInterripcion);
+void recibirTCB(t_kernel* self,t_socket *socketNuevaConexionCPU,t_interrupcionKernel* unaInterripcion);
 void agregarEnListaDeCPU(int id,  t_socket* socketCPU);
 void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente);
 void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self,t_socket *socketNuevaConexionCPU);
 void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket *socketNuevaConexionCPU);
 void ejecutar_UNA_INTERRUPCION(t_kernel* self,t_socket *socketNuevaConexionCPU);
-void ejecutar_UNA_ENTRADA_STANDAR(t_kernel* self);
+void printfEntradaStandar(t_entrada_estandarKenel* entrada);
+void ejecutar_UNA_ENTRADA_STANDAR(t_kernel* self, t_socket *socketNuevaConexionCPU);
 void ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self);
 void ejecutar_UN_CREAR_HILO(t_kernel* self);
 void ejecutar_UN_JOIN_HILO(t_kernel* self);

@@ -1138,18 +1138,29 @@ int FREE_ESO(t_CPU *self){
 	return estado_free;
 }
 
+
+void printfEntradaStandarCPU(t_entrada_estandar* entrada){
+	printf("entrada pid: %d\n",entrada->pid);
+	printf("entrada tamanio: %d\n",entrada->tamanio);
+	printf("entrada tipo: %d\n",entrada->tipo);
+
+}
 int INNN_ESO(t_CPU *self){
 
+	log_info(self->loggerCPU, "TEST 1");
 	//1) declara la estructura para mostrar los registros de cpu: logs de la catedra.
 	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	//2) declara la variable de control que devuelve el estado del bloque funcion.
 	int estado_innn;
 	//3) carga los datos para enviar al planificador el servicio requerido.
 	t_entrada_estandar* entradaEstandar = malloc(sizeof(t_entrada_estandar));
-
+	log_info(self->loggerCPU, "TEST 2");
 	entradaEstandar->pid = self->tcb->pid;
 	entradaEstandar->tamanio = sizeof(int);
 	entradaEstandar->tipo = 1;
+
+	log_info(self->loggerCPU, "CPU: envia una ENTRADA_ESTANDAR");
+	printfEntradaStandarCPU(entradaEstandar);
 
 	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR,sizeof(t_entrada_estandar), entradaEstandar)<=0){  //22 corresponde a interrupcion
 		log_info(self->loggerCPU, "CPU: INNN ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
@@ -1170,7 +1181,7 @@ int INNN_ESO(t_CPU *self){
 		} else {
 			log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado de MSP: %d", paquete_KERNEL->header.type);
 			estado_innn = ERROR_POR_CODIGO_INESPERADO;
-			}
+		}
 	}else{
 		log_info(self->loggerCPU, "CPU: INNN ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 		printf("CPU: MSP ha cerrado su conexion\n");
@@ -1184,15 +1195,15 @@ int INNN_ESO(t_CPU *self){
 }
 
 int INNC_ESO(t_CPU *self){
-	int estado_innc;
 
+	int estado_innc;
 	t_entrada_estandar* entradaEstandar = malloc(sizeof(t_entrada_estandar));
 
 	entradaEstandar->pid = self->tcb->pid;
 	entradaEstandar->tamanio = self->tcb->registro_de_programacion[1];
 	entradaEstandar->tipo = 2;
 
-
+	socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR, 0, NULL);
 	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR,sizeof(t_entrada_estandar), entradaEstandar)<=0){  //22 corresponde a interrupcion
 		log_info(self->loggerCPU, "CPU: INNC ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 	}
@@ -1204,6 +1215,7 @@ int INNC_ESO(t_CPU *self){
 			log_info(self->loggerCPU, "CPU: recibiendo CADENA ingresado por consola ", self->tcb->pid);
 			char *cadena = malloc(self->tcb->registro_de_programacion[1]);
 			memcpy(cadena, paquete_KERNEL->data, self->tcb->registro_de_programacion[1]);
+			log_info(self->loggerCPU, "INNC_ESO: recibe una cadena de la Consola");
 			int estadoEscritura = cpuEscribirMemoria(self, self->tcb->registro_de_programacion[0], cadena, sizeof(self->tcb->registro_de_programacion[1]));
 
 			if(estadoEscritura == ERROR_POR_SEGMENTATION_FAULT){
