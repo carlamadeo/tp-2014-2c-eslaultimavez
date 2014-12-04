@@ -60,27 +60,8 @@ int cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
 				datosRecibidos = (t_datos_deMSP *) (paquete->data);
 				log_info(self->loggerCPU, "CPU: Se recibio de la MSP la direccion base %0.8p ", datosRecibidos->direccionBase);
 
-				if(datosRecibidos->direccionBase < 0){
-					switch(datosRecibidos->direccionBase){
-					case ERROR_POR_TAMANIO_EXCEDIDO:
-						return ERROR_POR_TAMANIO_EXCEDIDO;
-					case ERROR_POR_MEMORIA_LLENA:
-						return ERROR_POR_MEMORIA_LLENA;
-					case ERROR_POR_NUMERO_NEGATIVO:
-						return ERROR_POR_NUMERO_NEGATIVO;
-					case ERROR_POR_SEGMENTO_INVALIDO:
-						return ERROR_POR_SEGMENTO_INVALIDO;
-					case ERROR_POR_SEGMENTATION_FAULT:
-						return ERROR_POR_SEGMENTATION_FAULT;
-					default:
-						return datosRecibidos->direccionBase;
-					}
-					//ERROR_POR_TAMANIO_EXCEDIDO
-					//ERROR_POR_MEMORIA_LLENA
-					//ERROR_POR_NUMERO_NEGATIVO
-					//ERROR_POR_SEGMENTO_INVALIDO
-					//ERROR_POR_SEGMENTATION_FAULT
-				}
+				if(datosRecibidos->direccionBase == SIN_ERRORES)
+					log_info(self->loggerCPU, "CPU: Se creo correctamente el segmento solicitado. Direccion base: %0.8p correctamente", datosRecibidos->direccionBase);
 			}
 		}
 
@@ -109,15 +90,10 @@ int cpuDestruirSegmento(t_CPU *self, uint32_t direccionVirtual){
 
 	confirmacion = (t_confirmacion *) paqueteConfirmacionDestruccionSegmento->data;
 
-	switch (confirmacion->estado){
-	case SIN_ERRORES:
-		//loguear que se destruyo el segmento
-		return SIN_ERRORES;
-	case ERROR_POR_SEGMENTO_DESCONOCIDO:
-		//logueo
-		return ERROR_POR_SEGMENTO_DESCONOCIDO;
-	}
-	return SIN_ERRORES;
+	if(confirmacion->estado == SIN_ERRORES)
+		log_info(self->loggerCPU, "CPU: Se destruyo el segmento con base virtual %0.8p correctamente", direccionVirtual);
+
+	return confirmacion->estado;
 }
 
 int cpuEscribirMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int tamanio){
@@ -139,16 +115,8 @@ int cpuEscribirMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, i
 
 	unaConfirmacionEscritura = (t_confirmacion *) paqueteConfirmacionEscritura->data;
 
-	switch(unaConfirmacionEscritura->estado){
-
-	case ERROR_POR_SEGMENTATION_FAULT:
-
-		break;
-	default:
-
-		break;
-
-	}
+	if(unaConfirmacionEscritura->estado == SIN_ERRORES)
+		log_info(self->loggerCPU, "CPU: Se escribio correctamente en memoria, base virtual %0.8p", direccionVirtual);
 
 	free(escrituraDeCodigo);
 	return unaConfirmacionEscritura->estado;

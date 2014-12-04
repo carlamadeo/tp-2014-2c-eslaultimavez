@@ -24,7 +24,7 @@ typedef struct{
 } t_entrada_numeroKernel;
 
 typedef struct{
-	char* texto;
+	char texto[1000];
 } t_entrada_textoKernel;
 
 typedef struct{

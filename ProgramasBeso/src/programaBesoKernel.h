@@ -3,6 +3,8 @@
 
 #include "ProgramaBeso.h"
 
+#define TAMANIO_MAXIMO 1000
+
 typedef struct{
 	char *codigoBeso;
 }t_datosKernel;
@@ -25,7 +27,7 @@ typedef struct{
 } t_entrada_numero;
 
 typedef struct{
-	char* texto;
+	char texto[TAMANIO_MAXIMO];
 } t_entrada_texto;
 
 void consolaHacerConexionconLoader(t_programaBESO* self);

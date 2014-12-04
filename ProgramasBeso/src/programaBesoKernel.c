@@ -39,7 +39,6 @@ void realizarHandshakeConLoader(t_programaBESO* self){
 
 void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 	int num;
-	int tamanio;
 	char *texto;
 
 	FILE *archivoBeso = fopen(parametro, "r");
@@ -108,26 +107,29 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 					if(socket_recvPaquete(self->socketKernel->socket, paqueteEntrada) >= 0){
 						entradaConsola = (t_entrada_estandarConsola*) paqueteEntrada->data;
 
-						tamanio = entradaConsola->tamanio;
-
-						texto = malloc(sizeof(char)*tamanio + 1);
-						memset(texto, 0, tamanio);
-						printf("Ingrese lo que desea escribir: \n");
-						fgets(texto, tamanio, stdin);
-
-
 						t_entrada_texto* unTexto = malloc(sizeof(t_entrada_texto));
-						unTexto->texto = texto;
+
+						texto = malloc(sizeof(char)*entradaConsola->tamanio + 1);
+						memset(texto, 0, entradaConsola->tamanio + 1);
+						memset(unTexto->texto, 0, TAMANIO_MAXIMO);
+						printf("Ingrese lo que desea escribir: \n");
+						fgets(texto, entradaConsola->tamanio + 1, stdin);
+						memcpy(unTexto->texto, texto, entradaConsola->tamanio);
 
 						//se manda un texto al planificador
-						if(socket_sendPaquete(self->socketKernel->socket, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_texto), unTexto)>0){
-							log_info(self->loggerProgramaBESO, "Consola: envia un texto:");
-						}else
+						if(socket_sendPaquete(self->socketKernel->socket, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_texto), unTexto) > 0)
+							log_info(self->loggerProgramaBESO, "Consola: envia un texto: %s", unTexto->texto);
+
+						else
 							log_info(self->loggerProgramaBESO, "Consola: error al enviar un texto.");
 
-					}else
+					}
+
+					else
 						log_error(self->loggerProgramaBESO, "Consola: error al rebicir el mensaje UNA_ENTRADA_STANDAR.");
-				}else
+				}
+
+				else
 					log_error(self->loggerProgramaBESO,"Consola: error al recibir el paquete ENTRADA_ESTANDAR_TEXT");
 
 

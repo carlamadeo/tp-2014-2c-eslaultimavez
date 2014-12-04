@@ -3,6 +3,7 @@
 
 #include "CPU_Proceso.h"
 
+#define TAMANIO_MAXIMO 1000
 
 typedef struct {
 	t_TCB_CPU* tcb;
@@ -116,7 +117,7 @@ typedef struct{
 } t_entrada_numeroCPU;
 
 typedef struct{
-	char entradaEstandar[1000];
+	char entradaEstandar[TAMANIO_MAXIMO];
 } t_entrada_charCPU;
 
 
@@ -131,6 +132,7 @@ int cpuFinalizarProgramaExitoso(t_CPU *self, t_TCB_CPU* algo);
 int cpuSolicitarEntradaEstandar(t_CPU *self, int tamanio, int tipo);
 int reciboEntradaEstandarINT(t_CPU *self, int *recibido);
 int reciboEntradaEstandarCHAR(t_CPU *self, char *recibido, int tamanio);
+int cpuEnviarSalidaEstandar(t_CPU *self, char *salidaEstandar);
 
 
 #endif /* CPUKERNEL_H_ */

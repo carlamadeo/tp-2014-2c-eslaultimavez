@@ -1151,23 +1151,22 @@ int INNN_ESO(t_CPU *self){
 	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
 	int *intRecibido = malloc(sizeof(int));
 
-	int estado_innn;
+	int estado_innn = cpuSolicitarEntradaEstandar(self, sizeof(int), ENTRADA_ESTANDAR_INT);
 
-	estado_innn = cpuSolicitarEntradaEstandar(self, sizeof(int), ENTRADA_ESTANDAR_INT);
-
-	if(estado_innn == SIN_ERRORES)
+	if(estado_innn == SIN_ERRORES){
 		estado_innn = reciboEntradaEstandarINT(self, intRecibido);
 
-	self->tcb->registro_de_programacion[0] = (int32_t)intRecibido;
+		self->tcb->registro_de_programacion[0] = (int32_t)intRecibido;
 
-	cpuInicializarRegistrosCPU(self, registros_cpu);
-	cambio_registros(registros_cpu);
+		cpuInicializarRegistrosCPU(self, registros_cpu);
+		cambio_registros(registros_cpu);
 
-	if(estado_innn == SIN_ERRORES)
-		log_info(self->loggerCPU, "CPU: INNN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		if(estado_innn == ENTRADA_ESTANDAR)
+			log_info(self->loggerCPU, "CPU: INNN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
-	else
-		log_error(self->loggerCPU, "CPU: Ha ocurrido un error al ejecutar la instruccion INNN para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		else
+			log_error(self->loggerCPU, "CPU: Ha ocurrido un error al ejecutar la instruccion INNN para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+	}
 
 	free(registros_cpu);
 	return estado_innn;
@@ -1176,27 +1175,26 @@ int INNN_ESO(t_CPU *self){
 
 int INNC_ESO(t_CPU *self){
 
-	int estado_innc;
 	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 	char *charRecibido = malloc(sizeof(self->tcb->registro_de_programacion[1]));
 
-	estado_innc = cpuSolicitarEntradaEstandar(self, self->tcb->registro_de_programacion[1], ENTRADA_ESTANDAR_TEXT);
+	int estado_innc = cpuSolicitarEntradaEstandar(self, self->tcb->registro_de_programacion[1], ENTRADA_ESTANDAR_TEXT);
 
 	if(estado_innc == SIN_ERRORES){
 		estado_innc = reciboEntradaEstandarCHAR(self, charRecibido, sizeof(self->tcb->registro_de_programacion[1]));
-		log_info(self->loggerCPU, "INNC_ESO: recibe una cadena de la Consola");
-	}
+		log_info(self->loggerCPU, "INNC_ESO: Recibe una cadena de la Consola: %s", charRecibido);
 
-	int estadoEscritura = cpuEscribirMemoria(self, self->tcb->registro_de_programacion[0], charRecibido, sizeof(self->tcb->registro_de_programacion[1]));
+		int estadoEscritura = cpuEscribirMemoria(self, self->tcb->registro_de_programacion[0], charRecibido, sizeof(self->tcb->registro_de_programacion[1]));
 
-	if(estadoEscritura == ERROR_POR_SEGMENTATION_FAULT){
-		log_info(self->loggerCPU, "CPU: INNC ejecutado con ERROR_POR_SEGMENTATION_FAULT para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		estado_innc = ERROR_POR_SEGMENTATION_FAULT;
-	}
+		if(estadoEscritura == ERROR_POR_SEGMENTATION_FAULT){
+			log_info(self->loggerCPU, "CPU: INNC ejecutado con ERROR_POR_SEGMENTATION_FAULT para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			estado_innc = ERROR_POR_SEGMENTATION_FAULT;
+		}
 
-	else {
-		log_info(self->loggerCPU, "CPU: INNC ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		estado_innc = ENTRADA_ESTANDAR;
+		else {
+			log_info(self->loggerCPU, "CPU: INNC ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			estado_innc = ENTRADA_ESTANDAR;
+		}
 	}
 
 	free(registros_cpu);
@@ -1206,17 +1204,9 @@ int INNC_ESO(t_CPU *self){
 
 
 int OUTN_ESO(t_CPU *self){
-	int estado_outn;
-	t_salida_estandar* salida_estandar = malloc(sizeof(t_salida_estandar));
-	salida_estandar->pid = self->tcb->pid;
 
-	salida_estandar->cadena = string_itoa(self->tcb->registro_de_programacion[0]);
-	if (socket_sendPaquete(self->socketPlanificador->socket, SALIDA_ESTANDAR,sizeof(t_salida_estandar), salida_estandar)<=0){  //22 corresponde a interrupcion
-		log_info(self->loggerCPU, "CPU: OUTN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		estado_outn = MENSAJE_DE_ERROR;
-	}
-	free(salida_estandar);
-	estado_outn = SALIDA_ESTANDAR;
+	int estado_outn = cpuEnviarSalidaEstandar(self, string_itoa(self->tcb->registro_de_programacion[0]));
+
 	return estado_outn;
 }
 
@@ -1226,23 +1216,22 @@ int OUTC_ESO(t_CPU* self){
 	char* lecturaDeMSP = malloc(self->tcb->registro_de_programacion[1]);
 
 	int estado_lectura = cpuLeerMemoria(self, self->tcb->cursor_stack,  lecturaDeMSP, self->tcb->registro_de_programacion[1]);
-	if (estado_lectura == ERROR_POR_SEGMENTATION_FAULT){
-		estado_outc = ERROR_POR_SEGMENTATION_FAULT;
-	}else{
-		t_salida_estandar* salida_estandar = malloc(sizeof(t_salida_estandar));
-		salida_estandar->pid = self->tcb->pid;
-		salida_estandar->cadena = lecturaDeMSP;
-		if (socket_sendPaquete(self->socketPlanificador->socket, SALIDA_ESTANDAR,sizeof(t_salida_estandar), salida_estandar)<=0){  //22 corresponde a interrupcion
-			log_info(self->loggerCPU, "CPU: OUTC ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			estado_outc = MENSAJE_DE_ERROR;
-		}
-		free(salida_estandar);
-		log_info(self->loggerCPU, "CPU: OUTN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		estado_outc = SALIDA_ESTANDAR;
-	}
-	return estado_outc;
 
+	if (estado_lectura == ERROR_POR_SEGMENTATION_FAULT)
+		estado_outc = ERROR_POR_SEGMENTATION_FAULT;
+
+	else{
+		estado_outc = cpuEnviarSalidaEstandar(self, lecturaDeMSP);
+
+		if(estado_outc == SALIDA_ESTANDAR)
+			log_info(self->loggerCPU, "CPU: OUTN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+
+	}
+
+	return estado_outc;
 }
+
+
 int CREA_ESO(t_CPU *self){ 	// CREA un hilo hijo de TCB
 	int estado_crea;
 	t_crea_hilo* crear_hilo = malloc(sizeof(t_crea_hilo));

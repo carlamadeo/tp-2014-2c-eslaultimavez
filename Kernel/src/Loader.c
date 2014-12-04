@@ -76,6 +76,7 @@ void kernel_comenzar_Loader(t_kernel* self){
 						t_programaEnKernel* programaCliente = obtenerProgramaConsolaSegunDescriptor(self,i);
 						log_debug(self->loggerLoader, "Loader: Mensaje del Programa PID = %d.", programaCliente->programaTCB->pid);
 						atienderProgramaConsola(self,programaCliente, &master);
+						exit(1);
 					}
 				}//fin del if FD_ISSET
 			}// fin del for de las i
