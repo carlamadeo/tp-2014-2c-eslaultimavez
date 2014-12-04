@@ -3,7 +3,7 @@
 #include "commons/protocolStructInBigBang.h"
 
 t_list *listaDeProgramasDisponibles;
-t_list* cola_ready;
+//t_list* cola_ready;
 
 void agregarEnListaDeCPU(int id,  t_socket* socketCPU){
 	t_cpu* unaCpu;

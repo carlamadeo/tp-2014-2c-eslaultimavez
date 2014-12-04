@@ -3,8 +3,8 @@
 
 #include "kernelConfig.h"
 
-pthread_t programaBesoHilo, conexionConMSPHilo;
-
+pthread_t hiloMandarNew, hiloMandarReady;
+int iretThreadLoader;
 
 typedef struct{
 	char *codigoBeso;
@@ -17,7 +17,8 @@ typedef struct{
 
 
 void kernel_comenzar_Loader(t_kernel* self);
-
+void escuchar_conexiones_programa(t_kernel* self);
+void pasarProgramaNewAReady(t_kernel* self);
 t_programaEnKernel* obtenerProgramaConsolaSegunDescriptor(t_kernel* self,int descriptor);
 
 void atienderProgramaConsola(t_kernel* self,t_programaEnKernel* programa, fd_set* master);

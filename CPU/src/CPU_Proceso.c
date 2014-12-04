@@ -56,7 +56,11 @@ int main(int argc, char** argv) {
 
 			case FINALIZAR_PROGRAMA_EXITO:
 				num = cpuFinalizarProgramaExitoso(self, self->tcb);
-				log_error(self->loggerCPU, "CPU: manda al Kernel FINALIZAR_PROGRAMA_EXITO");
+
+				if(num == MENSAJE_DE_ERROR){
+					log_error(self->loggerCPU, "CPU: error al mandar un FINALIZAR_PROGRAMA_EXITO a la consola");
+				}
+
 				break;
 			case SIN_ERRORES:
 				//ALE: si el tcb ya fue enviado por XXXX aca lo vuelve a enviar!!! NO CONTEPLA ESE CASO

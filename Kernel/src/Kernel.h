@@ -66,7 +66,7 @@ typedef struct {
 
 //Guardan un TCB,Socket, ID
 //t_list* cola_new;  //es la que comparte el loader y el planificador, con los programas cargados
-//t_list* cola_ready;
+t_list* cola_ready;
 t_list* cola_exec;
 t_list* cola_block; //POR CUATRO, bloqueado por systemCall, por recurso, por esperando un hilo
 t_list* cola_exit;

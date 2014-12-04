@@ -18,7 +18,7 @@
 
 t_list *listaDeProgramasDisponibles;
 t_list* cola_new;
-t_list* cola_ready;
+//t_list* cola_ready;
 
 int main(int argc, char** argv) {
 
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
 	sem_init(&mutex_cpuExec, 0, 1);
 	sem_init(&mutex_exit, 0,1);
 	sem_init(&mutex_exec, 0, 1);
-	sem_init(&mutex_ready, 0, 1);
+	sem_init(&mutex_ready, 0, 0);
 	sem_init(&mutex_new, 0, 1);
 	sem_init(&mutex_block, 0, 1);
 	sem_init(&mutex_BloqueoPlanificador, 0, 0);

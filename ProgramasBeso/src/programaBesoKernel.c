@@ -123,6 +123,8 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 						else
 							log_info(self->loggerProgramaBESO, "Consola: error al enviar un texto.");
 
+						free(texto);
+
 					}
 
 					else
@@ -163,7 +165,7 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 		}
 	}
 
-	free(texto);
+
 	//free(datosAKernel->codigoBeso);
 	free(datosAKernel);
 	socket_freePaquete(paquete);

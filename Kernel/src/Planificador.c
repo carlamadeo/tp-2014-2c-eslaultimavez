@@ -4,9 +4,89 @@
 #include <unistd.h>
 
 t_list* cola_new;
-t_list* cola_ready;
+//t_list* cola_ready;
 int idCPU=250;
+
+
 void kernel_comenzar_Planificador(t_kernel* self){
+
+	iretThreadPlanificador = pthread_create( &hiloAtiendeCPU, NULL, (void*) planificadorEscucharConexionesCPU, self);
+	if(iretThreadPlanificador) {
+		fprintf(stderr,"Error - pthread_create() return code: %d\n",iretThread);
+		exit(EXIT_FAILURE);
+	}
+	iretThreadPlanificador = pthread_create( &hiloMandaEjectutarTCB, NULL, (void*) pasarTCB_Ready_A_Exec, self);
+	if(iretThreadPlanificador) {
+		fprintf(stderr,"Error - pthread_create() return code: %d\n",iretThread);
+		exit(EXIT_FAILURE);
+	}
+	pthread_join(hiloAtiendeCPU, NULL);
+	pthread_join(hiloMandaEjectutarTCB, NULL);
+
+}
+
+void pasarTCB_Ready_A_Exec(t_kernel* self){
+
+	log_debug(self->loggerPlanificador,"Planificador: Comienza a ejecutarse Hilo de Ready a Exec.");
+
+	while(1){
+
+		sem_wait(&mutex_ready);//se bloquea la cola_READY hasta que tenga un TCB cargado
+		log_info(self->loggerPlanificador,"Planificador: Se encuentra un proceso en ready");
+		sem_wait(&mutex_exec);//BLOQUEO LISTA DE EXEC
+
+		sem_wait(&mutex_cpuLibre);//se bloquea hasta que haya una CPU libre
+		sem_wait(&mutex_cpuExec);//se bloquea lista de CPU disponibles
+		log_info(self->loggerPlanificador,"Planificador: Se encuentra una CPU libre");
+
+		t_programaEnKernel* programaParaExec = list_remove(cola_ready, 0); //se remueve el primer elemento de la cola READY
+		log_info(self->loggerPlanificador,"Planificador: Mando a ejecutar el proceso Beso con  PID:%d TID:%d KM:%d",programaParaExec->programaTCB->pid,programaParaExec->programaTCB->tid,programaParaExec->programaTCB->km);
+
+		list_add(cola_exec, programaParaExec); // se agrega el programa en cola EXEC
+
+		log_info(self->loggerPlanificador,"Planificador:cantidad de exec %d",list_size(cola_exec));
+		log_info(self->loggerPlanificador,"Planificador:cantidad CPU LIBRE = %d / CPU EXEC = %d",list_size(listaDeCPULibres),list_size(listaDeCPUExec));
+
+		t_cpu* cpuLibre = list_remove(listaDeCPULibres,0);
+		cpuLibre->TCB->pid = programaParaExec->programaTCB->pid;
+		list_add(listaDeCPUExec,cpuLibre);
+		log_info(self->loggerPlanificador,"Planificador: cantidad CPU LIBRE = %d / CPU EXEC = %d",list_size(listaDeCPULibres),list_size(listaDeCPUExec));
+
+		mandarEjecutarPrograma(self,programaParaExec, cpuLibre->socket);
+
+		sem_post(&mutex_ready);   // se desbloquea cola READY
+		sem_post(&mutex_exec);    // se desbloquea cola EXEC
+		sem_post(&mutex_cpuLibre);// se desbloquea cola CPU LIBRE
+		sem_post(&mutex_cpuExec); // se desbloquea cola CPU OCUPADAS
+	}
+}
+
+void mandarEjecutarPrograma(t_kernel* self,t_programaEnKernel* programa, t_socket* socketCPU){
+
+	t_TCB_Kernel* unTCBaEXEC = malloc (sizeof(t_TCB_Kernel));
+	unTCBaEXEC = programa->programaTCB;
+	log_info(self->loggerPlanificador,"PID = %d CURSOR POINTER= %d",programa->programaTCB->pid,programa->programaTCB->puntero_instruccion);
+
+
+
+	t_QUANTUM* unQuantum = malloc(sizeof(t_QUANTUM));
+	unQuantum->quantum = self->quantum;
+
+	//se manda un QUANTUM a CPU
+	socket_sendPaquete(socketCPU, QUANTUM, sizeof(t_QUANTUM), unQuantum);
+	log_debug(self->loggerPlanificador, "Planificador: envia un quantum: %d", unQuantum->quantum);
+
+
+
+
+	if(socket_sendPaquete(socketCPU, TCB_NUEVO, sizeof(t_TCB_Kernel), unTCBaEXEC) > 0){ ////CPU_NUEVO_PCB
+		log_info(self->loggerPlanificador,"Planificador: envio el TCB  a ejecutar en una CPU");
+	} else {
+		log_info(self->loggerPlanificador,"Planificador: error el enviar a ejecutar un TCB a CPU");
+	}
+}
+
+void planificadorEscucharConexionesCPU(t_kernel* self){
 	listaSystemCall = list_create();
 	listaDeCPULibres = list_create();
 	t_socket *socketNuevaConexionCPU;
@@ -101,7 +181,7 @@ void atenderNuevaConexionCPU(t_kernel* self, t_socket* socketNuevoCliente, fd_se
 		*fdmax = socketNuevoCliente->descriptor; /*actualizar el máximo*/
 	}
 
-	t_programaEnKernel* unTCBCOLA = obtenerTCBdeReady(self);
+	/*t_programaEnKernel* unTCBCOLA = obtenerTCBdeReady(self);
 
 	if (unTCBCOLA!= NULL){
 		t_TCB_Kernel* unTCBaCPU = malloc(sizeof(t_TCB_Kernel));
@@ -121,7 +201,7 @@ void atenderNuevaConexionCPU(t_kernel* self, t_socket* socketNuevoCliente, fd_se
 		printTCBKernel(unTCBaCPU);
 		free(unQuantum);
 		//free(unTCBaCPU);
-	}
+	}*/
 
 	socket_freePaquete(paquete);
 }
@@ -183,7 +263,7 @@ t_cpu* obtenerCPUSegunDescriptor(t_kernel* self,int descriptor){
 
 t_programaEnKernel* obtenerTCBdeReady(t_kernel* self){
 
-	sem_wait(&mutex_BloqueoPlanificador);
+	//sem_wait(&mutex_BloqueoPlanificador);   //desbloquea al planificador!!! ERROR
 
 	log_error(self->loggerPlanificador," Cantidad de elemento en la cola New: %d" ,list_size(cola_new));
 	if (list_size(cola_new)>0){
