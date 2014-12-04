@@ -1130,11 +1130,12 @@ int FREE_ESO(t_CPU *self){
 
 	estado_free = cpuDestruirSegmento(self, direccionVirtual);
 
-	if(estado_free == ERROR_POR_SEGMENTO_DESCONOCIDO){
+	if(estado_free == ERROR_POR_SEGMENTO_DESCONOCIDO)
 		log_info(self->loggerCPU, "CPU: FREE ejecutado con ERROR_POR_SEGMENTO_DESCONOCIDO para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-	} else {
+
+	else
 		log_info(self->loggerCPU, "CPU: FREE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-	}
+
 	return estado_free;
 }
 
@@ -1146,46 +1147,29 @@ void printfEntradaStandarCPU(t_entrada_estandar* entrada){
 
 }
 int INNN_ESO(t_CPU *self){
-	//log_info(self->loggerCPU, "TEST 1");
-	//1) declara la estructura para mostrar los registros de cpu: logs de la catedra.
+
 	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
-	//2) declara la variable de control que devuelve el estado del bloque funcion.
+	int *intRecibido = malloc(sizeof(int));
+
 	int estado_innn;
-	//3) carga los datos para enviar al planificador el servicio requerido.
-	t_entrada_estandar* entradaEstandar = malloc(sizeof(t_entrada_estandar));
-	//log_info(self->loggerCPU, "TEST 2");
-	entradaEstandar->pid = self->tcb->pid;
-	entradaEstandar->tamanio = sizeof(int);
-	entradaEstandar->tipo = ENTRADA_ESTANDAR_INT;    //JORGE ESTO ESTA MAL!!!!!!!!!!!!!!!!!!!!!!
 
-	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR,sizeof(t_entrada_estandar), entradaEstandar)<=0){  //22 corresponde a interrupcion
-		log_info(self->loggerCPU, "CPU: INNN ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		estado_innn = MENSAJE_DE_ERROR;
-	}
-	free(entradaEstandar);
+	estado_innn = cpuSolicitarEntradaEstandar(self, sizeof(int), ENTRADA_ESTANDAR_INT);
 
-	//5) recibe del planificador el numero entero requerido.
-	t_socket_paquete *paquete_KERNEL = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-	if(socket_recvPaquete(self->socketPlanificador->socket, paquete_KERNEL) > 0){
-		if(paquete_KERNEL->header.type == ENTRADA_ESTANDAR){
-			log_info(self->loggerCPU, "CPU: INNN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			self->tcb->registro_de_programacion[0]=(int32_t)paquete_KERNEL;
-			estado_innn = ENTRADA_ESTANDAR;
-			//5) muestra los cambio_registros, logs de la catedra.
-			cpuInicializarRegistrosCPU(self, registros_cpu);
-			cambio_registros(registros_cpu);
-		} else {
-			log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado de MSP: %d", paquete_KERNEL->header.type);
-			estado_innn = ERROR_POR_CODIGO_INESPERADO;
-		}
-	}else{
-		log_info(self->loggerCPU, "CPU: INNN ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		printf("CPU: MSP ha cerrado su conexion\n");
+	if(estado_innn == SIN_ERRORES)
+		estado_innn = reciboEntradaEstandarINT(self, intRecibido);
 
-	}
+	self->tcb->registro_de_programacion[0] = (int32_t)intRecibido;
+
+	cpuInicializarRegistrosCPU(self, registros_cpu);
+	cambio_registros(registros_cpu);
+
+	if(estado_innn == SIN_ERRORES)
+		log_info(self->loggerCPU, "CPU: INNN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+
+	else
+		log_error(self->loggerCPU, "CPU: Ha ocurrido un error al ejecutar la instruccion INNN para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
 	free(registros_cpu);
-	free(paquete_KERNEL);
 	return estado_innn;
 
 }
@@ -1193,44 +1177,30 @@ int INNN_ESO(t_CPU *self){
 int INNC_ESO(t_CPU *self){
 
 	int estado_innc;
-	t_entrada_estandar* entradaEstandar = malloc(sizeof(t_entrada_estandar));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
+	char *charRecibido = malloc(sizeof(self->tcb->registro_de_programacion[1]));
 
-	entradaEstandar->pid = self->tcb->pid;
-	entradaEstandar->tamanio = self->tcb->registro_de_programacion[1];
-	entradaEstandar->tipo = ENTRADA_ESTANDAR_TEXT;    //JORGE ESTO ESTA MAL!!!!!!!!!!!!!!!!!!!!!!
+	estado_innc = cpuSolicitarEntradaEstandar(self, self->tcb->registro_de_programacion[1], ENTRADA_ESTANDAR_TEXT);
 
-	log_info(self->loggerCPU, "CPU: envia una ENTRADA_ESTANDAR");
-	printfEntradaStandarCPU(entradaEstandar);
-	socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR, 0, NULL);
-	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR,sizeof(t_entrada_estandar), entradaEstandar)<=0){  //22 corresponde a interrupcion
-		log_info(self->loggerCPU, "CPU: INNC ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+	if(estado_innc == SIN_ERRORES){
+		estado_innc = reciboEntradaEstandarCHAR(self, charRecibido, sizeof(self->tcb->registro_de_programacion[1]));
+		log_info(self->loggerCPU, "INNC_ESO: recibe una cadena de la Consola");
 	}
-	free(entradaEstandar);
 
-	t_socket_paquete *paquete_KERNEL = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-	if(socket_recvPaquete(self->socketPlanificador->socket, paquete_KERNEL) > 0){
-		if(paquete_KERNEL->header.type == ENTRADA_ESTANDAR){
-			log_info(self->loggerCPU, "CPU: recibiendo CADENA ingresado por consola ", self->tcb->pid);
-			char *cadena = malloc(self->tcb->registro_de_programacion[1]);
-			memcpy(cadena, paquete_KERNEL->data, self->tcb->registro_de_programacion[1]);
-			log_info(self->loggerCPU, "INNC_ESO: recibe una cadena de la Consola");
-			int estadoEscritura = cpuEscribirMemoria(self, self->tcb->registro_de_programacion[0], cadena, sizeof(self->tcb->registro_de_programacion[1]));
+	int estadoEscritura = cpuEscribirMemoria(self, self->tcb->registro_de_programacion[0], charRecibido, sizeof(self->tcb->registro_de_programacion[1]));
 
-			if(estadoEscritura == ERROR_POR_SEGMENTATION_FAULT){
-				log_info(self->loggerCPU, "CPU: INNC ejecutado con ERROR_POR_SEGMENTATION_FAULT para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-				estado_innc = ERROR_POR_SEGMENTATION_FAULT;
-			} else {
-				free(cadena);
-				log_info(self->loggerCPU, "CPU: INNC ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-				estado_innc = ENTRADA_ESTANDAR;
-			}
-		}else{
-			log_info(self->loggerCPU, "CPU: codigo inesperado de MSP");
-			printf("CPU: codigo inesperado de MSP\n");
-			estado_innc = MENSAJE_DE_ERROR;
-		}
-		free(paquete_KERNEL);
+	if(estadoEscritura == ERROR_POR_SEGMENTATION_FAULT){
+		log_info(self->loggerCPU, "CPU: INNC ejecutado con ERROR_POR_SEGMENTATION_FAULT para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		estado_innc = ERROR_POR_SEGMENTATION_FAULT;
 	}
+
+	else {
+		log_info(self->loggerCPU, "CPU: INNC ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		estado_innc = ENTRADA_ESTANDAR;
+	}
+
+	free(registros_cpu);
+	free(charRecibido);
 	return estado_innc;
 }
 

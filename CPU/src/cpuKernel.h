@@ -111,6 +111,14 @@ typedef struct {
 	t_crea_hilo* crearHijo;
 } t_ServiciosAlPlanificador;
 
+typedef struct{
+	int numero;
+} t_entrada_numeroCPU;
+
+typedef struct{
+	char entradaEstandar[1000];
+} t_entrada_charCPU;
+
 
 void cpuConectarConKernel(t_CPU *self);
 void cpuRealizarHandshakeConKernel(t_CPU *self);
@@ -120,6 +128,9 @@ void cpuEnviarPaqueteAPlanificador(t_CPU *self, int paquete);
 void cpuCambioContexto(t_CPU *self);
 void cpuEnviaInterrupcion(t_CPU *self);
 int cpuFinalizarProgramaExitoso(t_CPU *self, t_TCB_CPU* algo);
+int cpuSolicitarEntradaEstandar(t_CPU *self, int tamanio, int tipo);
+int reciboEntradaEstandarINT(t_CPU *self, int *recibido);
+int reciboEntradaEstandarCHAR(t_CPU *self, char *recibido, int tamanio);
 
 
 #endif /* CPUKERNEL_H_ */

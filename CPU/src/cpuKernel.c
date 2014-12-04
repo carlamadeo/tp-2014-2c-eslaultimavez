@@ -157,7 +157,7 @@ int cpuFinalizarProgramaExitoso(t_CPU *self, t_TCB_CPU* algo){
 
 	if (socket_sendPaquete(self->socketPlanificador->socket, FINALIZAR_PROGRAMA_EXITO, sizeof(t_TCB_CPU), algo) <= 0){
 		log_error(self->loggerCPU, "CPU: Error de finalizacion de proceso %d", self->tcb->pid);
-		return -1;
+		return MENSAJE_DE_ERROR;
 	}
 
 	else{
@@ -165,4 +165,79 @@ int cpuFinalizarProgramaExitoso(t_CPU *self, t_TCB_CPU* algo){
 		return SIN_ERRORES;
 
 	}
+}
+
+
+int cpuSolicitarEntradaEstandar(t_CPU *self, int tamanio, int tipo){
+
+	t_entrada_estandar *envioEntradaEstandar = malloc(sizeof(t_entrada_estandar));
+
+	envioEntradaEstandar->pid = self->tcb->pid;
+	envioEntradaEstandar->tamanio = tamanio;
+	envioEntradaEstandar->tipo = tipo;    //JORGE ESTO ESTA MAL!!!!!!!!!!!!!!!!!!!!!!
+
+	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR, sizeof(t_entrada_estandar), envioEntradaEstandar) <= 0){  //22 corresponde a interrupcion
+		log_info(self->loggerCPU, "CPU: Ha ocurrido un error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		return MENSAJE_DE_ERROR;
+	}
+
+	free(envioEntradaEstandar);
+		return SIN_ERRORES;
+}
+
+
+int reciboEntradaEstandarINT(t_CPU *self, int *recibido){
+
+	t_entrada_numeroCPU *datosRecibidos = malloc(sizeof(t_entrada_numeroCPU));
+	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+
+	if(socket_recvPaquete(self->socketPlanificador->socket, paquete) > 0){
+
+		if(paquete->header.type == ENTRADA_ESTANDAR){
+			datosRecibidos = (t_entrada_numeroCPU *) (paquete->data);
+			recibido = datosRecibidos->numero;
+			return ENTRADA_ESTANDAR;
+		}
+
+		else {
+			log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			return ERROR_POR_CODIGO_INESPERADO;
+		}
+	}
+
+	else
+		log_info(self->loggerCPU, "CPU: Ha ocurrido un error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+
+	socket_freePaquete(paquete);
+	free(datosRecibidos);
+	return SIN_ERRORES;
+}
+
+
+int reciboEntradaEstandarCHAR(t_CPU *self, char *recibido, int tamanio){
+
+	t_entrada_charCPU *datosRecibidos = malloc(sizeof(t_entrada_charCPU));
+	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+
+	if(socket_recvPaquete(self->socketPlanificador->socket, paquete) > 0){
+
+		if(paquete->header.type == ENTRADA_ESTANDAR){
+			datosRecibidos = (t_entrada_charCPU *) (paquete->data);
+			memset(recibido, 0, tamanio);
+			memcpy(recibido, datosRecibidos->entradaEstandar, tamanio);
+			return ENTRADA_ESTANDAR;
+		}
+
+		else {
+			log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			return ERROR_POR_CODIGO_INESPERADO;
+		}
+	}
+
+	else
+		log_info(self->loggerCPU, "CPU: Ha ocurrido un error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+
+	socket_freePaquete(paquete);
+	free(datosRecibidos);
+	return SIN_ERRORES;
 }
