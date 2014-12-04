@@ -35,12 +35,20 @@ typedef struct {
 	int tamanio;
 } t_escribirSegmentoBeso;
 
+typedef struct{
+	int pid;
+	uint32_t direccionVirtual;
+} t_destruirSegmento;
+
+typedef struct{
+	int estado;
+}t_confirmacion;
+
+
 void hacer_conexion_con_msp(t_kernel* self);
-
 void realizarHandshakeConMSP(t_kernel* self);
-
 int kernelCrearSegmento(t_kernel* self, int pid, int tamanio);
-
+int kernelDestruirSegmento(t_kernel *self, t_TCB_Kernel *tcb, uint32_t direccionVirtual);
 int kernelEscribirMemoria(t_kernel* self, int pid, uint32_t direccionVirtual, char *programaBeso, int tamanioBeso, t_socket* socketNuevoCliente);
 
 #endif /* KERNELMSP_H_ */

@@ -47,7 +47,6 @@ int kernelCrearSegmento(t_kernel *self, int pid, int tamanio){
 	datosAEnviar->pid = pid;
 	datosAEnviar->tamanio = tamanio;
 
-
 	if (socket_sendPaquete(self->socketMSP->socket, CREAR_SEGMENTO, sizeof(t_datos_aMSP), datosAEnviar) > 0) {
 		log_info(self->loggerKernel, "Kernel: Solicitud de creacion de segmento de Tamaño %d para el Proceso con PID %d.", datosAEnviar->tamanio, datosAEnviar->pid);
 
@@ -55,28 +54,46 @@ int kernelCrearSegmento(t_kernel *self, int pid, int tamanio){
 
 			if(paquete->header.type == CREAR_SEGMENTO){
 				datosRecibidos = (t_datos_deMSP *) (paquete->data);
-				log_info(self->loggerKernel, "Kernel: Se recibio de la MSP la direccion base %0.8p ", datosRecibidos->direccionBase);
 
-				if(datosRecibidos->direccionBase < 0){
-					//Manejo de errores
-					//ERROR_POR_TAMANIO_EXCEDIDO
-					//ERROR_POR_MEMORIA_LLENA
-					//ERROR_POR_NUMERO_NEGATIVO
-					//ERROR_POR_SEGMENTO_INVALIDO
-					//ERROR_POR_SEGMENTATION_FAULT
-				}
+				if(datosRecibidos->direccionBase >= 0)
+					log_info(self->loggerKernel, "Kernel: Se recibio de la MSP la direccion base %0.8p ", datosRecibidos->direccionBase);
 			}
 		}
 
 		else{
-			log_info(self->loggerKernel, "Kernel: Error al recibir los datos de creacion de segmento");
-			return -1;
+			log_error(self->loggerKernel, "Kernel: Error al recibir los datos de creacion de segmento");
+			return -1; //TODO ver que error mandar al no recibir un paquete
 		}
 	}
 
 	socket_freePaquete(paquete);
 	free(datosAEnviar);
 	return datosRecibidos->direccionBase;
+}
+
+
+int kernelDestruirSegmento(t_kernel *self, t_TCB_Kernel *tcb, uint32_t direccionVirtual){
+
+	t_destruirSegmento* destruir_segmento = malloc(sizeof(t_destruirSegmento));
+	t_socket_paquete *paqueteConfirmacionDestruccionSegmento = malloc(sizeof(t_socket_paquete));
+	t_confirmacion* confirmacion = malloc(sizeof(t_confirmacion));
+
+	destruir_segmento->pid = tcb->pid;
+	destruir_segmento->direccionVirtual = direccionVirtual;
+
+	socket_sendPaquete(self->socketMSP->socket, DESTRUIR_SEGMENTO, sizeof(t_destruirSegmento), destruir_segmento);
+
+	socket_recvPaquete(self->socketMSP->socket, paqueteConfirmacionDestruccionSegmento);
+
+	confirmacion = (t_confirmacion *) paqueteConfirmacionDestruccionSegmento->data;
+
+	if(confirmacion->estado == SIN_ERRORES)
+		log_info(self->loggerKernel, "CPU: Se destruyo el segmento con base virtual %0.8p correctamente", direccionVirtual);
+
+	free(destruir_segmento);
+	free(paqueteConfirmacionDestruccionSegmento);
+
+	return confirmacion->estado;
 }
 
 
@@ -99,16 +116,8 @@ int kernelEscribirMemoria(t_kernel* self, int pid, uint32_t direccionVirtual, ch
 
 	unaConfirmacionEscritura = (t_confirmacionEscritura *) paqueteConfirmacionEscritura->data;
 
-	switch(unaConfirmacionEscritura->estado){
-
-	case ERROR_POR_SEGMENTATION_FAULT:
-
-		break;
-	default:
-
-		break;
-
-	}
+	if(unaConfirmacionEscritura->estado == SIN_ERRORES)
+		log_info(self->loggerKernel, "Kernel: Se ha escrito en memoria correctamente");
 
 	free(escrituraDeCodigo);
 	free(paqueteConfirmacionEscritura);
