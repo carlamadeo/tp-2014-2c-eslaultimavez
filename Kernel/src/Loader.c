@@ -8,10 +8,10 @@
 int unPIDGlobal = 1;
 int unTIDGlobal = 1;
 
-t_list *listaDeProgramasDisponibles;
-t_list* cola_new;
+//t_list *listaDeProgramasDisponibles;
+//t_list* cola_new;
 
-
+pthread_mutex_t mutexLoader = PTHREAD_MUTEX_INITIALIZER;
 //se crean dos hilos:
 void kernel_comenzar_Loader(t_kernel* self){
 
@@ -39,12 +39,16 @@ void pasarProgramaNewAReady(t_kernel* self){
 	while(1){
 		sem_wait(&mutex_new);  //se bloquea hasta que haya un programa en la cola NEW
 		sem_wait(&mutex_ready);//se bloque la cola READY
+
+		//pthread_mutex_lock(&mutexLoader);
+
 		t_programaEnKernel* programaParaReady = malloc(sizeof(t_programaEnKernel));
 		programaParaReady = list_remove(cola_new, 0); //se remueve el primer elemento de la cola NEW
 		log_info(self->loggerLoader, "Loader: mueve de New a Ready el proceso con PID:%d TID:%d KM:%d",programaParaReady->programaTCB->pid,programaParaReady->programaTCB->tid,programaParaReady->programaTCB->km);
 
 		list_add(cola_ready, programaParaReady); // se agrega el programa buscado a la cola READY
 
+		//pthread_mutex_unlock(&mutexLoader);
 		sem_post(&mutex_new);   //se desbloquea la cola NEW
 		sem_post(&mutex_ready); //se desbloquea la cola Ready, ingresando un programa
 	}
@@ -216,17 +220,19 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 		t_TCB_Kernel* unTCBenLoader = loaderCrearTCB(self, programaBeso, socketNuevoCliente, sizePrograma);
 		log_info(self->loggerLoader, "Loader: TCB completo.");
 
-
+		log_info(self->loggerPlanificador,"Planificador: TEST 1");
 		if(unTCBenLoader!=NULL){
+			log_info(self->loggerPlanificador,"Planificador: TEST 2");
 			//al TCB se lo agrega al final de la Cola NEW con su socket correspondiente
 			t_programaEnKernel *unPrograma = malloc(sizeof(t_programaEnKernel));
 			unPrograma->programaTCB = unTCBenLoader;
 			unPrograma->socketProgramaConsola = socketNuevoCliente;
-
-			sem_wait(&mutex_new);
+			log_info(self->loggerPlanificador,"Planificador: TEST 3");
+			//sem_wait(&mutex_new);
 			list_add(cola_new, unPrograma);
+			log_info(self->loggerPlanificador,"Planificador: TEST 4");
 			list_add(listaDeProgramasDisponibles, unPrograma);
-			sem_post(&mutex_new);
+			//sem_post(&mutex_new);
 			log_info(self->loggerLoader,"Loader: Agrego un elemento a la Cola New con el PID:%d  TID:%d ", unTCBenLoader->pid, unTCBenLoader->tid);
 			//sem_post(&mutex_BloqueoPlanificador);   //bloquea al planificador hasta que la lista sea distinta de new
 
@@ -238,6 +244,8 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 				*fdmax = socketNuevoCliente->descriptor; /*actualizar el máximo*/
 			}
 
+			sem_post(&mutex_ready);
+			sem_post(&mutex_ready);//se ingremanta un contador en la cola_READY, ya tiene un NUEVO TCB cargado
 		}else{
 			//se tiene que hacer dos cosas
 			//1) avisarle al programa que tiene un error

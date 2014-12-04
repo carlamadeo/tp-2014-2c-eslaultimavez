@@ -5,7 +5,7 @@
 #include <commons/collections/list.h>
 #include "commons/log.h"
 #include "commons/socketInBigBang.h"
-
+#include <pthread.h>
 /*----------------------Estructuras del Kernel----------------------------------------*/
 #define MAXDATASIZE 1024
 #define PATH_CONFIG "archivoConfiguracion.cfg"
@@ -65,7 +65,8 @@ typedef struct {
 } t_cpu;
 
 //Guardan un TCB,Socket, ID
-//t_list* cola_new;  //es la que comparte el loader y el planificador, con los programas cargados
+t_list *listaDeProgramasDisponibles;
+t_list* cola_new;
 t_list* cola_ready;
 t_list* cola_exec;
 t_list* cola_block; //POR CUATRO, bloqueado por systemCall, por recurso, por esperando un hilo

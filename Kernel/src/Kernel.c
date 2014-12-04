@@ -14,10 +14,10 @@
 #include "boot.h"
 #include "kernelMSP.h"
 #include "commons/config.h"
-#include <pthread.h>
 
-t_list *listaDeProgramasDisponibles;
-t_list* cola_new;
+
+//t_list *listaDeProgramasDisponibles;
+//t_list* cola_new;
 //t_list* cola_ready;
 
 int main(int argc, char** argv) {
@@ -43,6 +43,7 @@ int main(int argc, char** argv) {
 	listaDeCPUExec = list_create();
 	listaDeCPULibres = list_create();
 	listaDeProgramasDisponibles = list_create();
+
 
 
 	//se inician los semaforos

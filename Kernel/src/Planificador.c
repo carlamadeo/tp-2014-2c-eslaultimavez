@@ -3,7 +3,7 @@
 #include <errno.h>
 #include <unistd.h>
 
-t_list* cola_new;
+//t_list* cola_new;
 //t_list* cola_ready;
 int idCPU=250;
 
@@ -31,6 +31,7 @@ void pasarTCB_Ready_A_Exec(t_kernel* self){
 
 	while(1){
 
+		//sem_wait(&mutex_ready);
 		sem_wait(&mutex_ready);//se bloquea la cola_READY hasta que tenga un TCB cargado
 		log_info(self->loggerPlanificador,"Planificador: Se encuentra un proceso en ready");
 		sem_wait(&mutex_exec);//BLOQUEO LISTA DE EXEC
@@ -166,9 +167,9 @@ void atenderNuevaConexionCPU(t_kernel* self, t_socket* socketNuevoCliente, fd_se
 			log_info(self->loggerPlanificador, "Planificador: envia HANDSHAKE_PLANIFICADOR.");
 
 			idCPU++;
-			sem_wait(&mutex_cpuLibre);
-			agregarEnListaDeCPU(idCPU, socketNuevoCliente);
-			sem_post(&mutex_cpuLibre);
+			//sem_wait(&mutex_cpuLibre);
+			agregarEnListaDeCPU(self,idCPU, socketNuevoCliente);
+			//sem_post(&mutex_cpuLibre);
 		}
 		else
 			log_error(self->loggerPlanificador, "Planificador: Error en el HANDSHAKE_PLANIFICADOR con la CPU.");

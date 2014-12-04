@@ -59,7 +59,7 @@ typedef struct {
 void enviarTCByQUANTUMCPU(t_kernel* self,t_socket *socketNuevaConexionCPU,t_TCB_Kernel* tcbKernel);
 void recibirUnaDireccion(t_kernel* self,t_socket *socketNuevaConexionCPU,t_interrupcionKernel* unaInterripcion);
 void recibirTCB(t_kernel* self,t_socket *socketNuevaConexionCPU,t_interrupcionKernel* unaInterripcion);
-void agregarEnListaDeCPU(int id,  t_socket* socketCPU);
+void agregarEnListaDeCPU(t_kernel* self,int id,  t_socket* socketCPU);
 void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente);
 void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self,t_socket *socketNuevaConexionCPU);
 void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket *socketNuevaConexionCPU);

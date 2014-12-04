@@ -2,15 +2,16 @@
 #include "kernelMSP.h"
 #include "commons/protocolStructInBigBang.h"
 
-t_list *listaDeProgramasDisponibles;
+//t_list *listaDeProgramasDisponibles;
 //t_list* cola_ready;
 
-void agregarEnListaDeCPU(int id,  t_socket* socketCPU){
+void agregarEnListaDeCPU(t_kernel* self,int id,  t_socket* socketCPU){
 	t_cpu* unaCpu;
 	unaCpu = malloc( sizeof(t_cpu) );
 	unaCpu->id = id;
 	unaCpu->socket = socketCPU;
 	list_add(listaDeCPULibres, unaCpu);
+	log_info(self->loggerPlanificador, "Planificador: tiene una nueva CPU con id: %d",unaCpu->id);
 	//free(unaCpu);
 }
 
