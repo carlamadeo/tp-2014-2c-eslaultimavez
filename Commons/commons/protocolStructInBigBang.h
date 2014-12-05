@@ -33,6 +33,11 @@
 //kenel JOIN
 #define FIN_DE_ESPERAR 125
 
+//Kernel - CPU
+#define DESCONECTAR_CPU 126
+//Kernel - MSP
+#define PID_A_BORRAR_MSP 127
+
 //MSP
 #define CREAR_SEGMENTO 10
 #define DESTRUIR_SEGMENTO 11

@@ -53,9 +53,53 @@ void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket *socketNuevaCone
 	//3) Tercero, mando un mensja
 	socket_sendPaquete(unTcbProcesado->socketProgramaConsola, FINALIZAR_PROGRAMA_EXITO, 0 , NULL);
 
-	//4) Se carga en la COLA_EXIT
+	//4) Cuarto paso,Se carga en la COLA_EXIT
 	list_add(cola_exit,unTcbProcesado);
 	printf("COLA_EXIT: Guarda PID: %d TID: %d\n",unTcbProcesado->programaTCB->pid,unTcbProcesado->programaTCB->tid);
+
+	//5) Quinto Paso, avisar a la MVU que un programa se desconecto
+	//avisarQueTerminoUnProgramaDestruirSusSegmentos((self,unTcbProcesado));
+
+
+}
+
+void avisarQueTerminoUnProgramaDestruirSusSegmentos(t_kernel* self, t_TCB_Kernel* tcbABorrar){
+
+	//Carla te dejo para que completes esta parte!!! esta funciona la voy a llamar en otros lados
+
+	//1) al final ejecutar_DESCONECTAR_CPU   Linea 286
+
+	//2) al final ejecutar_UN_MENSAJE_DE_ERROR Linea 248
+
+
+	sem_wait(&mutex_exec); //se bloquea cola READY
+	sem_wait(&mutex_exit); //se bloquea cola EXIT
+
+	bool esPrograma(t_programaEnKernel* programaEnLista){
+		return ((programaEnLista->programaTCB->pid == tcbABorrar->pid) && (programaEnLista->programaTCB->tid == tcbABorrar->tid));
+	}
+	t_programaEnKernel* programa = list_remove_by_condition(cola_exec, (void*)esPrograma);
+	list_add(cola_exit, programa);
+
+
+	//Carla en esta estructura podes agregar la direccion que necesitas
+	t_PID_A_BORRAR_EN_MSP* pidParaMSP = malloc(sizeof(t_PID_A_BORRAR_EN_MSP));
+	pidParaMSP->pid = tcbABorrar->pid;
+
+
+	if(socket_sendPaquete(self->socketMSP->socket, PID_A_BORRAR_MSP, sizeof(t_PID_A_BORRAR_EN_MSP), pidParaMSP ) > 0) {
+		log_info(self->loggerPlanificador,"Planificador: manda destruir segmentos del proceso con PID: %d!", pidParaMSP->pid);
+	}
+
+	sem_post(&mutex_exit);
+	sem_post(&mutex_exec);
+
+
+	//se manda mensaje al programaBeso, cambiar el ERROR_POR_DESCONEXION_DE_CPU lo puse porque estaba a mano
+	if( socket_sendPaquete(programa->socketProgramaConsola,ERROR_POR_DESCONEXION_DE_CPU , 0, NULL) >= 0 ){
+		log_info(self->loggerPlanificador, "Se envia la finalizacion de programa");
+	}
+
 }
 
 
@@ -224,9 +268,59 @@ void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self,t_socket* socketNuevaConexionCP
 	//3) Tercero, mando un mensja
 
 	if (socket_sendPaquete(unTcbProcesado->socketProgramaConsola, errorNum, 0, NULL) <= 0)
-			log_info(self->loggerPlanificador, "CPU: fallo al enviar a la consola un paquete N°: %d", errorNum);
-		else
-			log_info(self->loggerPlanificador, "CPU: envia al Planificador un paquete N°: %d", errorNum);
+		log_info(self->loggerPlanificador, "CPU: fallo al enviar a la consola un paquete N°: %d", errorNum);
+	else
+		log_info(self->loggerPlanificador, "CPU: envia al Planificador un paquete N°: %d", errorNum);
+
+
+	// Cuarto paso, se tiene que avisar a la UMV que borres los segmentos de el prograga
+
+	//avisarQueTerminoUnProgramaDestruirSusSegmentos(cpuRemovido->TCB->pid)
+
+
+}
+
+
+void ejecutar_DESCONECTAR_CPU(t_kernel* self,t_socket *socketNuevaConexionCPU, t_cpu* cpu, fd_set* master){
+
+
+	//1) Primer paso, se elimina de conjunto maestro
+	FD_CLR(cpu->socket->descriptor, master);
+	close(cpu->socket->descriptor);
+
+
+	//2) Segundo paso, se trae el CPU que se quiere desconectar de la lista de ejecutados
+	bool esCpu(t_cpu* cpuEnLista){
+		return (cpuEnLista->id == cpu->id);
+	}
+	sem_wait(&mutex_cpuExec);
+	t_cpu* cpuRemovido = list_remove_by_condition(listaDeCPUExec, (void*)esCpu);
+	sem_post(&mutex_cpuExec);
+
+
+
+	//3) Tercer paso, se pregunta si tiene programa ejecutando
+	if(cpuRemovido!=NULL){
+		bool esPrograma(t_programaEnKernel* programaEnLista){
+			return ((programaEnLista->programaTCB->pid == cpuRemovido->TCB->pid)&&(programaEnLista->programaTCB->tid == cpuRemovido->TCB->pid));
+		}
+		//sem_wait(&sem_cpuExec);
+		sem_wait(&mutex_exec);
+		t_programaEnKernel* programaRemovido = list_remove_by_condition(cola_exec, (void*)esPrograma);
+		sem_post(&mutex_exec);
+		sem_wait(&mutex_exit);
+		list_add(cola_exit, programaRemovido);
+		sem_post(&mutex_exit);
+		//sem_post(&sem_multiprog);
+	}else{
+		//sino solo borra de la lista de CPUs libres
+		sem_wait(&mutex_cpuLibre);
+		cpuRemovido = list_remove_by_condition(listaDeCPULibres, (void*)esCpu);
+		//avisarQueTerminoUnProgramaDestruirSusSegmentos(cpuRemovido->TCB->pid)
+		sem_post(&mutex_cpuLibre);
+		//sem_wait(&sem_cpuLibre);
+	}
+
 
 
 }

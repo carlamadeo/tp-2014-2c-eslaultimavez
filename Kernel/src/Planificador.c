@@ -221,31 +221,40 @@ void atenderCPU(t_kernel* self,t_socket *socketNuevaConexionCPU, t_cpu* cpu, fd_
 	log_info(self->loggerPlanificador, "Planificador: LISTO PARA ATENDER CPUs" );
 
 	t_socket_paquete *paqueteCPUAtendido = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-	socket_recvPaquete(cpu->socket, paqueteCPUAtendido);
 
-	printf("Valor para el switch: %d\n",paqueteCPUAtendido->header.type);
+	if (socket_recvPaquete(cpu->socket, paqueteCPUAtendido)>0){
+		printf("Valor para el switch: %d\n",paqueteCPUAtendido->header.type);
 
-	switch(paqueteCPUAtendido->header.type){
-	case CAMBIO_DE_CONTEXTO:
-		ejecutar_UN_CAMBIO_DE_CONTEXTO(self, socketNuevaConexionCPU);
-		break;
-	case FINALIZAR_PROGRAMA_EXITO:
-		ejecutar_FINALIZAR_PROGRAMA_EXITO(self, socketNuevaConexionCPU);
-		break;
-	case INTERRUPCION:
-		ejecutar_UNA_INTERRUPCION(self, socketNuevaConexionCPU);
-		break;
-	default:
-		//MENSAJE_DE_ERROR:
-		ejecutar_UN_MENSAJE_DE_ERROR(self, socketNuevaConexionCPU,paqueteCPUAtendido->header.type);
+		switch(paqueteCPUAtendido->header.type){
+		case CAMBIO_DE_CONTEXTO:
+			ejecutar_UN_CAMBIO_DE_CONTEXTO(self, socketNuevaConexionCPU);
+			break;
+		case FINALIZAR_PROGRAMA_EXITO:
+			ejecutar_FINALIZAR_PROGRAMA_EXITO(self, socketNuevaConexionCPU);
+			break;
+		case INTERRUPCION:
+			ejecutar_UNA_INTERRUPCION(self, socketNuevaConexionCPU);
+			break;
+		//case DESCONECTAR_CPU:
+		//	ejecutar_DESCONECTAR_CPU(self, socketNuevaConexionCPU,cpu,master);
+		//	break;
+		default:
+			//MENSAJE_DE_ERROR:
+			ejecutar_UN_MENSAJE_DE_ERROR(self, socketNuevaConexionCPU,paqueteCPUAtendido->header.type);
 
-		//esto es importante, va en otro lado
-		//log_error(self->loggerPlanificador, "Planificador:Conexión cerrada con CPU.");
-		//FD_CLR(cpu->socket->descriptor, master);
-		//close(cpu->socket->descriptor);
-		break;
+			//esto es importante, va en otro lado
+			//log_error(self->loggerPlanificador, "Planificador:Conexión cerrada con CPU.");
+			//FD_CLR(cpu->socket->descriptor, master);
+			//close(cpu->socket->descriptor);
+			break;
 
-	}//fin switch(paqueteCPU->header.type)
+		}//fin switch(paqueteCPU->header.type)
+
+	}else{
+		ejecutar_DESCONECTAR_CPU(self, socketNuevaConexionCPU,cpu,master);
+	}
+
+
 
 	socket_freePaquete(paqueteCPUAtendido);
 }

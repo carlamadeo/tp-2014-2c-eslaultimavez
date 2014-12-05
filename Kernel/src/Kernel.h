@@ -27,6 +27,9 @@ typedef struct {
 	int quantum;
 } t_QUANTUM;
 
+typedef struct {
+	int pid;
+} t_PID_A_BORRAR_EN_MSP;
 
 typedef struct {
 	t_socket_client* socketMSP;
