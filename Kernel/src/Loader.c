@@ -43,6 +43,7 @@ void pasarProgramaNewAReady(t_kernel* self){
 		//pthread_mutex_lock(&mutexLoader);
 
 		t_programaEnKernel* programaParaReady = malloc(sizeof(t_programaEnKernel));
+		log_info(self->loggerLoader,"Loader: tamanio de la cola New: %d",list_size(cola_new));
 		programaParaReady = list_remove(cola_new, 0); //se remueve el primer elemento de la cola NEW
 		log_info(self->loggerLoader, "Loader: mueve de New a Ready el proceso con PID:%d TID:%d KM:%d",programaParaReady->programaTCB->pid,programaParaReady->programaTCB->tid,programaParaReady->programaTCB->km);
 
@@ -229,7 +230,9 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 			unPrograma->socketProgramaConsola = socketNuevoCliente;
 			log_info(self->loggerPlanificador,"Planificador: TEST 3");
 			//sem_wait(&mutex_new);
+			log_info(self->loggerPlanificador,"Planificador: cola NEW tamanio antes de un programa: %d ",list_size(cola_new));
 			list_add(cola_new, unPrograma);
+			log_info(self->loggerPlanificador,"Planificador: cola NEW tamanio despues de un programa: %d ",list_size(cola_new));
 			log_info(self->loggerPlanificador,"Planificador: TEST 4");
 			list_add(listaDeProgramasDisponibles, unPrograma);
 			//sem_post(&mutex_new);
