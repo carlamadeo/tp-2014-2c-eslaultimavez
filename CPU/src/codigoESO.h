@@ -4,7 +4,11 @@
 #include "CPU_Proceso.h"
 #include "cpuKernel.h"
 
-
+void imprimirUnNumero(int numero, char* funcion);
+void imprimirNumeroYRegistro(char registro, int numero, char* funcion);
+void imprimirDosRegistrosUnNumero(char registroA, char registroB, int numero, char* funcion);
+void imprimirDosRegistros(char registroA, char registroB, char* funcion);
+void imprimirUnRegistro(char registro, char* funcion);
 
 //Instrucciones de usuario
 

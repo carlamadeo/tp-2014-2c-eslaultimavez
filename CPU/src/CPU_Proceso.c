@@ -66,6 +66,7 @@ int main(int argc, char** argv) {
 			case SIN_ERRORES:
 				//ALE: si el tcb ya fue enviado por XXXX aca lo vuelve a enviar!!! NO CONTEPLA ESE CASO
 				cpuEnviarPaqueteAPlanificador(self, CAMBIO_DE_CONTEXTO);
+				log_error(self->loggerCPU, "CPU: envia en el descriptor: %d", self->socketPlanificador->socket->descriptor);
 				t_TCB_CPU* tcbProcesado = malloc(sizeof(t_TCB_CPU));
 				tcbProcesado = self->tcb;
 

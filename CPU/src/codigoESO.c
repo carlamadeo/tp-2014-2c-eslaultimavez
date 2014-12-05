@@ -29,22 +29,12 @@ int LOAD_ESO(t_CPU *self){
 		memcpy(&(registro), lecturaDeMSP, sizeof(char));
 		memcpy(&(numero), lecturaDeMSP + sizeof(char), sizeof(int));
 
-		printf("registro es %c\n", registro);
-		printf("numero es %d\n", numero);
 		reg = determinar_registro(registro);
 	}
 
 	if(reg != -1){
 
-		char *registroEnString = malloc(1);
-		registroEnString[0] = registro;
-		char *numeroEnString = malloc(1);
-		sprintf(numeroEnString, "%d", numero);
-		list_add(parametros, registroEnString);
-		list_add(parametros, numeroEnString);
-		ejecucion_instruccion("LOAD", parametros);
-		free(registroEnString);
-		free(numeroEnString);
+		imprimirNumeroYRegistro(registro, numero, "LOAD");
 
 		self->tcb->registro_de_programacion[reg] = numero;
 
@@ -69,6 +59,7 @@ int LOAD_ESO(t_CPU *self){
 
 
 int GETM_ESO(t_CPU *self){
+
 	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 
 	int tamanio = 2;
@@ -95,15 +86,7 @@ int GETM_ESO(t_CPU *self){
 
 		if((regA != -1) || (regB != -1)){
 
-			char *registroAEnString = malloc(1);
-			registroAEnString[0] = regA;
-			char *registroBEnString = malloc(1);
-			registroBEnString[0] = regB;
-			list_add(parametros, &regA);
-			list_add(parametros, &regB);
-			ejecucion_instruccion("GETM", parametros);
-			free(registroAEnString);
-			free(registroBEnString);
+			imprimirDosRegistros(regA, regB, "GETM");
 
 			int tamanioMSP = sizeof(int32_t);
 			char *lecturaMSP = malloc(sizeof(char)*tamanioMSP);
@@ -136,6 +119,7 @@ int GETM_ESO(t_CPU *self){
 
 
 int SETM_ESO(t_CPU *self){
+
 	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 
 	int tamanio = 6;
@@ -164,10 +148,7 @@ int SETM_ESO(t_CPU *self){
 
 			if(numero <= sizeof(uint32_t)){
 
-				list_add(parametros, &registroA);
-				list_add(parametros, &registroB);
-				list_add(parametros, &numero);
-				ejecucion_instruccion("SETM", parametros);
+				imprimirDosRegistrosUnNumero(registroA, registroB, numero, "SETM");
 
 				char* byte_a_escribir = malloc(sizeof(int32_t));
 				memcpy(byte_a_escribir, &(self->tcb->registro_de_programacion[regB]), numero);
@@ -220,9 +201,7 @@ int MOVR_ESO(t_CPU *self){
 
 		if((regA != -1) || (regB != -1)){
 
-			list_add(parametros, &registroA);
-			list_add(parametros, &registroB);
-			ejecucion_instruccion("MOVR", parametros);
+			imprimirDosRegistros(registroA, registroB, "MOVR");
 
 			self->tcb->registro_de_programacion[regA] = self->tcb->registro_de_programacion[regB];
 
@@ -268,9 +247,7 @@ int ADDR_ESO(t_CPU *self){
 
 		if((regA != -1) && (regB != -1)){
 
-			list_add(parametros, &registroA);
-			list_add(parametros, &registroB);
-			ejecucion_instruccion("ADDR", parametros);
+			imprimirDosRegistros(registroA, registroB, "ADDR");
 
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] + self->tcb->registro_de_programacion[regB];
 
@@ -318,9 +295,7 @@ int SUBR_ESO(t_CPU *self){
 
 		if((regA != -1) && (regB != -1)){
 
-			list_add(parametros, &registroA);
-			list_add(parametros, &registroB);
-			ejecucion_instruccion("SUBR", parametros);
+			imprimirDosRegistros(registroA, registroB, "SUBR");
 
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] - self->tcb->registro_de_programacion[regB];
 
@@ -368,9 +343,7 @@ int MULR_ESO(t_CPU *self){
 
 		if((regA != -1) && (regB != -1)){
 
-			list_add(parametros, &registroA);
-			list_add(parametros, &registroB);
-			ejecucion_instruccion("MULR", parametros);
+			imprimirDosRegistros(registroA, registroB, "MULR");
 
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] * self->tcb->registro_de_programacion[regB];
 
@@ -388,7 +361,7 @@ int MULR_ESO(t_CPU *self){
 
 	free(registros_cpu);
 	free(lecturaDeMSP);
-	return estado_bloque;
+	return SIN_ERRORES;
 
 }
 
@@ -419,9 +392,7 @@ int MODR_ESO(t_CPU *self){
 
 		if((regA != -1) && (regB != -1)){
 
-			list_add(parametros, &registroA);
-			list_add(parametros, &registroB);
-			ejecucion_instruccion("MODR", parametros);
+			imprimirDosRegistros(registroA, registroB, "MODR");
 
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] % self->tcb->registro_de_programacion[regB];
 
@@ -470,9 +441,7 @@ int DIVR_ESO(t_CPU *self){
 
 		if((regA != -1) && (regB != -1)){
 
-			list_add(parametros, &registroA);
-			list_add(parametros, &registroB);
-			ejecucion_instruccion("DIVR", parametros);
+			imprimirDosRegistros(registroA, registroB, "DIVR");
 
 			//int32_t auxiliar = self->tcb->registro_de_programacion[regB];
 
@@ -524,8 +493,7 @@ int INCR_ESO(t_CPU *self){
 
 		if((reg != -1)){
 
-			list_add(parametros, &registro);
-			ejecucion_instruccion("INCR", parametros);
+			imprimirUnRegistro(registro, "INCR");
 
 			self->tcb->registro_de_programacion[reg]++;
 
@@ -571,8 +539,7 @@ int DECR_ESO(t_CPU *self){
 
 		if((reg != -1)){
 
-			list_add(parametros, &registro);
-			ejecucion_instruccion("DECR", parametros);
+			imprimirUnRegistro(registro, "DECR");
 
 			self->tcb->registro_de_programacion[reg]--;
 
@@ -621,9 +588,7 @@ int COMP_ESO(t_CPU *self){
 
 		if((regA != -1) && (regB != -1)){
 
-			list_add(parametros, &registroA);
-			list_add(parametros, &registroB);
-			ejecucion_instruccion("COMP", parametros);
+			imprimirDosRegistros(registroA, registroB, "COMP");
 
 			if (self->tcb->registro_de_programacion[regA] == self->tcb->registro_de_programacion[regB])
 				self->tcb->registro_de_programacion[0] = 1;
@@ -675,9 +640,7 @@ int CGEQ_ESO(t_CPU *self){
 
 		if((regA != -1) && (regB != -1)){
 
-			list_add(parametros, &registroA);
-			list_add(parametros, &registroB);
-			ejecucion_instruccion("CGEQ", parametros);
+			imprimirDosRegistros(registroA, registroB, "CGEQ");
 
 			if (self->tcb->registro_de_programacion[regA] >= self->tcb->registro_de_programacion[regB])
 				self->tcb->registro_de_programacion[0] = 1;
@@ -729,9 +692,7 @@ int CLEQ_ESO(t_CPU *self){
 
 		if((regA != -1) && (regB != -1)){
 
-			list_add(parametros, &registroA);
-			list_add(parametros, &registroB);
-			ejecucion_instruccion("CLEQ", parametros);
+			imprimirDosRegistros(registroA, registroB, "CLEQ");
 
 			if (self->tcb->registro_de_programacion[regA] <= self->tcb->registro_de_programacion[regB])
 				self->tcb->registro_de_programacion[0] = 1;
@@ -781,8 +742,7 @@ int GOTO_ESO(t_CPU *self){
 
 		if((reg != -1)){
 
-			list_add(parametros, &registro);
-			ejecucion_instruccion("GOTO", parametros);
+			imprimirUnRegistro(registro, "GOTO");
 
 			if((self->tcb->base_segmento_codigo + self->tcb->registro_de_programacion[reg]) <= self->tcb->tamanio_segmento_codigo){
 				self->tcb->puntero_instruccion = self->tcb->registro_de_programacion[reg];
@@ -826,8 +786,7 @@ int JMPZ_ESO(t_CPU *self){
 
 		memcpy(&(direccion), lecturaDeMSP, sizeof(uint32_t));
 
-		list_add(parametros, &direccion);
-		ejecucion_instruccion("JMPZ", parametros);
+		imprimirUnNumero((int)direccion, "JMPZ");
 
 		if(self->tcb->registro_de_programacion[0] == 0){
 
@@ -870,8 +829,7 @@ int JPNZ_ESO(t_CPU *self){
 
 		memcpy(&(direccion), lecturaDeMSP, sizeof(uint32_t));
 
-		list_add(parametros,&direccion);
-		ejecucion_instruccion("JPNZ", parametros);
+		imprimirUnNumero((int)direccion, "JPNZ");
 
 		if(self->tcb->registro_de_programacion[0] != 0){
 
@@ -913,8 +871,8 @@ int INTE_ESO(t_CPU *self){
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion INTE");
 
 		memcpy(&(direccion), lecturaDeMSP, sizeof(uint32_t));
-		list_add(parametros, &direccion);
-		ejecucion_instruccion("INTE", parametros);
+
+		imprimirUnNumero((int)direccion, "INTE");
 
 		cpuInicializarRegistrosCPU(self, registros_cpu);
 		cambio_registros(registros_cpu);
@@ -963,9 +921,7 @@ int SHIF_ESO(t_CPU *self){
 
 		if((reg != -1)){
 
-			list_add(parametros, &numero);
-			list_add(parametros, &registro);
-			ejecucion_instruccion("SHIF", parametros);
+			imprimirNumeroYRegistro(registro, numero, "SHIF");
 
 			if(numero > 0)
 				self->tcb->registro_de_programacion[reg]>>=numero;
@@ -1017,9 +973,7 @@ int PUSH_ESO(t_CPU *self){
 
 		if((reg != -1)){
 
-			list_add(parametros, &numero);
-			list_add(parametros, &registro);
-			ejecucion_instruccion("PUSH", parametros);
+			imprimirNumeroYRegistro(registro, numero, "PUSH");
 
 			if(numero <= sizeof(uint32_t)){
 
@@ -1070,9 +1024,7 @@ int TAKE_ESO(t_CPU *self){
 
 		if((reg != -1)){
 
-			list_add(parametros, &numero);
-			list_add(parametros, &registro);
-			ejecucion_instruccion("TAKE", parametros);
+			imprimirNumeroYRegistro(registro, numero, "TAKE");
 
 			if(numero <= sizeof(uint32_t)){
 
@@ -1111,6 +1063,7 @@ int XXXX_ESO(t_CPU *self){
 	//char *data = malloc(sizeof(t_TCB_CPU));
 	//memcpy(data, self->tcb, sizeof(t_TCB_CPU));
 	//int estado = cpuFinalizarProgramaExitoso(self, data);
+	ejecucion_instruccion("XXXX", parametros);
 
 	log_info(self->loggerCPU, "CPU: XXXX ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 	//free(data);
@@ -1163,6 +1116,7 @@ int MALC_ESO(t_CPU *self){
 			return SIN_ERRORES;
 		}
 
+		ejecucion_instruccion("MALC", parametros);
 		free(registros_cpu);
 	}
 
@@ -1187,8 +1141,10 @@ int FREE_ESO(t_CPU *self){
 		if(estado_free == ERROR_POR_SEGMENTO_DESCONOCIDO)
 			log_info(self->loggerCPU, "CPU: FREE ejecutado con ERROR_POR_SEGMENTO_DESCONOCIDO para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
-		else
+		else{
 			log_info(self->loggerCPU, "CPU: FREE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			ejecucion_instruccion("FREE", parametros);
+		}
 	}
 
 	else
@@ -1228,8 +1184,10 @@ int INNN_ESO(t_CPU *self){
 			cpuInicializarRegistrosCPU(self, registros_cpu);
 			cambio_registros(registros_cpu);
 
-			if(estado_innn == ENTRADA_ESTANDAR)
+			if(estado_innn == ENTRADA_ESTANDAR){
 				log_info(self->loggerCPU, "CPU: INNN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+				ejecucion_instruccion("INNN", parametros);
+			}
 
 			else
 				log_error(self->loggerCPU, "CPU: Ha ocurrido un error al ejecutar la instruccion INNN para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
@@ -1274,6 +1232,7 @@ int INNC_ESO(t_CPU *self){
 
 			else {
 				log_info(self->loggerCPU, "CPU: INNC ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+				ejecucion_instruccion("INNC", parametros);
 				estado_innc = ENTRADA_ESTANDAR;
 			}
 		}
@@ -1297,6 +1256,7 @@ int OUTN_ESO(t_CPU *self){
 	if(self->tcb->km == 1){
 		log_info(self->loggerCPU, "CPU: Ejecutando instruccion OUTN");
 		estado_outn = cpuEnviarSalidaEstandar(self, string_itoa(self->tcb->registro_de_programacion[0]));
+		ejecucion_instruccion("OUTN", parametros);
 	}
 
 	else
@@ -1324,8 +1284,10 @@ int OUTC_ESO(t_CPU* self){
 		else{
 			estado_outc = cpuEnviarSalidaEstandar(self, lecturaDeMSP);
 
-			if(estado_outc == SALIDA_ESTANDAR)
+			if(estado_outc == SALIDA_ESTANDAR){
 				log_info(self->loggerCPU, "CPU: OUTN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+				ejecucion_instruccion("OUTC", parametros);
+			}
 		}
 
 		free(lecturaDeMSP);
@@ -1355,6 +1317,7 @@ int CREA_ESO(t_CPU *self){ 	// CREA un hilo hijo de TCB
 		}
 
 		log_info(self->loggerCPU, "CPU: CREA ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		ejecucion_instruccion("CREA", parametros);
 
 		free(crear_hilo);
 	}
@@ -1386,6 +1349,7 @@ int JOIN_ESO(t_CPU *self){
 
 		log_info(self->loggerCPU, "CPU: JOIN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
+		ejecucion_instruccion("JOIN", parametros);
 		free(joinear);
 	}
 
@@ -1421,6 +1385,7 @@ int BLOK_ESO(t_CPU *self){
 			estado_blok = JOIN_HILO;
 		}
 
+		ejecucion_instruccion("BLOK", parametros);
 		free(blocker);
 	}
 
@@ -1451,6 +1416,7 @@ int WAKE_ESO(t_CPU *self){
 			estado_wake = WAKE_HILO;
 		}
 
+		ejecucion_instruccion("WAKE", parametros);
 		free(despertar);
 	}
 
@@ -1460,6 +1426,84 @@ int WAKE_ESO(t_CPU *self){
 	return estado_wake;
 }
 
+//Funciones para la impresion de los logs de la catedra
+
+void imprimirUnNumero(int numero, char* funcion){
+
+	char *numeroEnString = malloc(1);
+	sprintf(numeroEnString, "%d", numero);
+	list_add(parametros, numeroEnString);
+	ejecucion_instruccion(funcion, parametros);
+	free(numeroEnString);
+}
+
+
+void imprimirNumeroYRegistro(char registro, int numero, char* funcion){
+
+	char *registroEnString = malloc(1);
+	sprintf(registroEnString, "%c", registro);
+	char *numeroEnString = malloc(1);
+	sprintf(numeroEnString, "%d", numero);
+
+	list_add(parametros, registroEnString);
+	list_add(parametros, numeroEnString);
+
+	ejecucion_instruccion(funcion, parametros);
+
+	free(registroEnString);
+	free(numeroEnString);
+}
+
+
+void imprimirDosRegistrosUnNumero(char registroA, char registroB, int numero, char* funcion){
+
+	char *registroAEnString = malloc(1);
+	sprintf(registroAEnString, "%c", registroA);
+	char *registroBEnString = malloc(1);
+	sprintf(registroBEnString, "%c", registroB);
+	char *numeroEnString = malloc(1);
+	sprintf(numeroEnString, "%d", numero);
+
+	list_add(parametros, registroAEnString);
+	list_add(parametros, registroBEnString);
+	list_add(parametros, numeroEnString);
+
+	ejecucion_instruccion(funcion, parametros);
+
+	free(registroAEnString);
+	free(registroBEnString);
+	free(numeroEnString);
+}
+
+
+void imprimirDosRegistros(char registroA, char registroB, char* funcion){
+
+	char *registroAEnString = malloc(1);
+	sprintf(registroAEnString, "%c", registroA);
+	char *registroBEnString = malloc(1);
+	sprintf(registroBEnString, "%c", registroB);
+
+	list_add(parametros, registroAEnString);
+	list_add(parametros, registroBEnString);
+
+	ejecucion_instruccion(funcion, parametros);
+
+	free(registroAEnString);
+	free(registroBEnString);
+
+}
+
+
+void imprimirUnRegistro(char registro, char* funcion){
+
+	char *registroEnString = malloc(1);
+	sprintf(registroEnString, "%c", registro);
+	list_add(parametros, registroEnString);
+
+	ejecucion_instruccion(funcion, parametros);
+
+	free(registroEnString);
+}
 
 //
 //
