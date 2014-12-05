@@ -55,7 +55,7 @@ typedef struct {
 	t_TCB_Kernel* tcb;
 } t_crea_hiloKernelSecundario;
 
-
+void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self,t_socket* socketNuevaConexionCPU, int8_t errorNum);
 void enviarTCByQUANTUMCPU(t_kernel* self,t_socket *socketNuevaConexionCPU,t_TCB_Kernel* tcbKernel);
 void recibirUnaDireccion(t_kernel* self,t_socket *socketNuevaConexionCPU,t_interrupcionKernel* unaInterripcion);
 void recibirTCB(t_kernel* self,t_socket *socketNuevaConexionCPU,t_interrupcionKernel* unaInterripcion);

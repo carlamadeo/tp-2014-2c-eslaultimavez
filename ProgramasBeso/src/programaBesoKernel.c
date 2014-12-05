@@ -138,18 +138,43 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 				break;
 			case ERROR_POR_TAMANIO_EXCEDIDO:
 				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error por tamaño de segmento excedido");
+				fin=1;
 				break;
 			case ERROR_POR_MEMORIA_LLENA:
 				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error por memoria llena");
+				fin=1;
 				break;
 			case ERROR_POR_NUMERO_NEGATIVO:
 				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error por solicitar un tamaño de segmento negativo");
+				fin=1;
 				break;
 			case ERROR_POR_SEGMENTO_INVALIDO:
 				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error por segmento invalido");
+				fin=1;
 				break;
 			case ERROR_POR_SEGMENTATION_FAULT:
 				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error del tipo Segmentation Fault");
+				fin=1;
+				break;
+			case ERROR_POR_DESCONEXION_DE_CPU:
+				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error del tipo ERROR_POR_DESCONEXION_DE_CPU");
+				fin=1;
+				break;
+			case ERROR_POR_DESCONEXION_DE_CONSOLA:
+				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error del tipo ERROR_POR_DESCONEXION_DE_CONSOLA");
+				fin=1;
+				break;
+			case ERROR_POR_EJECUCION_ILICITA:
+				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error del tipo ERROR_POR_EJECUCION_ILICITA");
+				fin=1;
+				break;
+			case ERROR_POR_CODIGO_INESPERADO:
+				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error del tipo ERROR_POR_CODIGO_INESPERADO");
+				fin=1;
+				break;
+			case ERROR_REGISTRO_DESCONOCIDO:
+				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error del tipo ERROR_REGISTRO_DESCONOCIDO");
+				fin=1;
 				break;
 			default:
 				log_info(self->loggerProgramaBESO,"Consola: Recibe OK");

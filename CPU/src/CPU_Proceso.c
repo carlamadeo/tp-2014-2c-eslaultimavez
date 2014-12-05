@@ -152,9 +152,27 @@ int main(int argc, char** argv) {
 				//log_info(self->loggerCPU, "CPU: envia un WAKE_HILO");
 				break;
 			default:
-				cpuEnviarPaqueteAPlanificador(self, MENSAJE_DE_ERROR);
-				log_error(self->loggerCPU, "CPU: envia un MENSAJE_DE_ERROR");
-				return MENSAJE_DE_ERROR;
+				//Maneja los errores de la CPU, tine su valor en la variable valorCPU
+				// ERROR_POR_DESCONEXION_DE_CPU 110
+				// ERROR_POR_DESCONEXION_DE_CONSOLA 111
+				// ERROR_POR_EJECUCION_ILICITA 112
+				// ERROR_POR_CODIGO_INESPERADO 113
+				// ERROR_REGISTRO_DESCONOCIDO 114
+
+				if (socket_sendPaquete(self->socketPlanificador->socket, valorCPU, 0, NULL) <= 0)
+					log_info(self->loggerCPU, "CPU: Fallo envio de CPU_TERMINE_UNA_LINEA, PID: %d", self->tcb->pid);
+				else
+					log_info(self->loggerCPU, "CPU: envia al Planificador un paquete N°: %d", valorCPU);
+
+
+				if (socket_sendPaquete(self->socketPlanificador->socket, TCB_NUEVO, sizeof(t_TCB_CPU), self->tcb) > 0){
+					log_info(self->loggerCPU, "CPU: envia un TCB por un ERROR");
+					printTCBCPU(self->tcb);
+				}else
+					log_error(self->loggerCPU, "CPU: error al envia un TCB en una interrupcion");
+
+
+				break;
 			}
 
 		}

@@ -192,6 +192,46 @@ void enviarTCByQUANTUMCPU(t_kernel* self,t_socket *socketNuevaConexionCPU,t_TCB_
 
 
 }
+
+
+void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self,t_socket* socketNuevaConexionCPU, int8_t errorNum){
+
+
+	log_info(self->loggerPlanificador, "Planificador: recibe UN_MENSAJE_DE_ERROR" );
+
+	//1) Primer paso, se recibe un TCB
+
+	t_socket_paquete *paqueteError = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+	t_TCB_Kernel* tcbError = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
+
+	if(socket_recvPaquete(socketNuevaConexionCPU, paqueteError) >= 0){
+		tcbError = (t_TCB_Kernel*) paqueteError->data;
+		//printTCBKernel(tcbFinalizado);
+	}else
+		log_error(self->loggerPlanificador, "Planificador: error al rebicir  UN_MENSAJE_DE_ERROR.");
+
+
+	//2) Segundo se obtiene el socket del programaBeso
+	//printf("Buscar PID: %d TID: %d\n",tcbFinalizado->pid,tcbFinalizado->tid);
+
+	bool _tcbParaExit(t_programaEnKernel* tcb) {
+		return ((tcb->programaTCB->tid == tcbError->tid) && (tcb->programaTCB->pid == tcbError->pid));
+	}
+
+	//printf("listaDeProgramasDisponibles Cantidad: %d\n", list_size(listaDeProgramasDisponibles));
+	t_programaEnKernel* unTcbProcesado = list_find(listaDeProgramasDisponibles, (void*)_tcbParaExit);
+
+	//3) Tercero, mando un mensja
+
+	if (socket_sendPaquete(unTcbProcesado->socketProgramaConsola, errorNum, 0, NULL) <= 0)
+			log_info(self->loggerPlanificador, "CPU: fallo al enviar a la consola un paquete N°: %d", errorNum);
+		else
+			log_info(self->loggerPlanificador, "CPU: envia al Planificador un paquete N°: %d", errorNum);
+
+
+}
+
+
 void ejecutar_UNA_INTERRUPCION(t_kernel* self,t_socket *socketNuevaConexionCPU){
 
 	//1) Primer paso, poner el TCB Recibido en cola BLOCK

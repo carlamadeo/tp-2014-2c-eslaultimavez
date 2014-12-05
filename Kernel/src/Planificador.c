@@ -54,7 +54,7 @@ void pasarTCB_Ready_A_Exec(t_kernel* self){
 		t_cpu* cpuLibre = malloc(sizeof(t_cpu));
 		cpuLibre = list_remove(listaDeCPULibres,0);
 		//log_info(self->loggerPlanificador,"PID::: %d",programaParaExec->programaTCB->pid);
-		cpuLibre->TCB->pid = programaParaExec->programaTCB->pid;
+		cpuLibre->TCB = programaParaExec->programaTCB;
 		list_add(listaDeCPUExec,cpuLibre);
 		log_info(self->loggerPlanificador,"Planificador: cantidad CPU LIBRE = %d / CPU EXEC = %d",list_size(listaDeCPULibres),list_size(listaDeCPUExec));
 
@@ -69,11 +69,12 @@ void pasarTCB_Ready_A_Exec(t_kernel* self){
 
 void mandarEjecutarPrograma(t_kernel* self,t_programaEnKernel* programa, t_socket* socketCPU){
 
+	log_info(self->loggerPlanificador,"TEST 1");
 	t_TCB_Kernel* unTCBaEXEC = malloc (sizeof(t_TCB_Kernel));
 	unTCBaEXEC = programa->programaTCB;
 	log_info(self->loggerPlanificador,"PID = %d CURSOR POINTER= %d",programa->programaTCB->pid,programa->programaTCB->puntero_instruccion);
 
-
+	log_info(self->loggerPlanificador,"TEST 2");
 
 	t_QUANTUM* unQuantum = malloc(sizeof(t_QUANTUM));
 	unQuantum->quantum = self->quantum;
@@ -82,7 +83,7 @@ void mandarEjecutarPrograma(t_kernel* self,t_programaEnKernel* programa, t_socke
 	socket_sendPaquete(socketCPU, QUANTUM, sizeof(t_QUANTUM), unQuantum);
 	log_debug(self->loggerPlanificador, "Planificador: envia un quantum: %d", unQuantum->quantum);
 
-
+	log_info(self->loggerPlanificador,"TEST 3");
 
 
 	if(socket_sendPaquete(socketCPU, TCB_NUEVO, sizeof(t_TCB_Kernel), unTCBaEXEC) > 0){ ////CPU_NUEVO_PCB
@@ -90,6 +91,8 @@ void mandarEjecutarPrograma(t_kernel* self,t_programaEnKernel* programa, t_socke
 	} else {
 		log_info(self->loggerPlanificador,"Planificador: error el enviar a ejecutar un TCB a CPU");
 	}
+
+	log_info(self->loggerPlanificador,"TEST 4");
 }
 
 void planificadorEscucharConexionesCPU(t_kernel* self){
@@ -229,16 +232,17 @@ void atenderCPU(t_kernel* self,t_socket *socketNuevaConexionCPU, t_cpu* cpu, fd_
 	case FINALIZAR_PROGRAMA_EXITO:
 		ejecutar_FINALIZAR_PROGRAMA_EXITO(self, socketNuevaConexionCPU);
 		break;
-	case MENSAJE_DE_ERROR:
-		log_info(self->loggerPlanificador, "Planificador: recibe un MENSAJE_DE_ERROR" );
-		break;
 	case INTERRUPCION:
 		ejecutar_UNA_INTERRUPCION(self, socketNuevaConexionCPU);
 		break;
 	default:
-		log_error(self->loggerPlanificador, "Planificador:Conexión cerrada con CPU.");
-		FD_CLR(cpu->socket->descriptor, master);
-		close(cpu->socket->descriptor);
+		//MENSAJE_DE_ERROR:
+		ejecutar_UN_MENSAJE_DE_ERROR(self, socketNuevaConexionCPU,paqueteCPUAtendido->header.type);
+
+		//esto es importante, va en otro lado
+		//log_error(self->loggerPlanificador, "Planificador:Conexión cerrada con CPU.");
+		//FD_CLR(cpu->socket->descriptor, master);
+		//close(cpu->socket->descriptor);
 		break;
 
 	}//fin switch(paqueteCPU->header.type)
