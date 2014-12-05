@@ -83,6 +83,9 @@ t_list* listaDeEsperaRecurso;
 
 
 // Semaforos
+sem_t sem_new;
+sem_t sem_ready;
+sem_t sem_cpuLIBRE;
 sem_t mutex_new;
 sem_t mutex_block;      // Mutex cola Block
 sem_t mutex_ready;      // Mutex cola Ready

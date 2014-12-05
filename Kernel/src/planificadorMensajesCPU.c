@@ -11,6 +11,7 @@ void agregarEnListaDeCPU(t_kernel* self,int id,  t_socket* socketCPU){
 	unaCpu->id = id;
 	unaCpu->socket = socketCPU;
 	list_add(listaDeCPULibres, unaCpu);
+	sem_post(&mutex_cpuLibre);
 	log_info(self->loggerPlanificador, "Planificador: tiene una nueva CPU con id: %d",unaCpu->id);
 	//free(unaCpu);
 }

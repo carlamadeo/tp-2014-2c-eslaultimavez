@@ -51,11 +51,13 @@ int main(int argc, char** argv) {
 	sem_init(&mutex_cpuExec, 0, 1);
 	sem_init(&mutex_exit, 0,1);
 	sem_init(&mutex_exec, 0, 1);
-	sem_init(&mutex_ready, 0, 0);
+	sem_init(&mutex_ready, 0, 1);
 	sem_init(&mutex_new, 0, 1);
 	sem_init(&mutex_block, 0, 1);
 	sem_init(&mutex_BloqueoPlanificador, 0, 0);
-
+	sem_init(&sem_new, 0, 0);
+	sem_init(&sem_ready, 0, 0);
+	sem_init(&sem_cpuLIBRE, 0, 0);
 
 
 	//hace el boot y le manda a la msp el archivo de SystemCall

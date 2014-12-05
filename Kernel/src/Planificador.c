@@ -31,7 +31,7 @@ void pasarTCB_Ready_A_Exec(t_kernel* self){
 
 	while(1){
 
-		//sem_wait(&mutex_ready);
+		sem_wait(&sem_ready);
 		sem_wait(&mutex_ready);//se bloquea la cola_READY hasta que tenga un TCB cargado
 		log_info(self->loggerPlanificador,"Planificador: Se encuentra un proceso en ready");
 		sem_wait(&mutex_exec);//BLOQUEO LISTA DE EXEC
@@ -40,6 +40,7 @@ void pasarTCB_Ready_A_Exec(t_kernel* self){
 		sem_wait(&mutex_cpuExec);//se bloquea lista de CPU disponibles
 		log_info(self->loggerPlanificador,"Planificador: Se encuentra una CPU libre");
 
+		log_info(self->loggerPlanificador,"Planificador:tamanio de la cola ready: %d",list_size(cola_ready));
 		t_programaEnKernel* programaParaExec = list_remove(cola_ready, 0); //se remueve el primer elemento de la cola READY
 		log_info(self->loggerPlanificador,"Planificador: Mando a ejecutar el proceso Beso con  PID:%d TID:%d KM:%d",programaParaExec->programaTCB->pid,programaParaExec->programaTCB->tid,programaParaExec->programaTCB->km);
 
@@ -48,7 +49,11 @@ void pasarTCB_Ready_A_Exec(t_kernel* self){
 		log_info(self->loggerPlanificador,"Planificador:cantidad de exec %d",list_size(cola_exec));
 		log_info(self->loggerPlanificador,"Planificador:cantidad CPU LIBRE = %d / CPU EXEC = %d",list_size(listaDeCPULibres),list_size(listaDeCPUExec));
 
-		t_cpu* cpuLibre = list_remove(listaDeCPULibres,0);
+
+		sem_wait(&mutex_cpuLibre);
+		t_cpu* cpuLibre = malloc(sizeof(t_cpu));
+		cpuLibre = list_remove(listaDeCPULibres,0);
+		//log_info(self->loggerPlanificador,"PID::: %d",programaParaExec->programaTCB->pid);
 		cpuLibre->TCB->pid = programaParaExec->programaTCB->pid;
 		list_add(listaDeCPUExec,cpuLibre);
 		log_info(self->loggerPlanificador,"Planificador: cantidad CPU LIBRE = %d / CPU EXEC = %d",list_size(listaDeCPULibres),list_size(listaDeCPUExec));

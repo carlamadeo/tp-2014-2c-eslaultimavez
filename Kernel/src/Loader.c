@@ -37,21 +37,23 @@ void pasarProgramaNewAReady(t_kernel* self){
 	log_info(self->loggerLoader, "Loader: Comienza a ejecutarse hilo de New a Ready");
 
 	while(1){
+		sem_wait(&sem_new);   //averiguo si la cola New esta bloqueado
 		sem_wait(&mutex_new);  //se bloquea hasta que haya un programa en la cola NEW
 		sem_wait(&mutex_ready);//se bloque la cola READY
 
 		//pthread_mutex_lock(&mutexLoader);
 
 		t_programaEnKernel* programaParaReady = malloc(sizeof(t_programaEnKernel));
-		log_info(self->loggerLoader,"Loader: tamanio de la cola New: %d",list_size(cola_new));
+		log_info(self->loggerLoader,"Loader: pasarProgramaNewAReady: tamanio de la cola New: %d",list_size(cola_new));
 		programaParaReady = list_remove(cola_new, 0); //se remueve el primer elemento de la cola NEW
-		log_info(self->loggerLoader, "Loader: mueve de New a Ready el proceso con PID:%d TID:%d KM:%d",programaParaReady->programaTCB->pid,programaParaReady->programaTCB->tid,programaParaReady->programaTCB->km);
+		log_info(self->loggerLoader, "Loader: pasarProgramaNewAReady: mueve de New a Ready el proceso con PID:%d TID:%d KM:%d",programaParaReady->programaTCB->pid,programaParaReady->programaTCB->tid,programaParaReady->programaTCB->km);
 
 		list_add(cola_ready, programaParaReady); // se agrega el programa buscado a la cola READY
-
+		log_info(self->loggerLoader,"Loader: pasarProgramaNewAReady: tamanio de la cola READY: %d",list_size(cola_ready));
 		//pthread_mutex_unlock(&mutexLoader);
 		sem_post(&mutex_new);   //se desbloquea la cola NEW
 		sem_post(&mutex_ready); //se desbloquea la cola Ready, ingresando un programa
+		sem_post(&sem_ready);
 	}
 }
 
@@ -221,24 +223,24 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 		t_TCB_Kernel* unTCBenLoader = loaderCrearTCB(self, programaBeso, socketNuevoCliente, sizePrograma);
 		log_info(self->loggerLoader, "Loader: TCB completo.");
 
-		log_info(self->loggerPlanificador,"Planificador: TEST 1");
+		//log_info(self->loggerPlanificador,"Planificador: TEST 1");
 		if(unTCBenLoader!=NULL){
-			log_info(self->loggerPlanificador,"Planificador: TEST 2");
+			//log_info(self->loggerPlanificador,"Planificador: TEST 2");
 			//al TCB se lo agrega al final de la Cola NEW con su socket correspondiente
 			t_programaEnKernel *unPrograma = malloc(sizeof(t_programaEnKernel));
 			unPrograma->programaTCB = unTCBenLoader;
 			unPrograma->socketProgramaConsola = socketNuevoCliente;
-			log_info(self->loggerPlanificador,"Planificador: TEST 3");
+			//log_info(self->loggerPlanificador,"Planificador: TEST 3");
 			//sem_wait(&mutex_new);
-			log_info(self->loggerPlanificador,"Planificador: cola NEW tamanio antes de un programa: %d ",list_size(cola_new));
+			//log_info(self->loggerPlanificador,"Planificador: cola NEW tamanio antes de un programa: %d ",list_size(cola_new));
 			list_add(cola_new, unPrograma);
-			log_info(self->loggerPlanificador,"Planificador: cola NEW tamanio despues de un programa: %d ",list_size(cola_new));
-			log_info(self->loggerPlanificador,"Planificador: TEST 4");
+			//log_info(self->loggerPlanificador,"Planificador: cola NEW tamanio despues de un programa: %d ",list_size(cola_new));
+			//log_info(self->loggerPlanificador,"Planificador: TEST 4");
 			list_add(listaDeProgramasDisponibles, unPrograma);
 			//sem_post(&mutex_new);
 			log_info(self->loggerLoader,"Loader: Agrego un elemento a la Cola New con el PID:%d  TID:%d ", unTCBenLoader->pid, unTCBenLoader->tid);
 			//sem_post(&mutex_BloqueoPlanificador);   //bloquea al planificador hasta que la lista sea distinta de new
-
+			sem_post(&sem_new);
 
 			//Luego se tiene que actualizar las lista que se usan en el select
 			FD_SET(socketNuevoCliente->descriptor, master); /*añadir al conjunto maestro*/
@@ -247,8 +249,9 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 				*fdmax = socketNuevoCliente->descriptor; /*actualizar el máximo*/
 			}
 
-			sem_post(&mutex_ready);
-			sem_post(&mutex_ready);//se ingremanta un contador en la cola_READY, ya tiene un NUEVO TCB cargado
+
+			//sem_post(&mutex_ready);
+			//sem_post(&mutex_ready);//se ingremanta un contador en la cola_READY, ya tiene un NUEVO TCB cargado
 		}else{
 			//se tiene que hacer dos cosas
 			//1) avisarle al programa que tiene un error
