@@ -22,4 +22,6 @@ void atenderCPU(t_kernel* self,t_socket *socketNuevaConexionCPU, t_cpu* cpu, fd_
 t_programaEnKernel* obtenerTCBdeReady(t_kernel* self);
 void finalizarProgramaEnPlanificacion(t_programaEnKernel* programa);
 
+void ejecutar_DESCONECTAR_CPU(t_kernel* self,t_socket *socketNuevaConexionCPU, t_cpu* cpu, fd_set* master);
+
 #endif /* BOOT_H_ */

@@ -22,6 +22,14 @@ void kernel_comenzar_Loader(t_kernel* self){
 	if(iretThreadLoader)
 		log_error(self->loggerLoader, "Loader: Error al crear el hilo hiloMandaeNew");
 
+
+	//el segundo para sacar de a lista New pasarlo a la cola_READY
+	iretThreadLoader = pthread_create(&hiloMandarReady, NULL, (void*) pasarProgramaNewAReady, self);
+	if(iretThreadLoader) {
+		log_error(self->loggerLoader, "Loader: Error al crear el hilo hiloMandarReady");
+	}
+
+
 	pthread_join(hiloMandarNew, NULL);
 	pthread_join(hiloMandarReady, NULL);
 }
@@ -103,23 +111,27 @@ void escuchar_conexiones_programa(t_kernel* self){
 
 void pasarProgramaNewAReady(t_kernel* self){
 
-	log_info(self->loggerLoader, "Loader: Comienza a ejecutarse hilo de New a Ready");
+	log_debug(self->loggerLoader, "Loader: Comienza a ejecutarse hilo de New a Ready");
+	while(1){
+		sem_wait(&sem_A);
+		log_info(self->loggerLoader, "Loader: Comienza a ejecutarse hilo de New a Ready");
 
-	t_programaEnKernel* programaParaReady = malloc(sizeof(t_programaEnKernel));
+		t_programaEnKernel* programaParaReady = malloc(sizeof(t_programaEnKernel));
 
-	log_info(self->loggerLoader,"Loader: Tamanio de la cola New: %d", list_size(cola_new));
+		log_info(self->loggerLoader,"Loader: Tamanio de la cola New: %d", list_size(cola_new));
 
-	pthread_mutex_lock(&newMutex);
-	programaParaReady = list_remove(cola_new, 0); //se remueve el primer elemento de la cola NEW
-	pthread_mutex_unlock(&newMutex);
+		pthread_mutex_lock(&newMutex);
+		programaParaReady = list_remove(cola_new, 0); //se remueve el primer elemento de la cola NEW
+		pthread_mutex_unlock(&newMutex);
 
-	log_info(self->loggerLoader, "Loader: Mueve de New a Ready el proceso con PID:%d TID:%d KM:%d",programaParaReady->programaTCB->pid,programaParaReady->programaTCB->tid,programaParaReady->programaTCB->km);
+		log_info(self->loggerLoader, "Loader: Mueve de New a Ready el proceso con PID:%d TID:%d KM:%d",programaParaReady->programaTCB->pid,programaParaReady->programaTCB->tid,programaParaReady->programaTCB->km);
 
-	pthread_mutex_lock(&readyMutex);
-	list_add(cola_ready, programaParaReady); // se agrega el programa buscado a la cola READY
-	pthread_mutex_unlock(&readyMutex);
+		pthread_mutex_lock(&readyMutex);
+		list_add(cola_ready, programaParaReady); // se agrega el programa buscado a la cola READY
+		pthread_mutex_unlock(&readyMutex);
 
-	sem_post(&mutex_BloqueoPlanificador);
+		sem_post(&sem_B);
+	}
 
 }
 
@@ -251,7 +263,8 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 				*fdmax = socketNuevoCliente->descriptor; /*actualizar el máximo*/
 			}
 
-			pasarProgramaNewAReady(self);
+			sem_post(&sem_A);
+			//pasarProgramaNewAReady(self);
 
 		}
 
@@ -305,6 +318,8 @@ t_TCB_Kernel* loaderCrearTCB(t_kernel* self, char *programaBeso, t_socket* socke
 	unTCB->registro_de_programacion[4]=0;
 	return unTCB;
 }
+
+
 
 void loaderValidarEscrituraEnMSP(t_kernel* self, t_socket* socketNuevoCliente, int unaRespuesta){
 
