@@ -27,9 +27,6 @@ typedef struct {
 	int quantum;
 } t_QUANTUM;
 
-typedef struct {
-	int pid;
-} t_PID_A_BORRAR_EN_MSP;
 
 typedef struct {
 	t_socket_client* socketMSP;
@@ -49,7 +46,6 @@ typedef struct {
 } t_kernel;
 
 
-
 typedef struct {
 	t_TCB_Kernel* programaTCB;
 	t_socket* socketProgramaConsola;
@@ -57,14 +53,14 @@ typedef struct {
 
 
 typedef struct {
-		int motivo;
-        t_TCB_Kernel* tcbKernel;
+	int motivo;
+	t_TCB_Kernel* tcbKernel;
 } t_procesoBloquea;
 
 typedef struct {
-        int id;
-        t_TCB_Kernel* TCB;
-        t_socket* socket;
+	int id;
+	t_TCB_Kernel* TCB;
+	t_socket* socket;
 } t_cpu;
 
 //Guardan un TCB,Socket, ID
@@ -86,9 +82,6 @@ t_list* listaDeEsperaRecurso;
 
 
 // Semaforos
-//sem_t sem_new;
-//sem_t sem_ready;
-//sem_t sem_cpuLIBRE;
 sem_t mutex_new;
 sem_t mutex_block;      // Mutex cola Block
 sem_t mutex_ready;      // Mutex cola Ready
@@ -96,11 +89,8 @@ sem_t mutex_exec;       // Mutex cola Exec
 sem_t mutex_exit;       // Mutex cola Exit
 sem_t mutex_cpuLibre;   // Mutex cola de CPUs libres
 sem_t mutex_cpuExec;    // Mutex cola de CPUs procesando
-//sem_t mutex_BloqueoPlanificador;// Mutex cola New
-sem_t sem_A;
-sem_t sem_B;
-sem_t sem_C;
-sem_t sem_D;
+sem_t mutex_BloqueoPlanificador;// Mutex cola New
+
 
 int iretThread;
 pthread_t LoaderHilo, PlanificadorHilo;

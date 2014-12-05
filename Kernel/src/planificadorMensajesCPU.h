@@ -8,7 +8,6 @@ typedef struct {
 	uint32_t direccion;
 } t_interrupcionKernel;
 
-
 typedef struct {
 	uint32_t direccion;
 } t_interrupcionDireccionKernel;
@@ -56,8 +55,6 @@ typedef struct {
 } t_crea_hiloKernelSecundario;
 
 
-void ejecutar_DESCONECTAR_CPU(t_kernel* self,t_socket *socketNuevaConexionCPU, t_cpu* cpu, fd_set* master);
-void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self,t_socket* socketNuevaConexionCPU, int8_t errorNum);
 void enviarTCByQUANTUMCPU(t_kernel* self,t_socket *socketNuevaConexionCPU,t_TCB_Kernel* tcbKernel);
 void recibirUnaDireccion(t_kernel* self,t_socket *socketNuevaConexionCPU,t_interrupcionKernel* unaInterripcion);
 void recibirTCB(t_kernel* self,t_socket *socketNuevaConexionCPU,t_interrupcionKernel* unaInterripcion);

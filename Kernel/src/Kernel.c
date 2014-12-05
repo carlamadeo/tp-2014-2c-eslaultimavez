@@ -9,12 +9,18 @@
  */
 
 #include "Kernel.h"
-#include "Loader.h"
 #include "Planificador.h"
 #include "boot.h"
 #include "kernelMSP.h"
+#include "Loader.h"
 #include "commons/config.h"
 
+pthread_mutex_t blockMutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t execMutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t exitMutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t readyMutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t newMutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t cpuMutex = PTHREAD_MUTEX_INITIALIZER;
 
 //t_list *listaDeProgramasDisponibles;
 //t_list* cola_new;
@@ -47,21 +53,15 @@ int main(int argc, char** argv) {
 
 
 	//se inician los semaforos
-	sem_init(&mutex_cpuLibre, 0, 1);
-	sem_init(&mutex_cpuExec, 0, 1);
-	sem_init(&mutex_exit, 0,1);
-	sem_init(&mutex_exec, 0, 1);
-	sem_init(&mutex_ready, 0, 1);
-	sem_init(&mutex_new, 0, 1);
-	sem_init(&mutex_block, 0, 1);
-	//sem_init(&mutex_BloqueoPlanificador, 0, 0);
-	//sem_init(&sem_new, 0, 0);
-	//sem_init(&sem_ready, 0, 0);
-	//sem_init(&sem_cpuLIBRE, 0, 0);
-	sem_init(&sem_A, 0, 0);
-	sem_init(&sem_B, 0, 0);
-	sem_init(&sem_C, 0, 0);
-	sem_init(&sem_D, 0, 0);
+	sem_init(&mutex_cpuLibre, 1, 1);
+	sem_init(&mutex_cpuExec, 1, 1);
+	sem_init(&mutex_exit, 1,1);
+	sem_init(&mutex_exec, 1, 1);
+	sem_init(&mutex_ready, 1, 0);
+	sem_init(&mutex_new, 1, 0);
+	sem_init(&mutex_block, 1, 1);
+	sem_init(&mutex_BloqueoPlanificador, 1, 0);
+
 
 
 	//hace el boot y le manda a la msp el archivo de SystemCall

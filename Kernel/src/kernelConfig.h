@@ -1,6 +1,7 @@
 
 #ifndef KERNELCONFIG_H_
 #define KERNELCONFIG_H_
+
 #include "Kernel.h"
 #include "commons/config.h"
 

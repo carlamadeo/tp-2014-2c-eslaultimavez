@@ -5,27 +5,30 @@
 //t_list *listaDeProgramasDisponibles;
 //t_list* cola_ready;
 
-void agregarEnListaDeCPU(t_kernel* self,int id,  t_socket* socketCPU){
-	t_cpu* unaCpu;
+void agregarEnListaDeCPU(t_kernel* self, int id, t_socket* socketCPU){
+
+	t_cpu *unaCpu;
 	unaCpu = malloc( sizeof(t_cpu) );
 	unaCpu->id = id;
 	unaCpu->socket = socketCPU;
 	list_add(listaDeCPULibres, unaCpu);
-	sem_post(&mutex_cpuLibre);
-	sem_post(&sem_C);
-	log_info(self->loggerPlanificador, "Planificador: tiene una nueva CPU con id: %d",unaCpu->id);
+	log_info(self->loggerPlanificador, "Planificador: Tiene una nueva CPU con ID: %d",unaCpu->id);
 	//free(unaCpu);
 }
 
+
 void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente){
-	log_info(self->loggerPlanificador, "Planificador: recibe CPU_TERMINE_UNA_LINEA");
+
+	log_info(self->loggerPlanificador, "Planificador: Recibe CPU_TERMINE_UNA_LINEA");
 	socket_sendPaquete(socketNuevoCliente, CPU_SEGUI_EJECUTANDO, 0, NULL);
-	log_info(self->loggerPlanificador, "Planificador: envia CPU_SEGUI_EJECUTANDO");
+	log_info(self->loggerPlanificador, "Planificador: Envia CPU_SEGUI_EJECUTANDO");
+
 }
+
 
 void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket *socketNuevaConexionCPU){
 
-	log_info(self->loggerPlanificador, "Planificador: recibe un FINALIZAR_PROGRAMA_EXITO" );
+	log_info(self->loggerPlanificador, "Planificador: Recibe un FINALIZAR_PROGRAMA_EXITO" );
 
 	//1) Primer paso, se recibe un TCB
 
@@ -35,8 +38,10 @@ void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket *socketNuevaCone
 	if(socket_recvPaquete(socketNuevaConexionCPU, paqueteFinalizado) >= 0){
 		tcbFinalizado = (t_TCB_Kernel*) paqueteFinalizado->data;
 		//printTCBKernel(tcbFinalizado);
-	}else
-		log_error(self->loggerPlanificador, "Planificador: error al rebicir FINALIZAR_PROGRAMA_EXITO.");
+	}
+
+	else
+		log_error(self->loggerPlanificador, "Planificador: Error al rebicir FINALIZAR_PROGRAMA_EXITO.");
 
 
 	//2) Segundo se obtiene el socket del programaBeso
@@ -54,60 +59,15 @@ void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket *socketNuevaCone
 	//3) Tercero, mando un mensja
 	socket_sendPaquete(unTcbProcesado->socketProgramaConsola, FINALIZAR_PROGRAMA_EXITO, 0 , NULL);
 
-	//4) Cuarto paso,Se carga en la COLA_EXIT
-	list_add(cola_exit,unTcbProcesado);
+	//4) Se carga en la COLA_EXIT
+	list_add(cola_exit, unTcbProcesado);
+
 	printf("COLA_EXIT: Guarda PID: %d TID: %d\n",unTcbProcesado->programaTCB->pid,unTcbProcesado->programaTCB->tid);
-
-	//5) Quinto Paso, avisar a la MVU que un programa se desconecto
-	//avisarQueTerminoUnProgramaDestruirSusSegmentos((self,unTcbProcesado));
-
-
-}
-
-void avisarQueTerminoUnProgramaDestruirSusSegmentos(t_kernel* self, t_TCB_Kernel* tcbABorrar){
-
-	//Carla te dejo para que completes esta parte!!! esta funciona la voy a llamar en otros lados
-
-	//1) al final ejecutar_DESCONECTAR_CPU   Linea 286
-
-	//2) al final ejecutar_UN_MENSAJE_DE_ERROR Linea 248
-
-
-	sem_wait(&mutex_exec); //se bloquea cola READY
-	sem_wait(&mutex_exit); //se bloquea cola EXIT
-
-	bool esPrograma(t_programaEnKernel* programaEnLista){
-		return ((programaEnLista->programaTCB->pid == tcbABorrar->pid) && (programaEnLista->programaTCB->tid == tcbABorrar->tid));
-	}
-	t_programaEnKernel* programa = list_remove_by_condition(cola_exec, (void*)esPrograma);
-	list_add(cola_exit, programa);
-
-
-	//Carla en esta estructura podes agregar la direccion que necesitas
-	t_PID_A_BORRAR_EN_MSP* pidParaMSP = malloc(sizeof(t_PID_A_BORRAR_EN_MSP));
-	pidParaMSP->pid = tcbABorrar->pid;
-
-
-	if(socket_sendPaquete(self->socketMSP->socket, PID_A_BORRAR_MSP, sizeof(t_PID_A_BORRAR_EN_MSP), pidParaMSP ) > 0) {
-		log_info(self->loggerPlanificador,"Planificador: manda destruir segmentos del proceso con PID: %d!", pidParaMSP->pid);
-	}
-
-	sem_post(&mutex_exit);
-	sem_post(&mutex_exec);
-
-
-	//se manda mensaje al programaBeso, cambiar el ERROR_POR_DESCONEXION_DE_CPU lo puse porque estaba a mano
-	if( socket_sendPaquete(programa->socketProgramaConsola,ERROR_POR_DESCONEXION_DE_CPU , 0, NULL) >= 0 ){
-		log_info(self->loggerPlanificador, "Se envia la finalizacion de programa");
-	}
-
 }
 
 
 void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_socket *socketNuevaConexionCPU){
-	log_info(self->loggerPlanificador, "Planificador: recibe un cambio");
 
-	/*
 	//1) Primer paso, se lo pone a final de READY
 	t_socket_paquete *paqueteTCB = (t_socket_paquete*) malloc(sizeof(t_socket_paquete));
 	t_TCB_Kernel* unTCBNuevo = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
@@ -160,8 +120,8 @@ void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_socket *socketNuevaConexio
 
 	//free(unTCBPadre);
 	//socket_freePaquete(paqueteContexto);
-	*/
 }
+
 
 void recibirUnaDireccion(t_kernel* self,t_socket *socketNuevaConexionCPU,t_interrupcionKernel* unaInterripcion){
 
@@ -179,6 +139,8 @@ void recibirUnaDireccion(t_kernel* self,t_socket *socketNuevaConexionCPU,t_inter
 	free(paqueteDireInterrupcion);
 
 }
+
+
 void recibirTCB(t_kernel* self,t_socket *socketNuevaConexionCPU,t_interrupcionKernel* unaInterripcion){
 
 	t_socket_paquete *paqueteInterrupcionTCB = (t_socket_paquete*) malloc(sizeof(t_socket_paquete));
@@ -238,95 +200,6 @@ void enviarTCByQUANTUMCPU(t_kernel* self,t_socket *socketNuevaConexionCPU,t_TCB_
 	socket_sendPaquete(socketNuevaConexionCPU, TCB_NUEVO,sizeof(t_TCB_Kernel), tcbKernel);
 	log_debug(self->loggerPlanificador, "Planificador: envia TCB con PID: %d TID:%d KM:%d", tcbKernel->pid, tcbKernel->tid, tcbKernel->km);
 
-
-}
-
-
-void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self,t_socket* socketNuevaConexionCPU, int8_t errorNum){
-
-
-	log_info(self->loggerPlanificador, "Planificador: recibe UN_MENSAJE_DE_ERROR" );
-
-	//1) Primer paso, se recibe un TCB
-
-	t_socket_paquete *paqueteError = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-	t_TCB_Kernel* tcbError = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
-
-	if(socket_recvPaquete(socketNuevaConexionCPU, paqueteError) >= 0){
-		tcbError = (t_TCB_Kernel*) paqueteError->data;
-		//printTCBKernel(tcbFinalizado);
-	}else
-		log_error(self->loggerPlanificador, "Planificador: error al rebicir  UN_MENSAJE_DE_ERROR.");
-
-
-	//2) Segundo se obtiene el socket del programaBeso
-	//printf("Buscar PID: %d TID: %d\n",tcbFinalizado->pid,tcbFinalizado->tid);
-
-	bool _tcbParaExit(t_programaEnKernel* tcb) {
-		return ((tcb->programaTCB->tid == tcbError->tid) && (tcb->programaTCB->pid == tcbError->pid));
-	}
-
-	//printf("listaDeProgramasDisponibles Cantidad: %d\n", list_size(listaDeProgramasDisponibles));
-	t_programaEnKernel* unTcbProcesado = list_find(listaDeProgramasDisponibles, (void*)_tcbParaExit);
-
-	//3) Tercero, mando un mensja
-
-	if (socket_sendPaquete(unTcbProcesado->socketProgramaConsola, errorNum, 0, NULL) <= 0)
-		log_info(self->loggerPlanificador, "CPU: fallo al enviar a la consola un paquete N°: %d", errorNum);
-	else
-		log_info(self->loggerPlanificador, "CPU: envia al Planificador un paquete N°: %d", errorNum);
-
-
-	// Cuarto paso, se tiene que avisar a la UMV que borres los segmentos de el prograga
-
-	//avisarQueTerminoUnProgramaDestruirSusSegmentos(cpuRemovido->TCB->pid)
-
-
-}
-
-
-void ejecutar_DESCONECTAR_CPU(t_kernel* self,t_socket *socketNuevaConexionCPU, t_cpu* cpu, fd_set* master){
-
-
-	//1) Primer paso, se elimina de conjunto maestro
-	FD_CLR(cpu->socket->descriptor, master);
-	close(cpu->socket->descriptor);
-
-
-	//2) Segundo paso, se trae el CPU que se quiere desconectar de la lista de ejecutados
-	bool esCpu(t_cpu* cpuEnLista){
-		return (cpuEnLista->id == cpu->id);
-	}
-	sem_wait(&mutex_cpuExec);
-	t_cpu* cpuRemovido = list_remove_by_condition(listaDeCPUExec, (void*)esCpu);
-	sem_post(&mutex_cpuExec);
-
-
-
-	//3) Tercer paso, se pregunta si tiene programa ejecutando
-	if(cpuRemovido!=NULL){
-		bool esPrograma(t_programaEnKernel* programaEnLista){
-			return ((programaEnLista->programaTCB->pid == cpuRemovido->TCB->pid)&&(programaEnLista->programaTCB->tid == cpuRemovido->TCB->pid));
-		}
-		//sem_wait(&sem_cpuExec);
-		sem_wait(&mutex_exec);
-		t_programaEnKernel* programaRemovido = list_remove_by_condition(cola_exec, (void*)esPrograma);
-		sem_post(&mutex_exec);
-		sem_wait(&mutex_exit);
-		list_add(cola_exit, programaRemovido);
-		sem_post(&mutex_exit);
-		//sem_post(&sem_multiprog);
-	}else{
-		//sino solo borra de la lista de CPUs libres
-		sem_wait(&mutex_cpuLibre);
-		cpuRemovido = list_remove_by_condition(listaDeCPULibres, (void*)esCpu);
-		//avisarQueTerminoUnProgramaDestruirSusSegmentos(cpuRemovido->TCB->pid)
-		sem_post(&mutex_cpuLibre);
-		//sem_wait(&sem_cpuLibre);
-	}
-
-
-
 }
 
 
@@ -334,25 +207,28 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self,t_socket *socketNuevaConexionCPU){
 
 	//1) Primer paso, poner el TCB Recibido en cola BLOCK
 
-	t_interrupcionKernel* unaInterripcion = malloc(sizeof(t_interrupcionKernel));
-	recibirTCB(self,socketNuevaConexionCPU,unaInterripcion);
+	t_interrupcionKernel* unaInterrupcion = malloc(sizeof(t_interrupcionKernel));
+	recibirTCB(self, socketNuevaConexionCPU, unaInterrupcion);
 
 	//log_info(self->loggerPlanificador, "Planificador: recibe una dirrecion %0.8p",unaInterripcion->direccion);
 	//printTCBKernel(unaInterripcion->tcb);
 
 	//se lo remueve de la lista listaDeCPULibres
 	bool _esTCBBuscado(t_programaEnKernel* tcbProcesado) {
-		return ((tcbProcesado->programaTCB->pid == unaInterripcion->tcb->pid) && ((tcbProcesado->programaTCB->tid == unaInterripcion->tcb->tid)));   //ver esta parte importante
+		return ((tcbProcesado->programaTCB->pid == unaInterrupcion->tcb->pid) && ((tcbProcesado->programaTCB->tid == unaInterrupcion->tcb->tid)));   //ver esta parte importante
 	}
 
 	t_programaEnKernel* unTcbEnReady = malloc(sizeof(t_programaEnKernel));
+	printf("list size es %d\n", list_size(cola_ready));
 	unTcbEnReady = list_find(cola_ready, (void*)_esTCBBuscado);
-
+	printf("------\n");
+	printTCBKernel(unTcbEnReady->programaTCB);
+	printf("------\n");
 	//		se lo agrega en la lista de Sistem Call
-	list_add(listaSystemCall,unTcbEnReady);
+	list_add(listaSystemCall, unTcbEnReady);
 
 	//printTCBKernel(unTcbProsesado->programaTCB);
-	cargarTCBconOtroTCB(unTcbEnReady->programaTCB,unaInterripcion->tcb);
+	cargarTCBconOtroTCB(unTcbEnReady->programaTCB, unaInterrupcion->tcb);
 
 	//2) Segundo paso, se busca el TCB kernel en la cola_Block
 
@@ -362,63 +238,66 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self,t_socket *socketNuevaConexionCPU){
 
 	t_TCB_Kernel* tcbKernel = list_remove_by_condition(cola_block, (void*)_esKMKERNEL);
 
-
 	//3) Tercer paso, se copia los registros del TCB usuario a TBC Kernel
-	cargarTCBconOtroTCB(tcbKernel,unaInterripcion->tcb);
-	tcbKernel->puntero_instruccion = unaInterripcion->direccion;
-
+	cargarTCBconOtroTCB(tcbKernel, unaInterrupcion->tcb);
+	tcbKernel->puntero_instruccion = unaInterrupcion->direccion;
 
 	//4) Cuarto paso, se agrega el TCB kernel en la lista de CPU Libres
 	//Se tiene que verificar si hay CPUs Libres
 
+	t_cpu *cpuLibre;
+
 	if (list_size(listaDeCPULibres) > 0){
+		cpuLibre = list_remove(listaDeCPULibres, 0);
+		list_add(listaDeCPUExec, tcbKernel);
+		log_debug(self->loggerPlanificador, "EXEC: Se carga KM = 1 en el primer CPU disponible");
+	}
 
-		list_add(listaDeCPULibres,tcbKernel); //sincronizar
-		log_debug(self->loggerPlanificador, "EXEC: Se carga KM=1 en el primer CPU disponible ");
-	}else
-		log_error(self->loggerPlanificador, "EXEC: error al cargar TCB Kernel NO EXISTES CPUs CONECTADAS");
-
+	else
+		log_error(self->loggerPlanificador, "EXEC: Error al cargar TCB Kernel NO HAY CPUs CONECTADAS");
 
 	//5) Quinto paso, se manda el TCB KERNEL al CPU
 
-	enviarTCByQUANTUMCPU(self,socketNuevaConexionCPU,tcbKernel);
+	if(cpuLibre != NULL){
+		enviarTCByQUANTUMCPU(self, cpuLibre->socket, tcbKernel);
 
-	log_info(self->loggerPlanificador, "Planificador: Listo TCB KERNEL");
-	printTCBKernel(tcbKernel);
+		log_info(self->loggerPlanificador, "Planificador: Listo TCB KERNEL");
+		printTCBKernel(tcbKernel);
 
+		log_info(self->loggerPlanificador, "Planificador: LISTO PARA RECIBIR SYSTEM CALLS" );
 
-	log_info(self->loggerPlanificador, "Planificador: LISTO PARA RECIBIR SYSTEM CALLS" );
+		t_socket_paquete *paqueteSYSTEMCALLS = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+		socket_recvPaquete(socketNuevaConexionCPU, paqueteSYSTEMCALLS);
 
-	t_socket_paquete *paqueteSYSTEMCALLS = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-	socket_recvPaquete(socketNuevaConexionCPU, paqueteSYSTEMCALLS);
+		printf("Tipo de Instruccion: %d\n", paqueteSYSTEMCALLS->header.type);
 
-	printf("Tipo de Instruccion: %d\n",paqueteSYSTEMCALLS->header.type);
+		switch(paqueteSYSTEMCALLS->header.type){
 
-	switch(paqueteSYSTEMCALLS->header.type){
-	case ENTRADA_ESTANDAR:
-		ejecutar_UNA_ENTRADA_STANDAR(self,socketNuevaConexionCPU);
-		break;
-	case SALIDA_ESTANDAR:
-		ejecutar_UNA_SALIDA_ESTANDAR(self,socketNuevaConexionCPU);
-		break;
-		break;
-	case CREAR_HILO:
-		ejecutar_UN_CREAR_HILO(self);
-		break;
-	case JOIN_HILO:
-		ejecutar_UN_JOIN_HILO(self);
-		break;
-	case BLOK_HILO:
-		ejecutar_UN_BLOK_HILO(self);
-		break;
-	case WAKE_HILO:
-		ejecutar_UN_WAKE_HILO(self);
-		break;
-	default:
-		log_error(self->loggerPlanificador, "Planificador:Conexión cerrada con CPU.");
-		break;
+		case ENTRADA_ESTANDAR:
+			ejecutar_UNA_ENTRADA_STANDAR(self,socketNuevaConexionCPU);
+			break;
+		case SALIDA_ESTANDAR:
+			ejecutar_UNA_SALIDA_ESTANDAR(self,socketNuevaConexionCPU);
+			break;
+		case CREAR_HILO:
+			ejecutar_UN_CREAR_HILO(self);
+			break;
+		case JOIN_HILO:
+			ejecutar_UN_JOIN_HILO(self);
+			break;
+		case BLOK_HILO:
+			ejecutar_UN_BLOK_HILO(self);
+			break;
+		case WAKE_HILO:
+			ejecutar_UN_WAKE_HILO(self);
+			break;
+		default:
+			log_error(self->loggerPlanificador, "Planificador: Conexión cerrada con CPU.");
+			break;
 
-	}//fin switch(paqueteCPU->header.type)
+		}//fin switch(paqueteCPU->header.type)
+
+	}// fin del if cpuLibre != NULL
 
 	/*//6) Sexto paso, se queda bloqueado esperando al TCB Kernel
 
@@ -571,8 +450,6 @@ void ejecutar_UNA_ENTRADA_STANDAR(t_kernel* self, t_socket *socketNuevaConexionC
 	socket_freePaquete(paqueteEntradaDevuelto);
 	 */
 }
-
-
 
 
 void ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self, t_socket *socketNuevaConexionCPU){

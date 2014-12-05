@@ -1,61 +1,31 @@
 
 #include "Loader.h"
-#include "kernelMSP.h"
 #include "commons/protocolStructInBigBang.h"
+#include "kernelMSP.h"
 #include <errno.h>
 #include <unistd.h>
 
 int unPIDGlobal = 1;
 int unTIDGlobal = 1;
 
+pthread_mutex_t readyMutex;
+pthread_mutex_t newMutex;
 //t_list *listaDeProgramasDisponibles;
 //t_list* cola_new;
 
 pthread_mutex_t mutexLoader = PTHREAD_MUTEX_INITIALIZER;
-//se crean dos hilos:
+
 void kernel_comenzar_Loader(t_kernel* self){
 
 	//el primero para crear TCB y cargarlos en la cola_NEW
 	iretThreadLoader = pthread_create(&hiloMandarNew, NULL, (void*) escuchar_conexiones_programa, self);
-	if(iretThreadLoader) {
+	if(iretThreadLoader)
 		log_error(self->loggerLoader, "Loader: Error al crear el hilo hiloMandaeNew");
-	}
-
-	//el segundo para sacar de a lista New pasarlo a la cola_READY
-	iretThreadLoader = pthread_create(&hiloMandarReady, NULL, (void*) pasarProgramaNewAReady, self);
-	if(iretThreadLoader) {
-		log_error(self->loggerLoader, "Loader: Error al crear el hilo hiloMandarReady");
-	}
 
 	pthread_join(hiloMandarNew, NULL);
 	pthread_join(hiloMandarReady, NULL);
 }
 
-
-void pasarProgramaNewAReady(t_kernel* self){
-
-	log_info(self->loggerLoader, "Loader: Comienza a ejecutarse hilo de New a Ready");
-
-	while(1){
-		sem_wait(&sem_A);   //averiguo si la cola New esta bloqueado
-		sem_wait(&mutex_new);  //se bloquea hasta que haya un programa en la cola NEW
-		sem_wait(&mutex_ready);//se bloque la cola READY
-
-		//pthread_mutex_lock(&mutexLoader);
-
-		t_programaEnKernel* programaParaReady = malloc(sizeof(t_programaEnKernel));
-		log_info(self->loggerLoader,"Loader: pasarProgramaNewAReady: tamanio de la cola New: %d",list_size(cola_new));
-		programaParaReady = list_remove(cola_new, 0); //se remueve el primer elemento de la cola NEW
-		log_info(self->loggerLoader, "Loader: pasarProgramaNewAReady: mueve de New a Ready el proceso con PID:%d TID:%d KM:%d",programaParaReady->programaTCB->pid,programaParaReady->programaTCB->tid,programaParaReady->programaTCB->km);
-
-		list_add(cola_ready, programaParaReady); // se agrega el programa buscado a la cola READY
-		log_info(self->loggerLoader,"Loader: pasarProgramaNewAReady: tamanio de la cola READY: %d",list_size(cola_ready));
-		//pthread_mutex_unlock(&mutexLoader);
-		sem_post(&mutex_new);   //se desbloquea la cola NEW
-		sem_post(&mutex_ready); //se desbloquea la cola Ready, ingresando un programa
-		sem_post(&sem_B);
-	}
-}
 
 void escuchar_conexiones_programa(t_kernel* self){
 
@@ -82,19 +52,20 @@ void escuchar_conexiones_programa(t_kernel* self){
 
 	/* bucle principal*/
 	while(1){
+
 		read_fds = master;
 		//printf("antes select: %d\n",  1111);
 		int selectResult = select(fdmax+1, &read_fds, NULL, NULL, NULL);
 		log_info(self->loggerLoader,"Loader: Select = %d",selectResult);
 		//printf("after select: %d\n",  1111);
+
 		if (selectResult == -1){
 			log_error(self->loggerLoader, "Error en el select del Loader.");
 			exit(1);
 		}
 
-		else if (selectResult == 0){
+		else if (selectResult == 0)
 			log_error(self->loggerLoader, "Error en el select del Loader: selectResult==0 ");
-		}
 
 		else{
 
@@ -113,15 +84,13 @@ void escuchar_conexiones_programa(t_kernel* self){
 							log_debug(self->loggerLoader, "Loader: Accept completo!");
 							atenderNuevaConexionPrograma(self, socketNuevaConexion, &master, &fdmax);
 						}
-
 					}
 
 					else{ //sino no es una nueva conexion busca un programa en la lista
-
 						log_debug(self->loggerLoader, "Loader: Mensaje del Programa descriptor = %d.", i);
 						t_programaEnKernel* programaCliente = obtenerProgramaConsolaSegunDescriptor(self,i);
 						log_debug(self->loggerLoader, "Loader: Mensaje del Programa PID = %d.", programaCliente->programaTCB->pid);
-						atienderProgramaConsola(self,programaCliente, &master);
+						atenderProgramaConsola(self,programaCliente, &master);
 						//exit(1);
 					}
 				}//fin del if FD_ISSET
@@ -132,48 +101,79 @@ void escuchar_conexiones_programa(t_kernel* self){
 }
 
 
+void pasarProgramaNewAReady(t_kernel* self){
+
+	log_info(self->loggerLoader, "Loader: Comienza a ejecutarse hilo de New a Ready");
+
+	t_programaEnKernel* programaParaReady = malloc(sizeof(t_programaEnKernel));
+
+	log_info(self->loggerLoader,"Loader: Tamanio de la cola New: %d", list_size(cola_new));
+
+	pthread_mutex_lock(&newMutex);
+	programaParaReady = list_remove(cola_new, 0); //se remueve el primer elemento de la cola NEW
+	pthread_mutex_unlock(&newMutex);
+
+	log_info(self->loggerLoader, "Loader: Mueve de New a Ready el proceso con PID:%d TID:%d KM:%d",programaParaReady->programaTCB->pid,programaParaReady->programaTCB->tid,programaParaReady->programaTCB->km);
+
+	pthread_mutex_lock(&readyMutex);
+	list_add(cola_ready, programaParaReady); // se agrega el programa buscado a la cola READY
+	pthread_mutex_unlock(&readyMutex);
+
+	sem_post(&mutex_BloqueoPlanificador);
+
+}
 
 
 //Busca una conexion ya existente
 t_programaEnKernel* obtenerProgramaConsolaSegunDescriptor(t_kernel* self,int descriptor){
 
-	log_info(self->loggerLoader,"Loader: buscando el descriptor %d de una Consola",descriptor);
+	log_info(self->loggerLoader,"Loader: Buscando el descriptor %d de una Consola",descriptor);
 
 	bool _esCPUDescriptor(t_programaEnKernel* programaBeso) {
 		return (programaBeso->socketProgramaConsola->descriptor == descriptor);
 	}
 
-	t_programaEnKernel* programaEnListaDisponible = list_find(listaDeProgramasDisponibles, (void*)_esCPUDescriptor); //MMM ver esto
-	log_info(self->loggerLoader,"Loader: Se encontro una Consola con PID:%d TID:%d KM:%d",programaEnListaDisponible->programaTCB->pid,programaEnListaDisponible->programaTCB->tid,programaEnListaDisponible->programaTCB->km);
+	t_programaEnKernel* descriptorBuscado = list_find(listaDeProgramasDisponibles, (void*)_esCPUDescriptor); //MMM ver esto
 
-	return programaEnListaDisponible;
+	if(descriptorBuscado == NULL){
+		sem_wait(&mutex_cpuLibre);
+		descriptorBuscado = list_find(listaDeProgramasDisponibles, (void*)_esCPUDescriptor);
+		sem_post(&mutex_cpuLibre);
+	}
+
+	log_info(self->loggerLoader,"Loader: Se encontro un Programa con PID: %d TID: %d KM: %d", descriptorBuscado->programaTCB->pid, descriptorBuscado->programaTCB->tid,descriptorBuscado->programaTCB->km);
+
+	//cpuBuscado->socket->descriptor = descriptor;
+	return descriptorBuscado;
 }
 
 
 
-void atienderProgramaConsola(t_kernel* self,t_programaEnKernel* programa, fd_set* master){
+void atenderProgramaConsola(t_kernel* self,t_programaEnKernel* programa, fd_set* master){
 
 	t_socket_paquete *paqueteDesconectoPrograma = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 
 	if ((socket_recvPaquete(programa->socketProgramaConsola, paqueteDesconectoPrograma)) < 0) {
+
 		log_error(self->loggerLoader, "El programa Beso con PID: %d TID: %d ha cerrado la conexion.", programa->programaTCB->pid,programa->programaTCB->tid);
 		FD_CLR(programa->socketProgramaConsola->descriptor, master); // eliminar del conjunto maestro
 		close(programa->socketProgramaConsola->descriptor);
 
 		bool esProgramaDesconectado(t_programaEnKernel* programaEnLista){
-			return ((programaEnLista->programaTCB->pid == programa->programaTCB->pid)&&(programaEnLista->programaTCB->tid == programa->programaTCB->tid));
+			return ((programaEnLista->programaTCB->pid == programa->programaTCB->pid) && (programaEnLista->programaTCB->tid == programa->programaTCB->tid));
 		}
-		list_remove_by_condition(listaDeProgramasDisponibles, (void*)esProgramaDesconectado);
-		list_remove_by_condition(cola_ready, (void*)esProgramaDesconectado);
-		log_info(self->loggerLoader,"Loader: tamanio de la cola READY:%d", list_size(cola_ready));
-		log_info(self->loggerLoader,"Loader: tamanio de consolas conectadas:%d", list_size(listaDeProgramasDisponibles));
-	}else {
 
-		if(paqueteDesconectoPrograma->header.type == FINALIZAR_PROGRAMA_EXITO){
+		list_remove_by_condition(listaDeProgramasDisponibles, (void*)esProgramaDesconectado);
+
+	}
+
+	else{
+
+		if(paqueteDesconectoPrograma->header.type == FINALIZAR_PROGRAMA_EXITO)
 			log_info(self->loggerLoader,"Loader: Termino exitosamente el programa con PID:%d TID:%d",programa->programaTCB->pid,programa->programaTCB->tid);
-		}else {
+
+		else
 			log_error(self->loggerLoader,"Loader: error al recibir el paquete de FINALIZAR_PROGRAMA_EXITO de programa PID:%d TID:%d",programa->programaTCB->pid,programa->programaTCB->tid);
-		}
 	}
 
 	free(paqueteDesconectoPrograma);
@@ -194,10 +194,14 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 		log_error(self->loggerLoader, "Loader: Error o conexión cerrada por el Cliente.");
 		FD_CLR(socketNuevoCliente->descriptor, master);
 		close(socketNuevoCliente->descriptor);
-	}else{
-		if (socket_sendPaquete(socketNuevoCliente, HANDSHAKE_LOADER, 0, NULL) >= 0){
+	}
+
+	else{
+
+		if (socket_sendPaquete(socketNuevoCliente, HANDSHAKE_LOADER, 0, NULL) >= 0)
 			log_info(self->loggerLoader, "Loader: Envia a Consola HANDSHAKE_LOADER");
-		}else
+
+		else
 			log_error(self->loggerLoader, "Loader: Error al enviar los datos de la Consola.");
 
 		//se recibe el codigo del archivo Beso
@@ -219,36 +223,39 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 		t_TCB_Kernel* unTCBenLoader = loaderCrearTCB(self, programaBeso, socketNuevoCliente, sizePrograma);
 		log_info(self->loggerLoader, "Loader: TCB completo.");
 
-		//log_info(self->loggerPlanificador,"Planificador: TEST 1");
-		if(unTCBenLoader!=NULL){
-			//log_info(self->loggerPlanificador,"Planificador: TEST 2");
+		if(unTCBenLoader != NULL){
+
 			//al TCB se lo agrega al final de la Cola NEW con su socket correspondiente
 			t_programaEnKernel *unPrograma = malloc(sizeof(t_programaEnKernel));
 			unPrograma->programaTCB = unTCBenLoader;
 			unPrograma->socketProgramaConsola = socketNuevoCliente;
-			//log_info(self->loggerPlanificador,"Planificador: TEST 3");
-			//sem_wait(&mutex_new);
-			//log_info(self->loggerPlanificador,"Planificador: cola NEW tamanio antes de un programa: %d ",list_size(cola_new));
+
+			log_info(self->loggerPlanificador,"Planificador: Cola NEW tamanio antes de un programa: %d ",list_size(cola_new));
+
+			pthread_mutex_lock(&newMutex);
 			list_add(cola_new, unPrograma);
-			//log_info(self->loggerPlanificador,"Planificador: cola NEW tamanio despues de un programa: %d ",list_size(cola_new));
-			//log_info(self->loggerPlanificador,"Planificador: TEST 4");
+			pthread_mutex_unlock(&newMutex);
+
+			log_info(self->loggerPlanificador,"Planificador: Cola NEW tamanio despues de un programa: %d ",list_size(cola_new));
+
 			list_add(listaDeProgramasDisponibles, unPrograma);
-			//sem_post(&mutex_new);
+
 			log_info(self->loggerLoader,"Loader: Agrego un elemento a la Cola New con el PID:%d  TID:%d ", unTCBenLoader->pid, unTCBenLoader->tid);
 			//sem_post(&mutex_BloqueoPlanificador);   //bloquea al planificador hasta que la lista sea distinta de new
-			sem_post(&sem_A);
 
 			//Luego se tiene que actualizar las lista que se usan en el select
 			FD_SET(socketNuevoCliente->descriptor, master); /*añadir al conjunto maestro*/
+
 			if (socketNuevoCliente->descriptor > *fdmax) {
 				log_info(self->loggerLoader, "Se actualiza y añade el conjunto maestro %d", socketNuevoCliente->descriptor);
 				*fdmax = socketNuevoCliente->descriptor; /*actualizar el máximo*/
 			}
 
+			pasarProgramaNewAReady(self);
 
-			//sem_post(&mutex_ready);
-			//sem_post(&mutex_ready);//se ingremanta un contador en la cola_READY, ya tiene un NUEVO TCB cargado
-		}else{
+		}
+
+		else{
 			//se tiene que hacer dos cosas
 			//1) avisarle al programa que tiene un error
 			log_error(self->loggerLoader, "Loader: Error al crear unTCB.");
