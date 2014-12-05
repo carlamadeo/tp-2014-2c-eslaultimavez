@@ -36,11 +36,15 @@ int LOAD_ESO(t_CPU *self){
 
 	if(reg != -1){
 
-		char registroEnString[1];
-		sprintf(registroEnString, "%d", registro);
+		char *registroEnString = malloc(1);
+		registroEnString[0] = registro;
+		char *numeroEnString = malloc(1);
+		sprintf(numeroEnString, "%d", numero);
 		list_add(parametros, registroEnString);
-		list_add(parametros, &numero);
+		list_add(parametros, numeroEnString);
 		ejecucion_instruccion("LOAD", parametros);
+		free(registroEnString);
+		free(numeroEnString);
 
 		self->tcb->registro_de_programacion[reg] = numero;
 
@@ -91,9 +95,15 @@ int GETM_ESO(t_CPU *self){
 
 		if((regA != -1) || (regB != -1)){
 
+			char *registroAEnString = malloc(1);
+			registroAEnString[0] = regA;
+			char *registroBEnString = malloc(1);
+			registroBEnString[0] = regB;
 			list_add(parametros, &regA);
 			list_add(parametros, &regB);
 			ejecucion_instruccion("GETM", parametros);
+			free(registroAEnString);
+			free(registroBEnString);
 
 			int tamanioMSP = sizeof(int32_t);
 			char *lecturaMSP = malloc(sizeof(char)*tamanioMSP);
