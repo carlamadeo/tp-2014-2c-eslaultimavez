@@ -59,6 +59,7 @@ int LOAD_ESO(t_CPU *self){
 
 	free(lecturaDeMSP);
 	free(registros_cpu);
+	log_info(self->loggerCPU,"-----------------ESTADO == %d--------------",estado_bloque);
 	return estado_bloque;
 }
 

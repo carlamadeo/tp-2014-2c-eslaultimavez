@@ -86,9 +86,9 @@ t_list* listaDeEsperaRecurso;
 
 
 // Semaforos
-sem_t sem_new;
-sem_t sem_ready;
-sem_t sem_cpuLIBRE;
+//sem_t sem_new;
+//sem_t sem_ready;
+//sem_t sem_cpuLIBRE;
 sem_t mutex_new;
 sem_t mutex_block;      // Mutex cola Block
 sem_t mutex_ready;      // Mutex cola Ready
@@ -96,8 +96,11 @@ sem_t mutex_exec;       // Mutex cola Exec
 sem_t mutex_exit;       // Mutex cola Exit
 sem_t mutex_cpuLibre;   // Mutex cola de CPUs libres
 sem_t mutex_cpuExec;    // Mutex cola de CPUs procesando
-sem_t mutex_BloqueoPlanificador;// Mutex cola New
-
+//sem_t mutex_BloqueoPlanificador;// Mutex cola New
+sem_t sem_A;
+sem_t sem_B;
+sem_t sem_C;
+sem_t sem_D;
 
 int iretThread;
 pthread_t LoaderHilo, PlanificadorHilo;

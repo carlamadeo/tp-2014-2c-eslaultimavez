@@ -98,7 +98,9 @@ int ejecutar_instruccion(t_CPU *self, int linea, t_ServiciosAlPlanificador* serv
 	switch(linea){
 
 	case LOAD:
+		log_info(self->loggerCPU,"-----------------ANTES ESTADO LOAD --------------");
 		estado = LOAD_ESO(self);
+		log_info(self->loggerCPU,"-----------------DESPUES ESTADO LOAD == %d--------------",estado);
 		break;
 
 	case GETM:
@@ -200,31 +202,31 @@ int ejecutar_instruccion(t_CPU *self, int linea, t_ServiciosAlPlanificador* serv
 
 	case FREE:
 		estado = FREE_ESO(self);
-
+		break;
 	case INNN:
 		estado = INNN_ESO(self);
-
+		break;
 	case INNC:
 		estado = INNC_ESO(self);
-
+		break;
 	case OUTN:
 		estado = OUTN_ESO(self);
-
+		break;
 	case OUTC:
 		estado = OUTC_ESO(self);
-
+		break;
 	case CREA:
 		estado = CREA_ESO(self);
-
+		break;
 	case JOIN:
 		estado = JOIN_ESO(self);
-
+		break;
 	case BLOK:
 		estado = BLOK_ESO(self);
-
+		break;
 	case WAKE:
 		estado = WAKE_ESO(self);
-
+		break;
 		/***************************************************************************************************\
 		 *								--FIN SYSTEMCALL--									 	 *
 	\***************************************************************************************************/

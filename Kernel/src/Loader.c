@@ -37,7 +37,7 @@ void pasarProgramaNewAReady(t_kernel* self){
 	log_info(self->loggerLoader, "Loader: Comienza a ejecutarse hilo de New a Ready");
 
 	while(1){
-		sem_wait(&sem_new);   //averiguo si la cola New esta bloqueado
+		sem_wait(&sem_A);   //averiguo si la cola New esta bloqueado
 		sem_wait(&mutex_new);  //se bloquea hasta que haya un programa en la cola NEW
 		sem_wait(&mutex_ready);//se bloque la cola READY
 
@@ -53,7 +53,7 @@ void pasarProgramaNewAReady(t_kernel* self){
 		//pthread_mutex_unlock(&mutexLoader);
 		sem_post(&mutex_new);   //se desbloquea la cola NEW
 		sem_post(&mutex_ready); //se desbloquea la cola Ready, ingresando un programa
-		sem_post(&sem_ready);
+		sem_post(&sem_B);
 	}
 }
 
@@ -142,17 +142,11 @@ t_programaEnKernel* obtenerProgramaConsolaSegunDescriptor(t_kernel* self,int des
 	bool _esCPUDescriptor(t_programaEnKernel* programaBeso) {
 		return (programaBeso->socketProgramaConsola->descriptor == descriptor);
 	}
-	t_programaEnKernel* descriptorBuscado = list_find(listaDeProgramasDisponibles, (void*)_esCPUDescriptor); //MMM ver esto
-	if(descriptorBuscado!=NULL){
-	}else{
-		sem_wait(&mutex_cpuLibre);
-		descriptorBuscado = list_find(listaDeProgramasDisponibles, (void*)_esCPUDescriptor);
-		sem_post(&mutex_cpuLibre);
-	}
-	log_info(self->loggerLoader,"Loader: Se encontro una Consola con PID:%d TID:%d KM:%d",descriptorBuscado->programaTCB->pid,descriptorBuscado->programaTCB->tid,descriptorBuscado->programaTCB->km);
 
-	//cpuBuscado->socket->descriptor = descriptor;
-	return descriptorBuscado;
+	t_programaEnKernel* programaEnListaDisponible = list_find(listaDeProgramasDisponibles, (void*)_esCPUDescriptor); //MMM ver esto
+	log_info(self->loggerLoader,"Loader: Se encontro una Consola con PID:%d TID:%d KM:%d",programaEnListaDisponible->programaTCB->pid,programaEnListaDisponible->programaTCB->tid,programaEnListaDisponible->programaTCB->km);
+
+	return programaEnListaDisponible;
 }
 
 
@@ -170,7 +164,9 @@ void atienderProgramaConsola(t_kernel* self,t_programaEnKernel* programa, fd_set
 			return ((programaEnLista->programaTCB->pid == programa->programaTCB->pid)&&(programaEnLista->programaTCB->tid == programa->programaTCB->tid));
 		}
 		list_remove_by_condition(listaDeProgramasDisponibles, (void*)esProgramaDesconectado);
-
+		list_remove_by_condition(cola_ready, (void*)esProgramaDesconectado);
+		log_info(self->loggerLoader,"Loader: tamanio de la cola READY:%d", list_size(cola_ready));
+		log_info(self->loggerLoader,"Loader: tamanio de consolas conectadas:%d", list_size(listaDeProgramasDisponibles));
 	}else {
 
 		if(paqueteDesconectoPrograma->header.type == FINALIZAR_PROGRAMA_EXITO){
@@ -240,7 +236,7 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 			//sem_post(&mutex_new);
 			log_info(self->loggerLoader,"Loader: Agrego un elemento a la Cola New con el PID:%d  TID:%d ", unTCBenLoader->pid, unTCBenLoader->tid);
 			//sem_post(&mutex_BloqueoPlanificador);   //bloquea al planificador hasta que la lista sea distinta de new
-			sem_post(&sem_new);
+			sem_post(&sem_A);
 
 			//Luego se tiene que actualizar las lista que se usan en el select
 			FD_SET(socketNuevoCliente->descriptor, master); /*añadir al conjunto maestro*/

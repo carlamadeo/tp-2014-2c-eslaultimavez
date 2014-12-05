@@ -31,7 +31,8 @@ void pasarTCB_Ready_A_Exec(t_kernel* self){
 
 	while(1){
 
-		sem_wait(&sem_ready);
+		sem_wait(&sem_B);
+		sem_wait(&sem_C);
 		sem_wait(&mutex_ready);//se bloquea la cola_READY hasta que tenga un TCB cargado
 		log_info(self->loggerPlanificador,"Planificador: Se encuentra un proceso en ready");
 		sem_wait(&mutex_exec);//BLOQUEO LISTA DE EXEC

@@ -12,6 +12,7 @@ void agregarEnListaDeCPU(t_kernel* self,int id,  t_socket* socketCPU){
 	unaCpu->socket = socketCPU;
 	list_add(listaDeCPULibres, unaCpu);
 	sem_post(&mutex_cpuLibre);
+	sem_post(&sem_C);
 	log_info(self->loggerPlanificador, "Planificador: tiene una nueva CPU con id: %d",unaCpu->id);
 	//free(unaCpu);
 }
@@ -104,7 +105,9 @@ void avisarQueTerminoUnProgramaDestruirSusSegmentos(t_kernel* self, t_TCB_Kernel
 
 
 void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_socket *socketNuevaConexionCPU){
+	log_info(self->loggerPlanificador, "Planificador: recibe un cambio");
 
+	/*
 	//1) Primer paso, se lo pone a final de READY
 	t_socket_paquete *paqueteTCB = (t_socket_paquete*) malloc(sizeof(t_socket_paquete));
 	t_TCB_Kernel* unTCBNuevo = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
@@ -157,6 +160,7 @@ void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_socket *socketNuevaConexio
 
 	//free(unTCBPadre);
 	//socket_freePaquete(paqueteContexto);
+	*/
 }
 
 void recibirUnaDireccion(t_kernel* self,t_socket *socketNuevaConexionCPU,t_interrupcionKernel* unaInterripcion){
