@@ -52,6 +52,7 @@ int main(int argc, char** argv) {
 
 			log_info(self->loggerCPU, "CPU: valorCPU == %d",valorCPU);
 			int num;
+
 			switch(valorCPU){
 
 			case FINALIZAR_PROGRAMA_EXITO:
@@ -74,10 +75,12 @@ int main(int argc, char** argv) {
 				log_info(self->loggerCPU, "CPU: envia un CAMBIO_DE_CONTEXTO");
 				free(tcbProcesado);
 				break;
+
 			case INTERRUPCION:
 				cpuEnviaInterrupcion(self);
 				//log_info(self->loggerCPU, "CPU: envia una INTERRUPCION");
 				break;
+
 			case ENTRADA_ESTANDAR:
 				//cpuEnviarPaqueteAPlanificador(self, ENTRADA_ESTANDAR);
 				//ALE: el send lo hace en la instruccion INNN e INNC en codigoESO.c
@@ -91,6 +94,7 @@ int main(int argc, char** argv) {
 				//socket_sendPaquete(self->socketPlanificador->socket,ENTRADA_ESTANDAR,sizeof(t_entrada_estandar), unaEntrada);
 				log_info(self->loggerCPU, "CPU: fin ENTRADA_ESTANDAR");
 				break;
+
 			case SALIDA_ESTANDAR:
 				cpuEnviarPaqueteAPlanificador(self, SALIDA_ESTANDAR);
 				//ALE: el send lo hace en la instruccion OUTN y OUTC en codigoESO.c
@@ -103,6 +107,7 @@ int main(int argc, char** argv) {
 				//socket_sendPaquete(self->socketPlanificador->socket,SALIDA_ESTANDAR,sizeof(t_salida_estandar), unaSalida);
 				//log_info(self->loggerCPU, "CPU: envia una SALIDA_ESTANDAR");
 				break;
+
 			case CREAR_HILO:
 				cpuEnviarPaqueteAPlanificador(self, CREAR_HILO);
 				//ALE: el send lo hace en la instruccion CREA_ESO (linea: 1257 archivo: codigoESO.c)
@@ -114,6 +119,7 @@ int main(int argc, char** argv) {
 				//socket_sendPaquete(self->socketPlanificador->socket,CREAR_HILO,sizeof(t_crea_hilo), unCrearHilo);
 				//log_info(self->loggerCPU, "CPU: envia un CREAR_HILO");
 				break;
+
 			case JOIN_HILO:
 				cpuEnviarPaqueteAPlanificador(self, JOIN_HILO);
 				//ALE: el send lo hace en la instruccion JOIN_ESO (linea: 1271 archivo: codigoESO.c)
@@ -126,6 +132,7 @@ int main(int argc, char** argv) {
 				//socket_sendPaquete(self->socketPlanificador->socket,JOIN_HILO,sizeof(t_join), unJoin);
 				//log_info(self->loggerCPU, "CPU: envia un JOIN_HILO");
 				break;
+
 			case BLOK_HILO:
 				cpuEnviarPaqueteAPlanificador(self, BLOK_HILO);
 				//ALE: el send lo hace en la instruccion BLOK_ESO (linea: 1287 archivo: codigoESO.c)
@@ -139,6 +146,7 @@ int main(int argc, char** argv) {
 				//socket_sendPaquete(self->socketPlanificador->socket,BLOK_HILO,sizeof(t_bloquear), unBlock);
 				//log_info(self->loggerCPU, "CPU: envia un BLOK_HILO");
 				break;
+
 			case WAKE_HILO:
 				cpuEnviarPaqueteAPlanificador(self, WAKE_HILO);
 				//ALE: el send lo hace en la instruccion WAKE_ESO (linea: 1302 archivo: codigoESO.c)
@@ -151,6 +159,7 @@ int main(int argc, char** argv) {
 				//socket_sendPaquete(self->socketPlanificador->socket,WAKE_HILO,sizeof(t_despertar), unDespertar);
 				//log_info(self->loggerCPU, "CPU: envia un WAKE_HILO");
 				break;
+
 			default:
 				//Maneja los errores de la CPU, tine su valor en la variable valorCPU
 				// ERROR_POR_DESCONEXION_DE_CPU 110
@@ -183,6 +192,7 @@ int main(int argc, char** argv) {
 	close(self->socketPlanificador->socket->descriptor);
 	close(self->socketMSP->socket->descriptor);
 
+	free(serviciosAlPlanificador);
 	free(self);
 	return EXIT_SUCCESS;
 }
@@ -218,6 +228,7 @@ void printTCBCPU(t_TCB_CPU* unTCB){
 
 }
 
+
 t_registros_cpu* cpuInicializarRegistrosCPU(t_CPU* self, t_registros_cpu* registros){
 
 	registros->I = (uint32_t)self->tcb->pid;
@@ -228,9 +239,8 @@ t_registros_cpu* cpuInicializarRegistrosCPU(t_CPU* self, t_registros_cpu* regist
 	registros->X = self->tcb->base_stack;
 
 	int i;
-	for(i=0;i<5;i++){
+	for(i = 0; i < 5 ;i++)
 		registros->registros_programacion[i] = self->tcb->registro_de_programacion[i];
-	}
 
 	return registros;
 }

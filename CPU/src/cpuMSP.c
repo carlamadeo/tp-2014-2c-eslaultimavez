@@ -40,6 +40,8 @@ void cpuRealizarHandshakeConMSP(t_CPU *self) {
 	else
 		log_error(self->loggerCPU, "CPU: Error al recibir paquete de la MSP.");
 
+	free(paquete);
+
 }
 
 int cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
@@ -47,6 +49,7 @@ int cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
 	t_datos_aMSP* datosAEnviar = malloc(sizeof(t_datos_aMSP));
 	t_datos_deMSP *datosRecibidos = malloc(sizeof(t_datos_deMSP));
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+	int direccionBase;
 
 	datosAEnviar->pid = pid;
 	datosAEnviar->tamanio = tamanio;
@@ -57,11 +60,14 @@ int cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
 		if(socket_recvPaquete(self->socketMSP->socket, paquete) >= 0){
 
 			if(paquete->header.type == CREAR_SEGMENTO){
+
+				direccionBase = datosRecibidos->direccionBase;
+
 				datosRecibidos = (t_datos_deMSP *) (paquete->data);
-				log_info(self->loggerCPU, "CPU: Se recibio de la MSP la direccion base %0.8p ", datosRecibidos->direccionBase);
+				log_info(self->loggerCPU, "CPU: Se recibio de la MSP la direccion base %0.8p ", direccionBase);
 
 				if(datosRecibidos->direccionBase == SIN_ERRORES)
-					log_info(self->loggerCPU, "CPU: Se creo correctamente el segmento solicitado. Direccion base: %0.8p correctamente", datosRecibidos->direccionBase);
+					log_info(self->loggerCPU, "CPU: Se creo correctamente el segmento solicitado. Direccion base: %0.8p correctamente", direccionBase);
 			}
 		}
 
@@ -72,7 +78,9 @@ int cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
 	}
 
 	free(datosAEnviar);
-	return datosRecibidos->direccionBase;
+	free(paquete);
+	free(datosRecibidos);
+	return direccionBase;
 }
 
 int cpuDestruirSegmento(t_CPU *self, uint32_t direccionVirtual){
@@ -80,6 +88,7 @@ int cpuDestruirSegmento(t_CPU *self, uint32_t direccionVirtual){
 	t_destruirSegmento* destruir_segmento = malloc(sizeof(t_destruirSegmento));
 	t_socket_paquete *paqueteConfirmacionDestruccionSegmento = malloc(sizeof(t_socket_paquete));
 	t_confirmacion* confirmacion = malloc(sizeof(t_confirmacion));
+	int intConfirmacion;
 
 	destruir_segmento->pid = self->tcb->pid;
 	destruir_segmento->direccionVirtual = direccionVirtual;
@@ -93,7 +102,12 @@ int cpuDestruirSegmento(t_CPU *self, uint32_t direccionVirtual){
 	if(confirmacion->estado == SIN_ERRORES)
 		log_info(self->loggerCPU, "CPU: Se destruyo el segmento con base virtual %0.8p correctamente", direccionVirtual);
 
-	return confirmacion->estado;
+	intConfirmacion = confirmacion->estado;
+
+	free(paqueteConfirmacionDestruccionSegmento);
+	free(destruir_segmento);
+	free(confirmacion);
+	return intConfirmacion;
 }
 
 int cpuEscribirMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int tamanio){
@@ -101,6 +115,7 @@ int cpuEscribirMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, i
 	t_escribirSegmentoBeso* escrituraDeCodigo = malloc(sizeof(t_escribirSegmentoBeso));
 	t_socket_paquete *paqueteConfirmacionEscritura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 	t_confirmacion *unaConfirmacionEscritura = (t_confirmacion *)malloc(sizeof(t_confirmacion));
+	int intConfirmacion;
 
 	escrituraDeCodigo->direccionVirtual = direccionVirtual;
 	escrituraDeCodigo->pid = self->tcb->pid;
@@ -118,8 +133,12 @@ int cpuEscribirMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, i
 	if(unaConfirmacionEscritura->estado == SIN_ERRORES)
 		log_info(self->loggerCPU, "CPU: Se escribio correctamente en memoria, base virtual %0.8p", direccionVirtual);
 
+	intConfirmacion = unaConfirmacionEscritura->estado;
+
 	free(escrituraDeCodigo);
-	return unaConfirmacionEscritura->estado;
+	free(paqueteConfirmacionEscritura);
+	free(unaConfirmacionEscritura);
+	return intConfirmacion;
 }
 
 int cpuLeerMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int tamanio){
@@ -127,6 +146,8 @@ int cpuLeerMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int t
 	t_datos_aMSPLectura *datosAMSP = malloc(sizeof(t_datos_aMSPLectura));
 	t_socket_paquete *paqueteLectura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 	t_datos_deMSPLectura *unaLectura = (t_datos_deMSPLectura *)malloc(sizeof(t_datos_deMSPLectura));
+
+	int estado;
 
 	datosAMSP->direccionVirtual = direccionVirtual;
 	int pid = 0;
@@ -146,5 +167,8 @@ int cpuLeerMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int t
 	memset(programa, 0, tamanio);
 	memcpy(programa, unaLectura->lectura, tamanio);  //en esta linea rompe Para que se usa un programa y como se carga
 
-	return unaLectura->estado;
+	estado = unaLectura->estado;
+
+	free(unaLectura);
+	return estado;
 }

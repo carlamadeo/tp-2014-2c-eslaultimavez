@@ -7,11 +7,9 @@
 #include "ejecucion.h"
 
 
-
-
 int LOAD_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 
 	char registro;
 	int reg;
@@ -31,29 +29,33 @@ int LOAD_ESO(t_CPU *self){
 		memcpy(&(registro), lecturaDeMSP, sizeof(char));
 		memcpy(&(numero), lecturaDeMSP + sizeof(char), sizeof(int));
 
+		printf("registro es %c\n", registro);
+		printf("numero es %d\n", numero);
 		reg = determinar_registro(registro);
 	}
 
 	if(reg != -1){
-		//printf("test2:%d\n", self->tcb->puntero_instruccion);
-		list_add(parametros, &registro);
+
+		char registroEnString[1];
+		sprintf(registroEnString, "%d", registro);
+		list_add(parametros, registroEnString);
 		list_add(parametros, &numero);
 		ejecucion_instruccion("LOAD", parametros);
 
 		self->tcb->registro_de_programacion[reg] = numero;
 
-		//printf("valor en self->tcb->puntero_instruccion: %d", self->tcb->puntero_instruccion);
-		registros_cpu->P=self->tcb->puntero_instruccion;
-		registros_cpu->registros_programacion[reg]=self->tcb->registro_de_programacion[reg];
+		registros_cpu->P = self->tcb->puntero_instruccion;
+		registros_cpu->registros_programacion[reg] = self->tcb->registro_de_programacion[reg];
 		cpuInicializarRegistrosCPU(self, registros_cpu);
 		cambio_registros(registros_cpu);
 
 		log_info(self->loggerCPU, "CPU: LOAD ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-	}else{
+	}
+
+	else{
 		log_error(self->loggerCPU, "CPU: Error registro de programacion no encontrado %d", self->tcb->pid);
 		estado_bloque = ERROR_REGISTRO_DESCONOCIDO;
 	}
-
 
 	free(lecturaDeMSP);
 	free(registros_cpu);
@@ -62,7 +64,7 @@ int LOAD_ESO(t_CPU *self){
 
 
 int GETM_ESO(t_CPU *self){
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
@@ -116,6 +118,8 @@ int GETM_ESO(t_CPU *self){
 		}
 	}
 
+	free(lecturaDeMSP);
+	free(registros_cpu);
 	return estado_bloque;
 }
 
@@ -172,6 +176,7 @@ int SETM_ESO(t_CPU *self){
 		}
 
 	}
+
 	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
@@ -180,7 +185,7 @@ int SETM_ESO(t_CPU *self){
 
 int MOVR_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
@@ -229,7 +234,7 @@ int MOVR_ESO(t_CPU *self){
 
 int ADDR_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
@@ -269,6 +274,7 @@ int ADDR_ESO(t_CPU *self){
 		}
 
 	}
+
 	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
@@ -277,7 +283,7 @@ int ADDR_ESO(t_CPU *self){
 
 int SUBR_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
@@ -318,6 +324,7 @@ int SUBR_ESO(t_CPU *self){
 		}
 
 	}
+
 	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
@@ -326,7 +333,7 @@ int SUBR_ESO(t_CPU *self){
 
 int MULR_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
@@ -367,6 +374,7 @@ int MULR_ESO(t_CPU *self){
 		}
 
 	}
+
 	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
@@ -376,7 +384,7 @@ int MULR_ESO(t_CPU *self){
 
 int MODR_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
@@ -417,6 +425,7 @@ int MODR_ESO(t_CPU *self){
 		}
 
 	}
+
 	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
@@ -426,7 +435,7 @@ int MODR_ESO(t_CPU *self){
 
 int DIVR_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
@@ -473,6 +482,7 @@ int DIVR_ESO(t_CPU *self){
 		}
 
 	}
+
 	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
@@ -482,7 +492,7 @@ int DIVR_ESO(t_CPU *self){
 
 int INCR_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 1;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registro;
@@ -519,6 +529,7 @@ int INCR_ESO(t_CPU *self){
 		}
 
 	}
+
 	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
@@ -528,7 +539,7 @@ int INCR_ESO(t_CPU *self){
 
 int DECR_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 1;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registro;
@@ -565,6 +576,7 @@ int DECR_ESO(t_CPU *self){
 		}
 
 	}
+
 	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
@@ -574,7 +586,7 @@ int DECR_ESO(t_CPU *self){
 
 int COMP_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
@@ -619,6 +631,7 @@ int COMP_ESO(t_CPU *self){
 		}
 
 	}
+
 	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
@@ -628,7 +641,7 @@ int COMP_ESO(t_CPU *self){
 
 int CGEQ_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
@@ -672,6 +685,7 @@ int CGEQ_ESO(t_CPU *self){
 		}
 
 	}
+
 	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
@@ -681,8 +695,7 @@ int CGEQ_ESO(t_CPU *self){
 
 int CLEQ_ESO(t_CPU *self){
 
-
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 2;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registroA, registroB;
@@ -726,6 +739,7 @@ int CLEQ_ESO(t_CPU *self){
 		}
 
 	}
+
 	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
@@ -735,7 +749,7 @@ int CLEQ_ESO(t_CPU *self){
 
 int GOTO_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 1;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registro;
@@ -776,6 +790,7 @@ int GOTO_ESO(t_CPU *self){
 		}
 
 	}
+
 	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
@@ -784,7 +799,7 @@ int GOTO_ESO(t_CPU *self){
 
 int JMPZ_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 4;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	uint32_t direccion;
@@ -818,6 +833,7 @@ int JMPZ_ESO(t_CPU *self){
 		}
 
 	}
+
 	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
@@ -827,7 +843,7 @@ int JMPZ_ESO(t_CPU *self){
 
 int JPNZ_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 4;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	uint32_t direccion;
@@ -861,6 +877,7 @@ int JPNZ_ESO(t_CPU *self){
 		}
 
 	}
+
 	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
@@ -870,7 +887,7 @@ int JPNZ_ESO(t_CPU *self){
 
 int INTE_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 4;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	uint32_t direccion;
@@ -898,6 +915,7 @@ int INTE_ESO(t_CPU *self){
 		log_info(self->loggerCPU, "CPU: INTE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
 	}
+
 	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
@@ -912,7 +930,7 @@ int INTE_ESO(t_CPU *self){
 
 int SHIF_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 5;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registro;
@@ -949,6 +967,7 @@ int SHIF_ESO(t_CPU *self){
 		}
 
 	}
+
 	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
@@ -966,7 +985,7 @@ int NOPP_ESO(t_CPU *self){
 
 int PUSH_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 5;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registro;
@@ -1009,6 +1028,7 @@ int PUSH_ESO(t_CPU *self){
 			}
 		}
 	}
+
 	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
@@ -1017,7 +1037,7 @@ int PUSH_ESO(t_CPU *self){
 
 int TAKE_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
+	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 	int tamanio = 5;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	char registro;
@@ -1066,6 +1086,7 @@ int TAKE_ESO(t_CPU *self){
 		else
 			log_error(self->loggerCPU, "CPU: Error registro de programacion no encontrado %d", self->tcb->pid);
 	}
+
 	free(registros_cpu);
 	free(lecturaDeMSP);
 	return estado_bloque;
@@ -1090,51 +1111,78 @@ int XXXX_ESO(t_CPU *self){
 //Instrucciones Protegidas, KM=1   (ninguna de estas operaciones tiene operadores)
 
 int MALC_ESO(t_CPU *self){
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
-	//CREAR_SEGMENTO
-	int estado_malc = cpuCrearSegmento(self, self->tcb->pid, self->tcb->registro_de_programacion[0]);
-	switch(estado_malc){
-	case ERROR_POR_TAMANIO_EXCEDIDO:
-		log_info(self->loggerCPU, "CPU: MALC ERROR_POR_TAMANIO_EXCEDIDO  para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+
+	int estado_malc;
+
+	if(self->tcb->km == 1){
+
+		log_info(self->loggerCPU, "CPU: Ejecutando instruccion MALC");
+
+		t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
+
+		estado_malc = cpuCrearSegmento(self, self->tcb->pid, self->tcb->registro_de_programacion[0]);
+
+		switch(estado_malc){
+
+		case ERROR_POR_TAMANIO_EXCEDIDO:
+			log_info(self->loggerCPU, "CPU: MALC ERROR_POR_TAMANIO_EXCEDIDO  para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			return ERROR_POR_TAMANIO_EXCEDIDO;
+
+		case ERROR_POR_MEMORIA_LLENA:
+			log_info(self->loggerCPU, "CPU: MALC ERROR_POR_MEMORIA_LLENA  para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			return ERROR_POR_MEMORIA_LLENA;
+
+		case ERROR_POR_NUMERO_NEGATIVO:
+			log_info(self->loggerCPU, "CPU: MALC ERROR_POR_MEMORIA_LLENA  para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			return ERROR_POR_NUMERO_NEGATIVO;
+
+		case ERROR_POR_SEGMENTO_INVALIDO:
+			log_info(self->loggerCPU, "CPU: MALC ERROR_POR_MEMORIA_LLENA  para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			return ERROR_POR_SEGMENTO_INVALIDO;
+
+		case ERROR_POR_SEGMENTATION_FAULT:
+			log_info(self->loggerCPU, "CPU: MALC ERROR_POR_MEMORIA_LLENA  para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			return ERROR_POR_SEGMENTATION_FAULT;
+
+		default:
+			self->tcb->registro_de_programacion[0] = estado_malc;
+			log_info(self->loggerCPU, "CPU: MALC ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			cpuInicializarRegistrosCPU(self, registros_cpu);
+			cambio_registros(registros_cpu);
+			return SIN_ERRORES;
+		}
+
 		free(registros_cpu);
-		return ERROR_POR_TAMANIO_EXCEDIDO;
-	case ERROR_POR_MEMORIA_LLENA:
-		log_info(self->loggerCPU, "CPU: MALC ERROR_POR_MEMORIA_LLENA  para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		free(registros_cpu);
-		return ERROR_POR_MEMORIA_LLENA;
-	case ERROR_POR_NUMERO_NEGATIVO:
-		log_info(self->loggerCPU, "CPU: MALC ERROR_POR_MEMORIA_LLENA  para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		free(registros_cpu);
-		return ERROR_POR_NUMERO_NEGATIVO;
-	case ERROR_POR_SEGMENTO_INVALIDO:
-		log_info(self->loggerCPU, "CPU: MALC ERROR_POR_MEMORIA_LLENA  para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		free(registros_cpu);
-		return ERROR_POR_SEGMENTO_INVALIDO;
-	case ERROR_POR_SEGMENTATION_FAULT:
-		log_info(self->loggerCPU, "CPU: MALC ERROR_POR_MEMORIA_LLENA  para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		free(registros_cpu);
-		return ERROR_POR_SEGMENTATION_FAULT;
-	default:
-		self->tcb->registro_de_programacion[0] = estado_malc;
-		log_info(self->loggerCPU, "CPU: MALC ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		cpuInicializarRegistrosCPU(self, registros_cpu);
-		cambio_registros(registros_cpu);
-		free(registros_cpu);
-		return SIN_ERRORES;
 	}
+
+	else
+		estado_malc = ERROR_POR_EJECUCION_ILICITA;
+
+	return estado_malc;
 }
+
+
 int FREE_ESO(t_CPU *self){
 
 	int estado_free;
-	int direccionVirtual = self->tcb->registro_de_programacion[0];
 
-	estado_free = cpuDestruirSegmento(self, direccionVirtual);
+	if(self->tcb->km == 1){
 
-	if(estado_free == ERROR_POR_SEGMENTO_DESCONOCIDO)
-		log_info(self->loggerCPU, "CPU: FREE ejecutado con ERROR_POR_SEGMENTO_DESCONOCIDO para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		log_info(self->loggerCPU, "CPU: Ejecutando instruccion FREE");
+		int direccionVirtual = self->tcb->registro_de_programacion[0];
+
+		estado_free = cpuDestruirSegmento(self, direccionVirtual);
+
+		if(estado_free == ERROR_POR_SEGMENTO_DESCONOCIDO)
+			log_info(self->loggerCPU, "CPU: FREE ejecutado con ERROR_POR_SEGMENTO_DESCONOCIDO para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+
+		else
+			log_info(self->loggerCPU, "CPU: FREE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+	}
 
 	else
-		log_info(self->loggerCPU, "CPU: FREE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		estado_free = ERROR_POR_EJECUCION_ILICITA;
+
 
 	return estado_free;
 }
@@ -1146,117 +1194,194 @@ void printfEntradaStandarCPU(t_entrada_estandar* entrada){
 	printf("entrada tipo: %d\n",entrada->tipo);
 
 }
+
+
 int INNN_ESO(t_CPU *self){
 
-	t_registros_cpu*  registros_cpu = malloc(sizeof(t_registros_cpu));
-	int *intRecibido = malloc(sizeof(int));
+	int estado_innn;
 
-	int estado_innn = cpuSolicitarEntradaEstandar(self, sizeof(int), ENTRADA_ESTANDAR_INT);
+	if(self->tcb->km == 1){
 
-	if(estado_innn == SIN_ERRORES){
-		estado_innn = reciboEntradaEstandarINT(self, intRecibido);
+		log_info(self->loggerCPU, "CPU: Ejecutando instruccion INNN");
 
-		self->tcb->registro_de_programacion[0] = (int32_t)intRecibido;
+		t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
+		int *intRecibido = malloc(sizeof(int));
 
-		cpuInicializarRegistrosCPU(self, registros_cpu);
-		cambio_registros(registros_cpu);
+		estado_innn = cpuSolicitarEntradaEstandar(self, sizeof(int), ENTRADA_ESTANDAR_INT);
 
-		if(estado_innn == ENTRADA_ESTANDAR)
-			log_info(self->loggerCPU, "CPU: INNN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		if(estado_innn == SIN_ERRORES){
+			estado_innn = reciboEntradaEstandarINT(self, intRecibido);
 
-		else
-			log_error(self->loggerCPU, "CPU: Ha ocurrido un error al ejecutar la instruccion INNN para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			self->tcb->registro_de_programacion[0] = (int32_t)intRecibido;
+
+			cpuInicializarRegistrosCPU(self, registros_cpu);
+			cambio_registros(registros_cpu);
+
+			if(estado_innn == ENTRADA_ESTANDAR)
+				log_info(self->loggerCPU, "CPU: INNN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+
+			else
+				log_error(self->loggerCPU, "CPU: Ha ocurrido un error al ejecutar la instruccion INNN para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		}
+
+		free(intRecibido);
+		free(registros_cpu);
 	}
 
-	free(registros_cpu);
+	else
+		estado_innn = ERROR_POR_EJECUCION_ILICITA;
+
+
 	return estado_innn;
 
 }
 
+
 int INNC_ESO(t_CPU *self){
 
-	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
-	char *charRecibido = malloc(sizeof(self->tcb->registro_de_programacion[1]));
+	int estado_innc;
 
-	int estado_innc = cpuSolicitarEntradaEstandar(self, self->tcb->registro_de_programacion[1], ENTRADA_ESTANDAR_TEXT);
+	if(self->tcb->km == 1){
 
-	if(estado_innc == SIN_ERRORES){
-		estado_innc = reciboEntradaEstandarCHAR(self, charRecibido, sizeof(self->tcb->registro_de_programacion[1]));
-		log_info(self->loggerCPU, "INNC_ESO: Recibe una cadena de la Consola: %s", charRecibido);
+		log_info(self->loggerCPU, "CPU: Ejecutando instruccion INNC");
 
-		int estadoEscritura = cpuEscribirMemoria(self, self->tcb->registro_de_programacion[0], charRecibido, sizeof(self->tcb->registro_de_programacion[1]));
+		t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
+		char *charRecibido = malloc(sizeof(self->tcb->registro_de_programacion[1]));
 
-		if(estadoEscritura == ERROR_POR_SEGMENTATION_FAULT){
-			log_info(self->loggerCPU, "CPU: INNC ejecutado con ERROR_POR_SEGMENTATION_FAULT para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			estado_innc = ERROR_POR_SEGMENTATION_FAULT;
+		estado_innc = cpuSolicitarEntradaEstandar(self, self->tcb->registro_de_programacion[1], ENTRADA_ESTANDAR_TEXT);
+
+		if(estado_innc == SIN_ERRORES){
+			estado_innc = reciboEntradaEstandarCHAR(self, charRecibido, sizeof(self->tcb->registro_de_programacion[1]));
+			log_info(self->loggerCPU, "INNC_ESO: Recibe una cadena de la Consola: %s", charRecibido);
+
+			int estadoEscritura = cpuEscribirMemoria(self, self->tcb->registro_de_programacion[0], charRecibido, sizeof(self->tcb->registro_de_programacion[1]));
+
+			if(estadoEscritura == ERROR_POR_SEGMENTATION_FAULT){
+				log_info(self->loggerCPU, "CPU: INNC ejecutado con ERROR_POR_SEGMENTATION_FAULT para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+				estado_innc = ERROR_POR_SEGMENTATION_FAULT;
+			}
+
+			else {
+				log_info(self->loggerCPU, "CPU: INNC ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+				estado_innc = ENTRADA_ESTANDAR;
+			}
 		}
 
-		else {
-			log_info(self->loggerCPU, "CPU: INNC ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			estado_innc = ENTRADA_ESTANDAR;
-		}
+		free(registros_cpu);
+		free(charRecibido);
 	}
 
-	free(registros_cpu);
-	free(charRecibido);
+	else
+		estado_innc = ERROR_POR_EJECUCION_ILICITA;
+
+
 	return estado_innc;
 }
 
 
 int OUTN_ESO(t_CPU *self){
 
-	int estado_outn = cpuEnviarSalidaEstandar(self, string_itoa(self->tcb->registro_de_programacion[0]));
+	int estado_outn;
+
+	if(self->tcb->km == 1){
+		log_info(self->loggerCPU, "CPU: Ejecutando instruccion OUTN");
+		estado_outn = cpuEnviarSalidaEstandar(self, string_itoa(self->tcb->registro_de_programacion[0]));
+	}
+
+	else
+		estado_outn = ERROR_POR_EJECUCION_ILICITA;
 
 	return estado_outn;
 }
 
+
 int OUTC_ESO(t_CPU* self){
 
 	int estado_outc;
-	char* lecturaDeMSP = malloc(self->tcb->registro_de_programacion[1]);
 
-	int estado_lectura = cpuLeerMemoria(self, self->tcb->cursor_stack,  lecturaDeMSP, self->tcb->registro_de_programacion[1]);
+	if(self->tcb->km == 1){
 
-	if (estado_lectura == ERROR_POR_SEGMENTATION_FAULT)
-		estado_outc = ERROR_POR_SEGMENTATION_FAULT;
+		log_info(self->loggerCPU, "CPU: Ejecutando instruccion OUTC");
 
-	else{
-		estado_outc = cpuEnviarSalidaEstandar(self, lecturaDeMSP);
+		char* lecturaDeMSP = malloc(self->tcb->registro_de_programacion[1]);
 
-		if(estado_outc == SALIDA_ESTANDAR)
-			log_info(self->loggerCPU, "CPU: OUTN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		int estado_lectura = cpuLeerMemoria(self, self->tcb->cursor_stack,  lecturaDeMSP, self->tcb->registro_de_programacion[1]);
 
+		if (estado_lectura == ERROR_POR_SEGMENTATION_FAULT)
+			estado_outc = ERROR_POR_SEGMENTATION_FAULT;
+
+		else{
+			estado_outc = cpuEnviarSalidaEstandar(self, lecturaDeMSP);
+
+			if(estado_outc == SALIDA_ESTANDAR)
+				log_info(self->loggerCPU, "CPU: OUTN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		}
+
+		free(lecturaDeMSP);
 	}
+
+	else
+		estado_outc = ERROR_POR_EJECUCION_ILICITA;
+
 
 	return estado_outc;
 }
 
 
 int CREA_ESO(t_CPU *self){ 	// CREA un hilo hijo de TCB
+
 	int estado_crea;
-	t_crea_hilo* crear_hilo = malloc(sizeof(t_crea_hilo));
-	crear_hilo->tcb = self->tcb;
-	if (socket_sendPaquete(self->socketPlanificador->socket, CREAR_HILO,sizeof(t_crea_hilo), crear_hilo)<=0){  //22 corresponde a interrupcion
-		log_info(self->loggerCPU, "CPU: CREA ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		estado_crea = MENSAJE_DE_ERROR;
+
+	if(self->tcb->km == 1){
+
+		log_info(self->loggerCPU, "CPU: Ejecutando instruccion CREA");
+		t_crea_hilo* crear_hilo = malloc(sizeof(t_crea_hilo));
+		crear_hilo->tcb = self->tcb;
+
+		if (socket_sendPaquete(self->socketPlanificador->socket, CREAR_HILO,sizeof(t_crea_hilo), crear_hilo) <= 0){  //22 corresponde a interrupcion
+			log_info(self->loggerCPU, "CPU: CREA ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			estado_crea = MENSAJE_DE_ERROR;
+		}
+
+		log_info(self->loggerCPU, "CPU: CREA ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+
+		free(crear_hilo);
 	}
-	free(crear_hilo);
-	log_info(self->loggerCPU, "CPU: CREA ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+
+	else
+		estado_crea = ERROR_POR_EJECUCION_ILICITA;
+
+
 	estado_crea = CREAR_HILO;
 	return estado_crea;
-
 }
+
+
 int JOIN_ESO(t_CPU *self){
+
 	int estado_join;
-	t_join* joinear = malloc(sizeof(t_join));
-	joinear->tid_llamador = self->tcb->tid;
-	joinear->tid_esperar = self->tcb->registro_de_programacion[0];
-	if (socket_sendPaquete(self->socketPlanificador->socket, JOIN_HILO,sizeof(t_join), joinear)<=0){  //22 corresponde a interrupcion
-		log_info(self->loggerCPU, "CPU: JOIN ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		estado_join = MENSAJE_DE_ERROR;
+
+	if(self->tcb->km == 1){
+
+		log_info(self->loggerCPU, "CPU: Ejecutando instruccion JOIN");
+		t_join* joinear = malloc(sizeof(t_join));
+		joinear->tid_llamador = self->tcb->tid;
+		joinear->tid_esperar = self->tcb->registro_de_programacion[0];
+
+		if (socket_sendPaquete(self->socketPlanificador->socket, JOIN_HILO,sizeof(t_join), joinear)<=0){  //22 corresponde a interrupcion
+			log_info(self->loggerCPU, "CPU: JOIN ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			estado_join = MENSAJE_DE_ERROR;
+		}
+
+		log_info(self->loggerCPU, "CPU: JOIN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+
+		free(joinear);
 	}
-	free(joinear);
-	log_info(self->loggerCPU, "CPU: JOIN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+
+	else
+		estado_join = ERROR_POR_EJECUCION_ILICITA;
+
+
 	estado_join = JOIN_HILO;
 	return estado_join;
 
@@ -1264,35 +1389,63 @@ int JOIN_ESO(t_CPU *self){
 
 
 int BLOK_ESO(t_CPU *self){
+
 	int estado_blok;
-	t_bloquear* blocker = malloc(sizeof(t_bloquear));
-	blocker->tcb = self->tcb;
-	blocker->id_recurso = self->tcb->registro_de_programacion[1];
-	if (socket_sendPaquete(self->socketPlanificador->socket, BLOK_HILO,sizeof(t_bloquear), blocker)<=0){
-		log_info(self->loggerCPU, "CPU: BLOK ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		estado_blok = MENSAJE_DE_ERROR;
-	} else{
-		log_info(self->loggerCPU, "CPU: BLOK ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		estado_blok = JOIN_HILO;
+
+	if(self->tcb->km == 1){
+
+		log_info(self->loggerCPU, "CPU: Ejecutando instruccion BLOK");
+		t_bloquear* blocker = malloc(sizeof(t_bloquear));
+		blocker->tcb = self->tcb;
+		blocker->id_recurso = self->tcb->registro_de_programacion[1];
+
+		if (socket_sendPaquete(self->socketPlanificador->socket, BLOK_HILO,sizeof(t_bloquear), blocker)<=0){
+			log_info(self->loggerCPU, "CPU: BLOK ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			estado_blok = MENSAJE_DE_ERROR;
+		}
+
+
+		else{
+			log_info(self->loggerCPU, "CPU: BLOK ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			estado_blok = JOIN_HILO;
+		}
+
+		free(blocker);
 	}
-	free(blocker);
+
+	else
+		estado_blok = ERROR_POR_EJECUCION_ILICITA;
+
 	return estado_blok;
 
 }
 
 int WAKE_ESO(t_CPU *self){
-	int estado_wake;
-	t_despertar* despertar = malloc(sizeof(t_despertar));
-	despertar->id_recurso = self->tcb->registro_de_programacion[1];
-	if (socket_sendPaquete(self->socketPlanificador->socket, WAKE_HILO ,sizeof(t_despertar), despertar)<=0){
-		log_info(self->loggerCPU, "CPU: WAKE ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		estado_wake = MENSAJE_DE_ERROR;
 
-	}else{
-		log_info(self->loggerCPU, "CPU: WAKE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		estado_wake = WAKE_HILO;
+	int estado_wake;
+
+	if(self->tcb->km == 1){
+
+		log_info(self->loggerCPU, "CPU: Ejecutando instruccion WAKE");
+		t_despertar* despertar = malloc(sizeof(t_despertar));
+		despertar->id_recurso = self->tcb->registro_de_programacion[1];
+
+		if (socket_sendPaquete(self->socketPlanificador->socket, WAKE_HILO ,sizeof(t_despertar), despertar)<=0){
+			log_info(self->loggerCPU, "CPU: WAKE ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			estado_wake = MENSAJE_DE_ERROR;
+		}
+
+		else{
+			log_info(self->loggerCPU, "CPU: WAKE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			estado_wake = WAKE_HILO;
+		}
+
+		free(despertar);
 	}
-	free(despertar);
+
+	else
+		estado_wake = ERROR_POR_EJECUCION_ILICITA;
+
 	return estado_wake;
 }
 

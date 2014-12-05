@@ -17,11 +17,11 @@ char *instrucciones_eso[] = {"LOAD", "GETM", "SETM", "MOVR", "ADDR", "SUBR", "MU
 		"COMP", "CGEQ", "CLEQ", "GOTO", "JMPZ", "JPNZ", "INTE", "SHIF", "NOPP", "PUSH", "TAKE", "XXXX", "MALC", "FREE", "INNN",
 		"INNC", "OUTN", "OUTC", "CREA", "JOIN", "BLOK", "WAKE"};
 
-int cpuProcesarTCB(t_CPU *self,t_ServiciosAlPlanificador* serviciosAlPlanificador){
+int cpuProcesarTCB(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
 
 	int tamanio = sizeof(char) * 4;
 	char *datosDeMSP = malloc(sizeof(tamanio) + 1);
-	int estado_ejecucion_instruccion, estado, encontrado, indice, indiceAnterior;
+	int estado_ejecucion_instruccion, estado, encontrado, indice;
 
 	//COPIO LA ESTRUCTURA DEL TCB AL hilo_log
 	hilo_log = (t_hilo_log *) self->tcb;
@@ -29,9 +29,11 @@ int cpuProcesarTCB(t_CPU *self,t_ServiciosAlPlanificador* serviciosAlPlanificado
 
 	log_info(self->loggerCPU, "CPU: Comienzo a procesar el TCB de pid: %d", self->tcb->pid);
 
-	while(((self->quantum > 0) || (self->tcb->km == 1)) && (indiceAnterior != XXXX)){
+	while(((self->quantum > 0) || (self->tcb->km == 1))){
 		encontrado = 0;
 		indice = 0;
+
+		log_info(self->loggerCPU, "CPU: --------------------QUANTUM = %d------------------", self->quantum);
 
 		estado = cpuLeerMemoria(self, self->tcb->puntero_instruccion, datosDeMSP, tamanio);
 
@@ -48,17 +50,15 @@ int cpuProcesarTCB(t_CPU *self,t_ServiciosAlPlanificador* serviciosAlPlanificado
 				encontrado = 1;
 				estado_ejecucion_instruccion = ejecutar_instruccion(self, indice, serviciosAlPlanificador);
 			}
+
 			indice++;
 		}
 
-		indiceAnterior = indice - 1;
-
 		self->quantum = self->quantum - 1;
 
-		if(indiceAnterior != XXXX) //ALE: si ya se ejecuto el XXXX entonces el tcb ya le llego al planificador...en estado_ejecucion_instruccion = SIN_ERRORES
-			log_info(self->loggerCPU, "CPU: --------------------QUANTUM = %d------------------", self->quantum);
 	}
 
+	free(datosDeMSP);
 	return estado_ejecucion_instruccion;
 }
 
@@ -195,96 +195,35 @@ int ejecutar_instruccion(t_CPU *self, int linea, t_ServiciosAlPlanificador* serv
 
 
 	case MALC:
-		if(self->tcb->km==1){
-			log_info(self->loggerCPU, "CPU: ejecutando instruccion MALC" );
-			estado = MALC_ESO(self);
-		}else{
-			estado = ERROR_POR_EJECUCION_ILICITA;
-			break;
-		}
+		estado = MALC_ESO(self);
 		break;
 
 	case FREE:
-		if(self->tcb->km==1){
-			estado = FREE_ESO(self);
-		}else{
-			estado = ERROR_POR_EJECUCION_ILICITA;
-			break;
-		}
-		break;
+		estado = FREE_ESO(self);
 
 	case INNN:
-		if(self->tcb->km==1){
-			estado = INNN_ESO(self);
-		}else{
-			estado = ERROR_POR_EJECUCION_ILICITA;
-			break;
-		}
-		break;
+		estado = INNN_ESO(self);
+
 	case INNC:
-		//log_info(self->loggerCPU, "TEST ESTOY");
-		if(self->tcb->km==1){
-			estado = INNC_ESO(self);
-		}else{
-			estado = ERROR_POR_EJECUCION_ILICITA;
-			break;
-		}
-		break;
+		estado = INNC_ESO(self);
+
 	case OUTN:
-		if(self->tcb->km==1){
-			estado = OUTN_ESO(self);
-		}else{
-			estado = ERROR_POR_EJECUCION_ILICITA;
-			break;
-		}
-		break;
+		estado = OUTN_ESO(self);
 
 	case OUTC:
-		if(self->tcb->km==1){
-			estado = OUTC_ESO(self);
-		}else{
-			estado = ERROR_POR_EJECUCION_ILICITA;
-			break;
-		}
-		break;
+		estado = OUTC_ESO(self);
 
 	case CREA:
-		if(self->tcb->km==1){
-			estado = CREA_ESO(self);
-		}else{
-			estado = ERROR_POR_EJECUCION_ILICITA;
-			break;
-		}
-		break;
+		estado = CREA_ESO(self);
 
 	case JOIN:
-		if(self->tcb->km==1){
-			estado = JOIN_ESO(self);
-		}else{
-			estado = ERROR_POR_EJECUCION_ILICITA;
-			break;
-		}
-		break;
+		estado = JOIN_ESO(self);
 
 	case BLOK:
-
-		if(self->tcb->km==1){
-			estado = BLOK_ESO(self);
-		}else{
-			estado = ERROR_POR_EJECUCION_ILICITA;
-			break;
-		}
-		break;
+		estado = BLOK_ESO(self);
 
 	case WAKE:
-
-		if(self->tcb->km==1){
-			estado = WAKE_ESO(self);
-		}else{
-			estado = ERROR_POR_EJECUCION_ILICITA;
-			break;
-		}
-		break;
+		estado = WAKE_ESO(self);
 
 		/***************************************************************************************************\
 		 *								--FIN SYSTEMCALL--									 	 *
