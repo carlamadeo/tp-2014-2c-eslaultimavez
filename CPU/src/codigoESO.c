@@ -34,12 +34,18 @@ int LOAD_ESO(t_CPU *self){
 
 	if(reg != -1){
 
+		if(reg<=5){
+			self->tcb->registro_de_programacion[reg] = numero;
+		}else{
+			switch(reg){
+			case 6: self->tcb->base_segmento_codigo = (uint32_t) numero; break;
+			case 7: self->tcb->puntero_instruccion = (uint32_t) numero; break;
+			case 8: self->tcb->base_stack = (uint32_t) numero; break;
+			case 9: self->tcb->cursor_stack = (uint32_t) numero; break;
+			}
+		}
+
 		imprimirNumeroYRegistro(registro, numero, "LOAD");
-
-		self->tcb->registro_de_programacion[reg] = numero;
-
-		registros_cpu->P = self->tcb->puntero_instruccion;
-		registros_cpu->registros_programacion[reg] = self->tcb->registro_de_programacion[reg];
 		cpuInicializarRegistrosCPU(self, registros_cpu);
 		cambio_registros(registros_cpu);
 
@@ -84,7 +90,7 @@ int GETM_ESO(t_CPU *self){
 
 		free(lecturaDeMSP);
 
-		if((regA != -1) || (regB != -1)){
+		if((regA != -1) && (regB != -1)){
 
 			imprimirDosRegistros(regA, regB, "GETM");
 
@@ -144,7 +150,7 @@ int SETM_ESO(t_CPU *self){
 		regA = determinar_registro(registroA);
 		regB = determinar_registro(registroB);
 
-		if((regA != -1) || (regB != -1)){
+		if((regA != -1) && (regB != -1)){
 
 			if(numero <= sizeof(uint32_t)){
 
@@ -199,7 +205,7 @@ int MOVR_ESO(t_CPU *self){
 		regA = determinar_registro(registroA);
 		regB = determinar_registro(registroB);
 
-		if((regA != -1) || (regB != -1)){
+		if((regA != -1) && (regB != -1)){
 
 			imprimirDosRegistros(registroA, registroB, "MOVR");
 
@@ -346,7 +352,6 @@ int MULR_ESO(t_CPU *self){
 			imprimirDosRegistros(registroA, registroB, "MULR");
 
 			self->tcb->registro_de_programacion[0] = self->tcb->registro_de_programacion[regA] * self->tcb->registro_de_programacion[regB];
-
 			log_info(self->loggerCPU, "CPU: MULR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
 			cambio_registros(registros_cpu);
@@ -361,7 +366,7 @@ int MULR_ESO(t_CPU *self){
 
 	free(registros_cpu);
 	free(lecturaDeMSP);
-	return SIN_ERRORES;
+	return estado_bloque;
 
 }
 
@@ -492,11 +497,17 @@ int INCR_ESO(t_CPU *self){
 		reg = determinar_registro(registro);
 
 		if((reg != -1)){
-
+			if(reg<=5){
+				self->tcb->registro_de_programacion[reg]++;
+			}else{
+				switch(reg){
+				case 6: self->tcb->base_segmento_codigo++; break;
+				case 7: self->tcb->puntero_instruccion++; break;
+				case 8: self->tcb->base_stack++; break;
+				case 9: self->tcb->cursor_stack++; break;
+				}
+			}
 			imprimirUnRegistro(registro, "INCR");
-
-			self->tcb->registro_de_programacion[reg]++;
-
 			log_info(self->loggerCPU, "CPU: INCR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
 			cambio_registros(registros_cpu);
@@ -538,11 +549,18 @@ int DECR_ESO(t_CPU *self){
 		reg = determinar_registro(registro);
 
 		if((reg != -1)){
+			if(reg<=5){
+				self->tcb->registro_de_programacion[reg]--;
+			}else{
+				switch(reg){
+				case 6: self->tcb->base_segmento_codigo--; break;
+				case 7: self->tcb->puntero_instruccion--; break;
+				case 8: self->tcb->base_stack--; break;
+				case 9: self->tcb->cursor_stack--; break;
+				}
+			}
 
 			imprimirUnRegistro(registro, "DECR");
-
-			self->tcb->registro_de_programacion[reg]--;
-
 			log_info(self->loggerCPU, "CPU: DECR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
 			cambio_registros(registros_cpu);
@@ -575,9 +593,6 @@ int COMP_ESO(t_CPU *self){
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
-
-		self->tcb->puntero_instruccion += tamanio;
-
 		log_info(self->loggerCPU, "Recibiendo parametros de instruccion COMP");
 
 		memcpy(&(registroA), lecturaDeMSP, sizeof(char));
@@ -920,13 +935,38 @@ int SHIF_ESO(t_CPU *self){
 		reg = determinar_registro(registro);
 
 		if((reg != -1)){
+			if(reg<=5){
+				if(numero > 0)
+					self->tcb->registro_de_programacion[reg]>>=numero;
+				else
+					self->tcb->registro_de_programacion[reg]<<=numero;
+			}else{
+				switch(reg){
+				case 6:
+					if(numero > 0)
+						self->tcb->base_segmento_codigo>>=numero;
+					else
+						self->tcb->base_segmento_codigo<<=numero;
+					break;
+				case 7:
+					if(numero > 0)
+						self->tcb->puntero_instruccion>>=numero;
+					else
+						self->tcb->puntero_instruccion<<=numero;
+					break;
+				case 8:
+					if(numero > 0)
+						self->tcb->base_stack>>=numero;
+					else
+						self->tcb->base_stack<<=numero;
+					break;
+				case 9: self->tcb->cursor_stack++; break;
+				}
+			}
 
 			imprimirNumeroYRegistro(registro, numero, "SHIF");
 
-			if(numero > 0)
-				self->tcb->registro_de_programacion[reg]>>=numero;
-			else
-				self->tcb->registro_de_programacion[reg]<<=numero;
+
 
 			log_info(self->loggerCPU, "CPU: SHIF ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
@@ -978,8 +1018,26 @@ int PUSH_ESO(t_CPU *self){
 			if(numero <= sizeof(uint32_t)){
 
 				char* byte_a_escribir = malloc(sizeof(int32_t));
+				if(reg<=5){
+					memcpy(byte_a_escribir, &(self->tcb->registro_de_programacion[reg]), numero);
+				}else{
+					switch(reg){
+					case 6:
+						memcpy(byte_a_escribir, &(self->tcb->base_segmento_codigo), numero);
+						break;
+					case 7:
+						memcpy(byte_a_escribir, &(self->tcb->puntero_instruccion), numero);
+						break;
+					case 8:
+						memcpy(byte_a_escribir, &(self->tcb->base_stack), numero);
+						break;
+					case 9:
+						memcpy(byte_a_escribir, &(self->tcb->cursor_stack), numero);
+					    break;
+					}
+				}
 
-				memcpy(byte_a_escribir, &(self->tcb->registro_de_programacion[reg]), numero);
+
 				estado_bloque = cpuEscribirMemoria(self, (uint32_t)self->tcb->cursor_stack, byte_a_escribir, numero);
 
 				free(byte_a_escribir);
@@ -1035,7 +1093,16 @@ int TAKE_ESO(t_CPU *self){
 				estado_bloque = estado_lectura;
 
 				if (estado_lectura == SIN_ERRORES){
-					self->tcb->registro_de_programacion[reg] = (int32_t)lecturaDeMSP2;
+					if(reg<=5){
+						self->tcb->registro_de_programacion[reg] = (int32_t)lecturaDeMSP2;
+					}else{
+						switch(reg){
+						case 6: self->tcb->base_segmento_codigo = (int32_t)lecturaDeMSP2; break;
+						case 7: self->tcb->puntero_instruccion = (int32_t)lecturaDeMSP2; break;
+						case 8: self->tcb->base_stack = (int32_t)lecturaDeMSP2; break;
+						case 9: self->tcb->cursor_stack = (int32_t)lecturaDeMSP2; break;
+						}
+					}
 					self->tcb->cursor_stack -= numero;
 					log_info(self->loggerCPU, "CPU: TAKE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 					cpuInicializarRegistrosCPU(self, registros_cpu);
