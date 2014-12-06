@@ -71,7 +71,6 @@ int determinar_registro(char registro){
 	case 'C': return 2;
 	case 'D': return 3;
 	case 'E': return 4;
-	case 'F': return 5;
 	case 'M': return 6;
 	case 'P': return 7;
 	case 'X': return 8;
