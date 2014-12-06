@@ -16,7 +16,6 @@
 
 t_MSP *self;
 pthread_rwlock_t rw_memoria;
-pthread_rwlock_t rw_estrutura;
 
 /***************************************************************************************************\
  *								--Comienzo Creacion Segmento--									 	 *
@@ -71,7 +70,7 @@ uint32_t crearSegmentoConSusPaginas(int pid, int cantidadPaginas, int tamanio){
 		//Agrego este porque si estoy en la mitad de creacion del segmento, y a su vez me piden escribir ese segmento
 		//no voy a tener cargados todos los datos y se va a generar un error
 
-		pthread_rwlock_wrlock(&rw_estrutura); cambiar por estructura
+		pthread_rwlock_wrlock(&rw_memoria);
 
 		//Si el programa no tiene segmentos, a numero de segmento le pongo 0
 		if(list_is_empty(programa->tablaSegmentos))
@@ -102,7 +101,7 @@ uint32_t crearSegmentoConSusPaginas(int pid, int cantidadPaginas, int tamanio){
 		else
 			log_info(self->logMSP, "Segmento creado correctamente. PID: %d, Tamanio: %d, Direccion base: %0.8p", pid, tamanio, direccionBase);
 
-		pthread_rwlock_unlock(&rw_estrutura);
+		pthread_rwlock_unlock(&rw_memoria);
 
 		return direccionBase;
 	}
@@ -149,7 +148,7 @@ int mspDestruirSegmento(int pid, uint32_t direccionBase){
 
 			if(segmento != NULL){
 
-			//	pthread_rwlock_wrlock(&rw_memoria);
+				pthread_rwlock_wrlock(&rw_memoria);
 
 				borrarPaginasDeMemoriaSecundariaYPrimaria(pid, segmento);
 
@@ -160,7 +159,7 @@ int mspDestruirSegmento(int pid, uint32_t direccionBase){
 				else
 					log_info(self->logMSP, "Segmento destruido correctamente. PID: %d, Direccion Base: %0.8p, Numero de Segmento: %d", pid, direccionBase, direccionReal.numeroSegmento);
 
-				//pthread_rwlock_unlock(&rw_memoria);
+				pthread_rwlock_unlock(&rw_memoria);
 			}
 
 			else{
@@ -301,9 +300,9 @@ int mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tam
 	//Creo una lista con todas las paginas que debo pasar a memoria
 	paginasAMemoria = crearListaPaginasAPasarAMemoria(cantidadPaginas, pagina, segmento->tablaPaginas);
 
-	//pthread_rwlock_wrlock(&rw_memoria);
+	pthread_rwlock_wrlock(&rw_memoria);
 	buscarPaginasYEscribirMemoria(pid, direccionReal, paginasAMemoria, tamanio, buffer);
-	//pthread_rwlock_unlock(&rw_memoria);
+	pthread_rwlock_unlock(&rw_memoria);
 
 	//TODO eliminarlo para la entrega!!
 	//Esto es para imprimir en el log lo que se escribio en memoria
@@ -405,34 +404,27 @@ void buscarPaginasYEscribirMemoria(int pid, t_direccion direccionReal, t_list *p
 
 				//Si es la primera pagina la que debo escribir, escribo desde desplazamiento hasta el final (tamanioParaPrimeraPagina)
 				if(contador == 1){
-					pthread_rwlock_wrlock(&rw_memoria); //agregado
 					memmove(self->memoria + marco->inicio + direccionReal.desplazamiento, buffer, tamanioParaPrimeraPagina);
 					faltaEscribir -= tamanioParaPrimeraPagina;
 					posicionDondeLeer = TAMANIO_PAGINA - direccionReal.desplazamiento;
-					pthread_rwlock_unlock(&rw_memoria); //agregado
 				}
 
 				//Si lo que queda por escribir supera o es igual a TAMANIO_PAGINA escribo toda la pagina
 				else if(faltaEscribir >= TAMANIO_PAGINA){
-					pthread_rwlock_wrlock(&rw_memoria); //agregado
 					memmove(self->memoria + marco->inicio, buffer + tamanioParaPrimeraPagina, TAMANIO_PAGINA);
 					faltaEscribir -= TAMANIO_PAGINA;
 					posicionDondeLeer += TAMANIO_PAGINA;
-					pthread_rwlock_unlock(&rw_memoria); //agregado
 				}
 
 				//Si es la ultima pagina la que debo escribir, escribo lo que falta
 				else if(contador == cantidadPaginas){
-					pthread_rwlock_wrlock(&rw_memoria); //agregado
 					memmove(self->memoria + marco->inicio, buffer + posicionDondeLeer, tamanio - faltaEscribir);
-					pthread_rwlock_unlock(&rw_memoria); //agregado
 				}
 			}
 			//Si solo debo esribir una pagina, escribo directo
 			else
-				pthread_rwlock_wrlock(&rw_memoria); //agregado
 				memmove(self->memoria + marco->inicio + direccionReal.desplazamiento, buffer, tamanio);
-				pthread_rwlock_unlock(&rw_memoria); //agregado
+
 			contador++;
 		}
 
@@ -484,9 +476,9 @@ int mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido)
 	//Creo una lista con todas las paginas que debo pasar a memoria
 	paginasAMemoria = crearListaPaginasAPasarAMemoria(cantidadPaginas, pagina, segmento->tablaPaginas);
 
-	//pthread_rwlock_rdlock(&rw_memoria);
+	pthread_rwlock_rdlock(&rw_memoria);
 	buscarPaginasYLeerMemoria(pid, direccionReal, paginasAMemoria, tamanio, leido);
-	//pthread_rwlock_unlock(&rw_memoria);
+	pthread_rwlock_unlock(&rw_memoria);
 	
 	log_info(self->logMSP, "Se ha leido de memoria: %s", leido);
 	
@@ -537,35 +529,27 @@ void buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *pagin
 
 				//Si es el primer marco el que debo leer, leo desde desplazamiento hasta el final (tamanioParaPrimeraPagina)
 				if(contador == 1){
-					pthread_rwlock_rdlock(&rw_memoria); //agregado
 					memmove(leido, self->memoria + marco->inicio + direccionReal.desplazamiento, tamanioParaPrimerMarco);
 					faltaLeer -= tamanioParaPrimerMarco;
 					posicionDondeLeer = TAMANIO_PAGINA - direccionReal.desplazamiento;
-					pthread_rwlock_unlock(&rw_memoria); //agregado
 				}
 
 				//Si lo que queda por leer supera o es igual a TAMANIO_PAGINA leo todo_el marco
 				else if(faltaLeer >= TAMANIO_PAGINA){
-					pthread_rwlock_rdlock(&rw_memoria); //agregado
 					memmove(leido + tamanioParaPrimerMarco, self->memoria + marco->inicio, TAMANIO_PAGINA);
 					faltaLeer -= TAMANIO_PAGINA;
 					posicionDondeLeer += TAMANIO_PAGINA;
-					pthread_rwlock_unlock(&rw_memoria); //agregado
 				}
 
 				//Si es el ultimo marco el que debo leer, leo lo que falta
 				else if(contador == cantidadPaginas){
-					pthread_rwlock_rdlock(&rw_memoria); //agregado
 					memmove(leido + posicionDondeLeer, self->memoria + marco->inicio, tamanio - faltaLeer);
-					pthread_rwlock_unlock(&rw_memoria); //agregado
 				}
 
 			}
 			//Si solo debo leer un marco, leo directo
 			else
-				pthread_rwlock_rdlock(&rw_memoria); //agregado
 				memmove(leido, self->memoria + marco->inicio + direccionReal.desplazamiento, tamanio);
-				pthread_rwlock_unlock(&rw_memoria); //agregado
 
 			contador++;
 		}
@@ -593,9 +577,8 @@ int traerPaginaDeDiscoAMemoria(int pid, int numeroSegmento, int numeroPagina){
 	}
 
 	void copiarPaginaAMemoriaYEliminarDeDisco(t_marco *marco){
-		pthread_rwlock_wrlock(&rw_memoria); //agregado
+
 		memcpy(self->memoria + marco->inicio, buffer, TAMANIO_PAGINA);
-		pthread_rwlock_unlock(&rw_memoria); //agregado
 		borrarPaginaDeDisco(pid, numeroSegmento, numeroPagina);
 
 		log_info(self->logMSP, "Se ha cargado la Pagina %d del Segmento %d del PID %d en memoria correctamente", numeroPagina, numeroSegmento, pid);
@@ -758,9 +741,7 @@ t_marco *sustituirPaginaPorCLOCK_MODIFICADO(){
 }
 
 void borrarMarcoDeMemoria(t_marco *marco){
-	pthread_rwlock_wrlock(&rw_memoria); //agregado
 	memset(self->memoria + marco->inicio, 0, TAMANIO_PAGINA);
-	pthread_rwlock_unlock(&rw_memoria); //agregado
 }
 
 void seReferencioElMarco(t_marco *marco){
@@ -838,9 +819,8 @@ void llevarPaginaADisco(t_marco *marco, int pid, int numeroSegmento, int numeroP
 	absolute_path = armarPathArchivo(pid, numeroSegmento, numeroPagina);
 
 	FILE* file = fopen(absolute_path, "wb");
-	pthread_rwlock_rdlock(&rw_memoria); //agregado
+
 	memcpy(leido, self->memoria + marco->inicio, TAMANIO_PAGINA);
-	pthread_rwlock_unlock(&rw_memoria); //agregado
 
 	fwrite (leido, 1, TAMANIO_PAGINA, file);
 	fclose(file);
