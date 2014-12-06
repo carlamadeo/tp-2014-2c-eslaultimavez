@@ -125,7 +125,7 @@ int GETM_ESO(t_CPU *self){
 			estado_bloque = estado_lectura;
 			log_info(self->loggerCPU, "CPU: GETM ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
-			free(lecturaMSP);
+			//free(lecturaMSP);
 
 		}
 
