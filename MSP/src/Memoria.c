@@ -16,6 +16,7 @@
 
 t_MSP *self;
 pthread_rwlock_t rw_memoria;
+pthread_rwlock_t rw_estrutura;
 
 /***************************************************************************************************\
  *								--Comienzo Creacion Segmento--									 	 *
@@ -70,7 +71,7 @@ uint32_t crearSegmentoConSusPaginas(int pid, int cantidadPaginas, int tamanio){
 		//Agrego este porque si estoy en la mitad de creacion del segmento, y a su vez me piden escribir ese segmento
 		//no voy a tener cargados todos los datos y se va a generar un error
 
-		//pthread_rwlock_wrlock(&rw_memoria); cambiar por estructura
+		pthread_rwlock_wrlock(&rw_estrutura); cambiar por estructura
 
 		//Si el programa no tiene segmentos, a numero de segmento le pongo 0
 		if(list_is_empty(programa->tablaSegmentos))
@@ -101,7 +102,7 @@ uint32_t crearSegmentoConSusPaginas(int pid, int cantidadPaginas, int tamanio){
 		else
 			log_info(self->logMSP, "Segmento creado correctamente. PID: %d, Tamanio: %d, Direccion base: %0.8p", pid, tamanio, direccionBase);
 
-		//pthread_rwlock_unlock(&rw_memoria);
+		pthread_rwlock_unlock(&rw_estrutura);
 
 		return direccionBase;
 	}
