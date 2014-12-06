@@ -68,7 +68,7 @@ uint32_t crearSegmentoConSusPaginas(int pid, int cantidadPaginas, int tamanio){
 	if(programa != NULL){
 
 		//Agrego este porque si estoy en la mitad de creacion del segmento, y a su vez me piden escribir ese segmento
-		//no voy a tener cargados todos los datos y se va a generar un error
+		//no voy a tener cargados todos los datos y se va a generar un error. Aca en realidad hay que agregar semaforo estructura.
 
 		pthread_rwlock_wrlock(&rw_memoria);
 
