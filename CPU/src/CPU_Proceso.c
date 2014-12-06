@@ -56,25 +56,17 @@ int main(int argc, char** argv) {
 			switch(valorCPU){
 
 			case FINALIZAR_PROGRAMA_EXITO:
-				num = cpuFinalizarProgramaExitoso(self, self->tcb);
+				num = cpuFinalizarProgramaExitoso(self);
 
 				if(num == MENSAJE_DE_ERROR){
-					log_error(self->loggerCPU, "CPU: error al mandar un FINALIZAR_PROGRAMA_EXITO a la consola");
+					//TODO Mandar a la consola
 				}
 
 				break;
 			case SIN_ERRORES:
 				//ALE: si el tcb ya fue enviado por XXXX aca lo vuelve a enviar!!! NO CONTEPLA ESE CASO
 				cpuEnviarPaqueteAPlanificador(self, CAMBIO_DE_CONTEXTO);
-				log_error(self->loggerCPU, "CPU: envia en el descriptor: %d", self->socketPlanificador->socket->descriptor);
-				t_TCB_CPU* tcbProcesado = malloc(sizeof(t_TCB_CPU));
-				tcbProcesado = self->tcb;
-
-				//se mande un TCB a CPU
-				//printTCBCPU(tcbProcesado);
-				socket_sendPaquete(self->socketPlanificador->socket, TCB_NUEVO,sizeof(t_TCB_CPU), tcbProcesado);
-				log_info(self->loggerCPU, "CPU: envia un CAMBIO_DE_CONTEXTO");
-				free(tcbProcesado);
+				cpuCambioContexto(self);
 				break;
 
 			case INTERRUPCION:

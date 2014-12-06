@@ -60,8 +60,8 @@ void recibirUnaDireccion(t_kernel* self,t_socket *socketNuevaConexionCPU,t_inter
 void recibirTCB(t_kernel* self,t_socket *socketNuevaConexionCPU,t_interrupcionKernel* unaInterripcion);
 void agregarEnListaDeCPU(t_kernel* self,int id,  t_socket* socketCPU);
 void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente);
-void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self,t_socket *socketNuevaConexionCPU);
-void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket *socketNuevaConexionCPU);
+void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_cpu *cpu, t_socket_paquete *paqueteTCB);
+void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_cpu *cpu, t_socket_paquete *paqueteTCB);
 void ejecutar_UNA_INTERRUPCION(t_kernel* self,t_socket *socketNuevaConexionCPU);
 void printfEntradaStandar(t_entrada_estandarKenel* entrada);
 void ejecutar_UNA_ENTRADA_STANDAR(t_kernel* self, t_socket *socketNuevaConexionCPU);

@@ -118,7 +118,7 @@ void planificadorEscucharConexionesCPU(t_kernel* self){
 		read_fds = master;
 		//printf("antes select: %d\n",  1111);
 		int selectResult = select(fdmax + 1, &read_fds, NULL, NULL, NULL);
-		log_info(self->loggerPlanificador,"Planificador: Select = %d",selectResult);
+		log_info(self->loggerPlanificador,"Planificador: Select = %d", selectResult);
 		//printf("after select: %d\n",  1111);
 		if (selectResult == -1){
 			log_error(self->loggerPlanificador, "Planificador: Error en el select del Planificador.");
@@ -215,45 +215,46 @@ void atenderNuevaConexionCPU(t_kernel* self, t_socket* socketNuevoCliente, fd_se
 }
 
 
-void atenderCPU(t_kernel* self,t_socket *socketNuevaConexionCPU, t_cpu* cpu, fd_set* master){
+void atenderCPU(t_kernel* self, t_socket *socketNuevaConexion, t_cpu *cpu, fd_set* master){
 
-	log_info(self->loggerPlanificador, "Planificador: LISTO PARA ATENDER CPUs" );
-	log_error(self->loggerPlanificador, "Planificador: cpu->socket->descriptor:%d", cpu->socket->descriptor);
-	t_socket_paquete *paqueteCPUAtendido = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-	if (socket_recvPaquete(cpu->socket, paqueteCPUAtendido)>0){
+	t_socket_paquete *paqueteCPUAtendido = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+
+	if (socket_recvPaquete(socketNuevaConexion, paqueteCPUAtendido) > 0){
 
 		printf("Valor para el switch: %d\n", paqueteCPUAtendido->header.type);
 
 		switch(paqueteCPUAtendido->header.type){
 
 		case CAMBIO_DE_CONTEXTO:
-			ejecutar_UN_CAMBIO_DE_CONTEXTO(self, socketNuevaConexionCPU);
+			log_info(self->loggerPlanificador, "Planificador: Recibe CAMBIO_DE_CONTEXTO");
+			ejecutar_UN_CAMBIO_DE_CONTEXTO(self, cpu, paqueteCPUAtendido);
 			break;
 		case FINALIZAR_PROGRAMA_EXITO:
-			ejecutar_FINALIZAR_PROGRAMA_EXITO(self, socketNuevaConexionCPU);
+			log_info(self->loggerPlanificador, "Planificador: Recibe FINALIZAR_PROGRAMA_EXITO");
+			ejecutar_FINALIZAR_PROGRAMA_EXITO(self, cpu, paqueteCPUAtendido);
 			break;
 		case MENSAJE_DE_ERROR:
 			log_info(self->loggerPlanificador, "Planificador: Recibe un MENSAJE_DE_ERROR");
 			//TODO Falta enviarle a la consola el mensaje de error
 			break;
 		case INTERRUPCION:
-			ejecutar_UNA_INTERRUPCION(self, socketNuevaConexionCPU);
+			//ejecutar_UNA_INTERRUPCION(self, cpu);
 			break;
 		default:
 			log_error(self->loggerPlanificador, "Planificador:Conexión cerrada con CPU.");
-			FD_CLR(cpu->socket->descriptor, master);
-			close(cpu->socket->descriptor);
+			FD_CLR(socketNuevaConexion->descriptor, master);
+			close(socketNuevaConexion->descriptor);
 			break;
 		}
 	}else{
-		ejecutar_DESCONECTAR_CPU(self, socketNuevaConexionCPU,cpu,master);
+		//ejecutar_DESCONECTAR_CPU(self, cpu, master);
 	}//fin switch(paqueteCPU->header.type)
 
 	socket_freePaquete(paqueteCPUAtendido);
 }
 
 
-void ejecutar_DESCONECTAR_CPU(t_kernel* self,t_socket *socketNuevaConexionCPU, t_cpu* cpu, fd_set* master){
+void ejecutar_DESCONECTAR_CPU(t_kernel* self, t_cpu* cpu, fd_set* master){
 
 	//1) Primer paso, se elimina de conjunto maestro
 	FD_CLR(cpu->socket->descriptor, master);
@@ -267,8 +268,6 @@ void ejecutar_DESCONECTAR_CPU(t_kernel* self,t_socket *socketNuevaConexionCPU, t
 	sem_wait(&mutex_cpuExec);
 	t_cpu* cpuRemovido = list_remove_by_condition(listaDeCPUExec, (void*)esCpu);
 	sem_post(&mutex_cpuExec);
-
-
 
 	//3) Tercer paso, se pregunta si tiene programa ejecutando
 	if(cpuRemovido!=NULL){
@@ -294,8 +293,6 @@ void ejecutar_DESCONECTAR_CPU(t_kernel* self,t_socket *socketNuevaConexionCPU, t
 	log_info(self->loggerPlanificador,"Planificador:  tamanio de la lista de CPU Exec %d", list_size(listaDeCPUExec));
 	log_info(self->loggerPlanificador,"Planificador:  tamanio de la lista de CPU Libres %d", list_size(listaDeCPULibres));
 }
-
-
 
 
 t_cpu* obtenerCPUSegunDescriptor(t_kernel* self, int descriptor){

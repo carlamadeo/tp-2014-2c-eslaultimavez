@@ -128,7 +128,7 @@ int cpuRecibirQuantum(t_CPU *self);
 void cpuEnviarPaqueteAPlanificador(t_CPU *self, int paquete);
 void cpuCambioContexto(t_CPU *self);
 void cpuEnviaInterrupcion(t_CPU *self);
-int cpuFinalizarProgramaExitoso(t_CPU *self, t_TCB_CPU* algo);
+int cpuFinalizarProgramaExitoso(t_CPU *self);
 int cpuSolicitarEntradaEstandar(t_CPU *self, int tamanio, int tipo);
 int reciboEntradaEstandarINT(t_CPU *self, int *recibido);
 int reciboEntradaEstandarCHAR(t_CPU *self, char *recibido, int tamanio);

@@ -33,7 +33,7 @@ void cpuRealizarHandshakeConKernel(t_CPU *self){
 	if (socket_recvPaquete(self->socketPlanificador->socket, paquete) >= 0) {
 
 		if(paquete->header.type == HANDSHAKE_PLANIFICADOR)
-			log_info(self->loggerCPU, "CPU: Recibe del Planificador HANDSHAKE_PLANIFICADOR");
+			log_info(self->loggerCPU, "CPU: Recibe del Planificador HANDSHAKE_PLANIFICADOR con descriptor %d");
 
 		else
 			log_error(self->loggerCPU, "CPU: Error al recibir HANDSHAKE_PLANIFICADOR del Planificador");
@@ -103,10 +103,10 @@ int cpuRecibirQuantum(t_CPU *self){
 
 void cpuEnviarPaqueteAPlanificador(t_CPU *self, int paquete){
 
-	if (socket_sendPaquete(self->socketPlanificador->socket, paquete, 0, NULL) <= 0)
-		log_info(self->loggerCPU, "CPU: Fallo envio de CPU_TERMINE_UNA_LINEA, PID: %d", self->tcb->pid);
+	if (socket_sendPaquete(self->socketPlanificador->socket, CAMBIO_DE_CONTEXTO, 0, NULL) <= 0)
+		log_error(self->loggerCPU, "CPU: Fallo envio de paquete a Kernel, PID: %d", self->tcb->pid);
 	else
-		log_info(self->loggerCPU, "CPU: envia al Planificador un paquete N°: %d", paquete);
+		log_info(self->loggerCPU, "CPU: Envia al Planificador un paquete N°: %d", paquete);
 
 }
 
@@ -116,7 +116,7 @@ void cpuCambioContexto(t_CPU *self){
 	//antes de hacer el send, deberia actualizarce el STACK
 	//el stack sufre modificaciones cuando se ejecutan las instrucciones ESO, no se actualiza, lo que se actualiza es el TCB.
 	if (socket_sendPaquete(self->socketPlanificador->socket, CAMBIO_DE_CONTEXTO, sizeof(t_TCB_CPU), self->tcb) <= 0)
-		log_error(self->loggerCPU, "CPU: Falló cambio de conexto");
+		log_error(self->loggerCPU, "CPU: Falló cambio de contexto");
 
 	else
 		log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO");
@@ -152,22 +152,22 @@ void cpuEnviaInterrupcion(t_CPU *self){
 }
 
 
-int cpuFinalizarProgramaExitoso(t_CPU *self, t_TCB_CPU* algo){
+int cpuFinalizarProgramaExitoso(t_CPU *self){
 
 	log_info(self->loggerCPU, "CPU: Envia FINALIZAR_PROGRAMA_EXITO al Kernel!!!!");
 
 	socket_sendPaquete(self->socketPlanificador->socket, FINALIZAR_PROGRAMA_EXITO, 0, NULL);
 
-	if (socket_sendPaquete(self->socketPlanificador->socket, FINALIZAR_PROGRAMA_EXITO, sizeof(t_TCB_CPU), algo) <= 0){
+	if (socket_sendPaquete(self->socketPlanificador->socket, FINALIZAR_PROGRAMA_EXITO, sizeof(t_TCB_CPU), self->tcb) <= 0){
 		log_error(self->loggerCPU, "CPU: Error de finalizacion de proceso %d", self->tcb->pid);
 		return MENSAJE_DE_ERROR;
 	}
 
 	else{
-		log_info(self->loggerCPU, "CPU: Finalizacion de proceso correctamente %d", self->tcb->pid);
+		log_info(self->loggerCPU, "CPU: Finalizacion de proceso correctamente PID = %d", self->tcb->pid);
 		return SIN_ERRORES;
-
 	}
+
 }
 
 

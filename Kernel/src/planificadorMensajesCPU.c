@@ -26,23 +26,11 @@ void ejecutar_CPU_TERMINE_UNA_LINEA (t_kernel* self,t_socket* socketNuevoCliente
 }
 
 
-void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket *socketNuevaConexionCPU){
-
-	log_info(self->loggerPlanificador, "Planificador: Recibe un FINALIZAR_PROGRAMA_EXITO" );
+void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_cpu *cpu, t_socket_paquete *paqueteTCB){
 
 	//1) Primer paso, se recibe un TCB
 
-	t_socket_paquete *paqueteFinalizado = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 	t_TCB_Kernel* tcbFinalizado = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
-
-	if(socket_recvPaquete(socketNuevaConexionCPU, paqueteFinalizado) >= 0){
-		tcbFinalizado = (t_TCB_Kernel*) paqueteFinalizado->data;
-		//printTCBKernel(tcbFinalizado);
-	}
-
-	else
-		log_error(self->loggerPlanificador, "Planificador: Error al rebicir FINALIZAR_PROGRAMA_EXITO.");
-
 
 	//2) Segundo se obtiene el socket del programaBeso
 	//printf("COLA_EXIT:Buscar PID: %d TID: %d\n",tcbFinalizado->pid,tcbFinalizado->tid);
@@ -53,8 +41,8 @@ void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket *socketNuevaCone
 
 	//printf("listaDeProgramasDisponibles Cantidad: %d\n", list_size(listaDeProgramasDisponibles));
 	t_programaEnKernel* unTcbProcesado = list_find(listaDeProgramasDisponibles, (void*)_tcbParaExit);
+	if(unTcbProcesado != NULL){
 	//printf("COLA_EXIT:Buscar PID: %d TID: %d\n",unTcbProcesado->programaTCB->pid,unTcbProcesado->programaTCB->tid);
-
 
 	//3) Tercero, mando un mensja
 	socket_sendPaquete(unTcbProcesado->socketProgramaConsola, FINALIZAR_PROGRAMA_EXITO, 0 , NULL);
@@ -63,60 +51,52 @@ void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket *socketNuevaCone
 	list_add(cola_exit, unTcbProcesado);
 
 	printf("COLA_EXIT: Guarda PID: %d TID: %d\n",unTcbProcesado->programaTCB->pid,unTcbProcesado->programaTCB->tid);
+	}
+
+	else{
+		log_error(self->loggerPlanificador, "Planificador: No se encontro ningun Programa. Esto es en ejecutar_FINALIZAR_PROGRAMA_EXITO");
+	}
 }
 
 
-void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_socket *socketNuevaConexionCPU){
+void ejecutar_UN_CAMBIO_DE_CONTEXTO(t_kernel* self, t_cpu *cpu, t_socket_paquete *paqueteTCB){
 
 	//1) Primer paso, se lo pone a final de READY
-	t_socket_paquete *paqueteTCB = (t_socket_paquete*) malloc(sizeof(t_socket_paquete));
 	t_TCB_Kernel* unTCBNuevo = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
 
-	if(socket_recvPaquete(socketNuevaConexionCPU, paqueteTCB) >= 0){
+	unTCBNuevo = (t_TCB_Kernel*) paqueteTCB->data;
+	t_programaEnKernel *unProgramaCPU = obtenerProgramaDeReady(unTCBNuevo);
 
-		if(paqueteTCB->header.type == TCB_NUEVO){
+	if(unProgramaCPU != NULL){
 
-			unTCBNuevo = (t_TCB_Kernel*) paqueteTCB->data;
-			t_programaEnKernel *unProgramaCPU = obtenerProgramaDeReady(unTCBNuevo);
+		list_add(cola_ready, unProgramaCPU);
 
-			if(unProgramaCPU != NULL){
+		//2) Segundo paso, se verifica que la cola de READY no esta vacia
 
-				list_add(cola_ready, unProgramaCPU);
+		if(list_size(cola_ready) > 0){
 
-				//2) Segundo paso, se verifica que la cola de READY no esta vacia
+			// se remueve el primer elemento de ready
+			t_programaEnKernel *unProgramaTcbReady = list_remove(cola_ready, 0); //SE REMUEVE EL PRIMER PROGRAMA DE NEW
 
-				if(list_size(cola_ready) > 0){
+			t_QUANTUM* unQuamtum = malloc(sizeof(t_QUANTUM));
+			unQuamtum->quantum = self->quantum;
 
-					// se remueve el primer elemento de ready
-					t_programaEnKernel *unProgramaTcbReady = list_remove(cola_ready, 0); //SE REMUEVE EL PRIMER PROGRAMA DE NEW
+			//se manda un QUANTUM a CPU
+			socket_sendPaquete(cpu->socket, QUANTUM, sizeof(t_QUANTUM), unQuamtum);
+			log_info(self->loggerPlanificador, "Planificador: Envia un Quantum: %d", unQuamtum->quantum);
 
-					t_QUANTUM* unQuamtum = malloc(sizeof(t_QUANTUM));
-					unQuamtum->quantum = self->quantum;
+			//se mande un TCB a CPU
+			socket_sendPaquete(cpu->socket, TCB_NUEVO, sizeof(t_TCB_Kernel), unProgramaTcbReady->programaTCB);
+			log_info(self->loggerPlanificador, "Planificador: Envia TCB_NUEVO con PID: %d TID:% d KM:% d", unProgramaTcbReady->programaTCB->pid, unProgramaTcbReady->programaTCB->tid, unProgramaTcbReady->programaTCB->km );
 
-					//se manda un QUANTUM a CPU
-					socket_sendPaquete(socketNuevaConexionCPU, QUANTUM, sizeof(t_QUANTUM), unQuamtum);
-					log_info(self->loggerPlanificador, "Planificador: envia un quantum: %d", unQuamtum->quantum);
-
-					//se mande un TCB a CPU
-					socket_sendPaquete(socketNuevaConexionCPU, TCB_NUEVO,sizeof(t_TCB_Kernel), unProgramaTcbReady->programaTCB);
-					log_info(self->loggerPlanificador, "Planificador: envia TCB_NUEVO con PID: %d TID:%d KM:%d", unProgramaTcbReady->programaTCB->pid, unProgramaTcbReady->programaTCB->tid, unProgramaTcbReady->programaTCB->km );
-
-				}
-
-				else{
-					// si no corresponde se queda bloqueado
-					log_debug(self->loggerPlanificador, "Planificador: bloqueado, sin Programas Beso. Error, jorge");
-					sem_wait(&mutex_new);
-				}
-			}
 		}
 
-		else
-			log_error(self->loggerPlanificador, "Planificador: Error al recibir de CPU TCB_NUEVO");
 	}
 
+
 	else
-		log_error(self->loggerPlanificador, "Planificador: Error al recibir un paquete del CPU");
+		log_error(self->loggerPlanificador, "Planificador: Error al recibir de CPU TCB_NUEVO");
+
 
 	//free(unTCBPadre);
 	//socket_freePaquete(paqueteContexto);
@@ -160,7 +140,9 @@ void recibirTCB(t_kernel* self,t_socket *socketNuevaConexionCPU,t_interrupcionKe
 		}else
 			log_error(self->loggerPlanificador, "CPU: error al recibir un TCB Interrupcion.");
 
-	}else
+	}
+
+	else
 		log_error(self->loggerPlanificador, "CPU: Error al recibir un paqueteInterrupcionTCB");
 
 	free(paqueteInterrupcionTCB);
