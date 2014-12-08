@@ -10,6 +10,7 @@ int idCPU = 250;
 
 void kernel_comenzar_Planificador(t_kernel* self){
 
+
 	iretThreadPlanificador = pthread_create(&hiloAtiendeCPU, NULL, (void*) planificadorEscucharConexionesCPU, self);
 	if(iretThreadPlanificador) {
 		fprintf(stderr,"Error - pthread_create() return code: %d\n",iretThread);
@@ -32,37 +33,43 @@ void pasarTCB_Ready_A_Exec(t_kernel* self){
 	log_debug(self->loggerPlanificador,"Planificador: Comienza a ejecutarse Hilo de Ready a Exec.");
 
 	while(1){
+
 		sem_wait(&sem_B);
 		sem_wait(&sem_C);
 
 		log_debug(self->loggerPlanificador,"Planificador: Comienza a ejecutarse Hilo de Ready a Exec.");
-
 		log_info(self->loggerPlanificador,"Planificador: Se encuentra un proceso en ready");
-
 		log_info(self->loggerPlanificador,"Planificador: Se encuentra una CPU libre");
 
 		pthread_mutex_lock(&readyMutex);
 		t_programaEnKernel* programaParaExec = list_remove(cola_ready, 0); //se remueve el primer elemento de la cola READY
 		pthread_mutex_unlock(&readyMutex);
 
-		log_info(self->loggerPlanificador,"Planificador: Mando a ejecutar el proceso Beso con PID: %d TID: %d KM: %d", programaParaExec->programaTCB->pid, programaParaExec->programaTCB->tid, programaParaExec->programaTCB->km);
+		if(programaParaExec != NULL){
+			log_info(self->loggerPlanificador,"Planificador: Mando a ejecutar el proceso Beso con PID: %d TID: %d KM: %d", programaParaExec->programaTCB->pid, programaParaExec->programaTCB->tid, programaParaExec->programaTCB->km);
 
-		pthread_mutex_lock(&execMutex);
-		list_add(cola_exec, programaParaExec); // se agrega el programa en cola EXEC
-		pthread_mutex_unlock(&execMutex);
+			pthread_mutex_lock(&execMutex);
+			list_add(cola_exec, programaParaExec); // se agrega el programa en cola EXEC
+			pthread_mutex_unlock(&execMutex);
 
-		log_info(self->loggerPlanificador,"Planificador: Cantidad de exec %d", list_size(cola_exec));
-		log_info(self->loggerPlanificador,"Planificador: Cantidad CPU LIBRE = %d / CPU EXEC = %d", list_size(listaDeCPULibres), list_size(listaDeCPUExec));
+			log_info(self->loggerPlanificador,"Planificador: Cantidad de exec %d", list_size(cola_exec));
+			log_info(self->loggerPlanificador,"Planificador: Cantidad CPU LIBRE = %d / CPU EXEC = %d", list_size(listaDeCPULibres), list_size(listaDeCPUExec));
 
-		t_cpu* cpuLibre = list_get(listaDeCPULibres, 0);
-		cpuLibre->TCB = programaParaExec->programaTCB;
-		list_add(listaDeCPUExec, cpuLibre);
-		log_info(self->loggerPlanificador,"Planificador: Cantidad CPU LIBRE = %d / CPU EXEC = %d",list_size(listaDeCPULibres), list_size(listaDeCPUExec));
+			t_cpu* cpuLibre = list_remove(listaDeCPULibres, 0);
+			cpuLibre->TCB = programaParaExec->programaTCB;
+			list_add(listaDeCPUExec, cpuLibre);
+			log_info(self->loggerPlanificador,"Planificador: Cantidad CPU LIBRE = %d / CPU EXEC = %d",list_size(listaDeCPULibres), list_size(listaDeCPUExec));
 
-		mandarEjecutarPrograma(self, programaParaExec, cpuLibre->socket);
+			mandarEjecutarPrograma(self, programaParaExec, cpuLibre->socket);
+
+			pasarCPUdeExecALibre(cpuLibre);
+
+		}
+
+		else{
+			printf("HUBO UN PROBLEMA EN LA MULTIPROGRAMACION\n");
+		}
 	}
-
-
 
 }
 
@@ -71,7 +78,7 @@ void mandarEjecutarPrograma(t_kernel* self, t_programaEnKernel* programa, t_sock
 
 	t_TCB_Kernel* unTCBaEXEC = malloc (sizeof(t_TCB_Kernel));
 	unTCBaEXEC = programa->programaTCB;
-	log_info(self->loggerPlanificador,"PID = %d CURSOR POINTER= %d", programa->programaTCB->pid,programa->programaTCB->puntero_instruccion);
+	log_info(self->loggerPlanificador,"PID = %d CURSOR POINTER = %d", programa->programaTCB->pid, programa->programaTCB->puntero_instruccion);
 
 	t_QUANTUM* unQuantum = malloc(sizeof(t_QUANTUM));
 	unQuantum->quantum = self->quantum;
@@ -81,12 +88,13 @@ void mandarEjecutarPrograma(t_kernel* self, t_programaEnKernel* programa, t_sock
 	log_debug(self->loggerPlanificador, "Planificador: Envia un quantum: %d", unQuantum->quantum);
 
 	if(socket_sendPaquete(socketCPU, TCB_NUEVO, sizeof(t_TCB_Kernel), unTCBaEXEC) > 0) ////CPU_NUEVO_PCB
-		log_info(self->loggerPlanificador,"Planificador: envio el TCB  a ejecutar en una CPU");
+		log_info(self->loggerPlanificador,"Planificador: Envia el TCB con direccion %0.8p a ejecutar en una CPU", unTCBaEXEC->puntero_instruccion);
 
 	else
-		log_info(self->loggerPlanificador,"Planificador: Error el Enviar a ejecutar un TCB a CPU");
+		log_info(self->loggerPlanificador,"Planificador: Error el enviar a ejecutar un TCB a CPU");
 
 }
+
 
 void planificadorEscucharConexionesCPU(t_kernel* self){
 
@@ -219,37 +227,83 @@ void atenderCPU(t_kernel* self, t_socket *socketNuevaConexion, t_cpu *cpu, fd_se
 
 	t_socket_paquete *paqueteCPUAtendido = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
+	//t_interrupcionKernel* interrupcion = malloc(sizeof(t_interrupcionKernel));
+
 	if (socket_recvPaquete(socketNuevaConexion, paqueteCPUAtendido) > 0){
 
-		printf("Valor para el switch: %d\n", paqueteCPUAtendido->header.type);
+		//removerCPUdeLibreYPasarlaAExec(cpu);
+
+		printf("Valor para el switch ACA: %d\n", paqueteCPUAtendido->header.type);
 
 		switch(paqueteCPUAtendido->header.type){
 
-		case CAMBIO_DE_CONTEXTO:
-			log_info(self->loggerPlanificador, "Planificador: Recibe CAMBIO_DE_CONTEXTO");
-			ejecutar_UN_CAMBIO_DE_CONTEXTO(self, cpu, paqueteCPUAtendido);
+		case TERMINAR_QUANTUM:
+			log_info(self->loggerPlanificador, "Planificador: Recibe TERMINAR_QUANTUM");
+			ejecutar_TERMINAR_QUANTUM(self, paqueteCPUAtendido);
 			break;
+
 		case FINALIZAR_PROGRAMA_EXITO:
 			log_info(self->loggerPlanificador, "Planificador: Recibe FINALIZAR_PROGRAMA_EXITO");
-			ejecutar_FINALIZAR_PROGRAMA_EXITO(self, cpu, paqueteCPUAtendido);
+			ejecutar_FINALIZAR_PROGRAMA_EXITO(self, paqueteCPUAtendido);
 			break;
+
 		case MENSAJE_DE_ERROR:
 			log_info(self->loggerPlanificador, "Planificador: Recibe un MENSAJE_DE_ERROR");
 			//TODO Falta enviarle a la consola el mensaje de error
 			break;
+
 		case INTERRUPCION:
-			//ejecutar_UNA_INTERRUPCION(self, cpu);
+			log_info(self->loggerPlanificador, "Planificador: Recibe una INTERRUPCION");
+			ejecutar_UNA_INTERRUPCION(self, paqueteCPUAtendido);
 			break;
+
+		case TERMINAR_INTERRUPCION:
+			log_info(self->loggerPlanificador, "Planificador: Recibe TERMINAR_INTERRUPCION");
+			ejecutar_FIN_DE_INTERRUPCION(self, paqueteCPUAtendido);
+			break;
+
+		case ENTRADA_ESTANDAR:
+			log_info(self->loggerPlanificador, "Planificador: Recibe una ENTRADA_ESTANDAR");
+			ejecutar_UNA_ENTRADA_ESTANDAR(self, cpu, paqueteCPUAtendido);
+			break;
+
+		case SALIDA_ESTANDAR:
+			log_info(self->loggerPlanificador, "Planificador: SALIDA ESTANDAR");
+			ejecutar_UNA_SALIDA_ESTANDAR(self, cpu, paqueteCPUAtendido);
+			break;
+
+		case CREAR_HILO:
+			log_info(self->loggerPlanificador, "Planificador: CREAR_HILO");
+			ejecutar_UN_CREAR_HILO(self, paqueteCPUAtendido);
+			break;
+
+		case JOIN_HILO:
+			log_info(self->loggerPlanificador, "Planificador: JOIN");
+			ejecutar_UN_JOIN_HILO(self, paqueteCPUAtendido);
+			break;
+
+		case BLOK_HILO:
+			log_info(self->loggerPlanificador, "Planificador: BLOCK_HILO");
+			ejecutar_UN_BLOCK_HILO(self, paqueteCPUAtendido);
+			break;
+
+		case WAKE_HILO:
+			log_info(self->loggerPlanificador, "Planificador: WAKE_HILO");
+			ejecutar_UN_WAKE_HILO(self, paqueteCPUAtendido);
+			break;
+
 		default:
-			log_error(self->loggerPlanificador, "Planificador:Conexión cerrada con CPU.");
-			FD_CLR(socketNuevaConexion->descriptor, master);
-			close(socketNuevaConexion->descriptor);
+			log_info(self->loggerPlanificador, "Planificador: Se envia un mensaje de error a la Consola");
+			ejecutar_UN_MENSAJE_DE_ERROR(self, paqueteCPUAtendido);
 			break;
 		}
-	}else{
+	}
+
+
+
+	else{
 		//ejecutar_DESCONECTAR_CPU(self, cpu, master);
 	}//fin switch(paqueteCPU->header.type)
-
 	socket_freePaquete(paqueteCPUAtendido);
 }
 
@@ -338,21 +392,21 @@ t_programaEnKernel* obtenerTCBdeReady(t_kernel* self){
 
 	return NULL;
 }
-//t_TCB_Kernel* test_TCB (){
-//	t_TCB_Kernel* test_TCB = malloc(sizeof(t_TCB_Kernel));
+//t_TCB_Kernel* test_TCB_Kernel (){
+//	t_TCB_Kernel* test_TCB_Kernel = malloc(sizeof(t_TCB_Kernel));
 //
-//	test_TCB->pid= 0;
-//	test_TCB->tid= 523;
-//	test_TCB->km = 1;
-//	test_TCB->base_segmento_codigo = 1048576;
-//	test_TCB->tamanio_segmento_codigo = 1000;
-//	test_TCB->base_stack = 2097152;
-//	test_TCB->cursor_stack = 2097152;
-//	test_TCB->puntero_instruccion = 1048576;
-//	//test_TCB->registro_de_programacion = 56;
+//	test_TCB_Kernel->pid= 0;
+//	test_TCB_Kernel->tid= 523;
+//	test_TCB_Kernel->km = 1;
+//	test_TCB_Kernel->base_segmento_codigo = 1048576;
+//	test_TCB_Kernel->tamanio_segmento_codigo = 1000;
+//	test_TCB_Kernel->base_stack = 2097152;
+//	test_TCB_Kernel->cursor_stack = 2097152;
+//	test_TCB_Kernel->puntero_instruccion = 1048576;
+//	//test_TCB_Kernel->registro_de_programacion = 56;
 //
 //
-//	return test_TCB;
+//	return test_TCB_Kernel;
 //}
 
 void finalizarProgramaEnPlanificacion(t_programaEnKernel* programa){

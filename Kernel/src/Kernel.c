@@ -49,7 +49,9 @@ int main(int argc, char** argv) {
 	listaDeCPUExec = list_create();
 	listaDeCPULibres = list_create();
 	listaDeProgramasDisponibles = list_create();
-
+	listaDeRecursos = list_create();
+	listaSystemCall = list_create();
+	listaBloqueadosPorOtroHilo = list_create();
 
 
 	//se inician los semaforos
@@ -64,6 +66,7 @@ int main(int argc, char** argv) {
 	sem_init(&sem_A, 0, 0);
 	sem_init(&sem_B, 0, 0);
 	sem_init(&sem_C, 0, 0);
+	sem_init(&sem_interrupcion, 1, 1);
 
 
 	//hace el boot y le manda a la msp el archivo de SystemCall

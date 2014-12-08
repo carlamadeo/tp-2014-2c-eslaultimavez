@@ -12,24 +12,26 @@
 #include "codigoESO.h"
 
 
-
 char *instrucciones_eso[] = {"LOAD", "GETM", "SETM", "MOVR", "ADDR", "SUBR", "MULR", "MODR", "DIVR", "INCR", "DECR",
 		"COMP", "CGEQ", "CLEQ", "GOTO", "JMPZ", "JPNZ", "INTE", "SHIF", "NOPP", "PUSH", "TAKE", "XXXX", "MALC", "FREE", "INNN",
 		"INNC", "OUTN", "OUTC", "CREA", "JOIN", "BLOK", "WAKE"};
 
-int cpuProcesarTCB(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificador){
+int cpuProcesarTCB(t_CPU *self){
 
 	int tamanio = sizeof(char) * 4;
 	char *datosDeMSP = malloc(sizeof(tamanio) + 1);
-	int estado_ejecucion_instruccion, estado, encontrado, indice;
+	int estado_ejecucion_instruccion, estado, encontrado, indice, num;
+	int salida = 0;
+	int error = 0;
 
 	//COPIO LA ESTRUCTURA DEL TCB AL hilo_log
 	hilo_log = (t_hilo_log *) self->tcb;
 	ejecucion_hilo(hilo_log, self->quantum);
 
-	log_info(self->loggerCPU, "CPU: Comienzo a procesar el TCB de pid: %d", self->tcb->pid);
+	log_info(self->loggerCPU, "CPU: Comienzo a procesar el TCB de pid: %d y direccion: %0.8p", self->tcb->pid, self->tcb->puntero_instruccion);
 
-	while(((self->quantum > 0) || (self->tcb->km == 1))){
+	while(!salida && ((self->quantum > 0) || (self->tcb->km == 1))){
+
 		encontrado = 0;
 		indice = 0;
 
@@ -39,7 +41,7 @@ int cpuProcesarTCB(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificad
 
 		if ((estado < 0) && (estado != SIN_ERRORES)){
 			log_error(self->loggerCPU, "CPU: error al intentar cpuLeerMemoria, con N°: %d", estado);
-			return estado;
+			estado_ejecucion_instruccion = ERROR_DE_LECTURA_DE_MEMORIA;
 		}
 		//estado puede ser SIN_ERRORES o ERROR_POR_SEGMENTATION_FAULT
 		//TODO Ver manejo de errores con el Kernel!!!
@@ -48,7 +50,7 @@ int cpuProcesarTCB(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificad
 
 			if(strncmp(instrucciones_eso[indice], datosDeMSP, 4) == 0){
 				encontrado = 1;
-				estado_ejecucion_instruccion = ejecutar_instruccion(self, indice, serviciosAlPlanificador);
+				estado_ejecucion_instruccion = ejecutar_instruccion(self, indice);
 			}
 
 			indice++;
@@ -56,10 +58,41 @@ int cpuProcesarTCB(t_CPU *self, t_ServiciosAlPlanificador* serviciosAlPlanificad
 
 		self->quantum = self->quantum - 1;
 
+		if((self->quantum == 0) && (self->tcb->km == 0) && (estado_ejecucion_instruccion != INTERRUPCION) && (estado_ejecucion_instruccion != FINALIZAR_PROGRAMA_EXITO))
+			estado_ejecucion_instruccion = TERMINAR_QUANTUM;
+
+
+		switch(estado_ejecucion_instruccion){
+
+		case FINALIZAR_PROGRAMA_EXITO:
+			salida = 1;
+			if(self->tcb->km == 0)
+				num = cpuFinalizarProgramaExitoso(self);
+			else
+				cpuFinalizarInterrupcion(self);
+			break;
+
+		case TERMINAR_QUANTUM:
+			salida = 1;
+			cpuTerminarQuantum(self);
+			break;
+
+		case INTERRUPCION:
+			salida = 1;
+			break;
+
+		default:
+			enviarMensajeDeErrorAKernel(self, estado_ejecucion_instruccion);
+			salida = 1;
+			error = 1;
+			//Enviar a kernel para que mande a consola el problema
+			break;
+		}
 	}
 
 	free(datosDeMSP);
-	return estado_ejecucion_instruccion;
+	return error;
+
 }
 
 
@@ -80,7 +113,7 @@ int determinar_registro(char registro){
 }
 
 
-int ejecutar_instruccion(t_CPU *self, int linea, t_ServiciosAlPlanificador* serviciosAlPlanificador){
+int ejecutar_instruccion(t_CPU *self, int linea){
 	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 
 	int estado = 0;
@@ -91,8 +124,6 @@ int ejecutar_instruccion(t_CPU *self, int linea, t_ServiciosAlPlanificador* serv
 	cambio_registros(registros_cpu);
 	free(registros_cpu);
 
-	log_info(self->loggerCPU, "CPU: Se ejecutara la instruccion %s", instrucciones_eso[linea]);
-	log_info(self->loggerCPU, "CPU: Retardo de %d", self->retardo);
 	log_info(self->loggerCPU, "CPU: TCB KM %d", self->tcb->km);
 	usleep(self->retardo);
 
@@ -101,9 +132,7 @@ int ejecutar_instruccion(t_CPU *self, int linea, t_ServiciosAlPlanificador* serv
 	switch(linea){
 
 	case LOAD:
-		log_info(self->loggerCPU,"-----------------ANTES ESTADO LOAD --------------");
 		estado = LOAD_ESO(self);
-		log_info(self->loggerCPU,"-----------------DESPUES ESTADO LOAD == %d--------------",estado);
 		break;
 
 	case GETM:

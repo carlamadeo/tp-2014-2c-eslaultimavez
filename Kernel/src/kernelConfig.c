@@ -53,18 +53,14 @@ bool validarConfiguracionKernel(t_config* configKernel){
 
 void destruirConfiguracionKernel(t_kernel *self, t_config *configKernel){
 
-	//free(cola_new);
-	//free(cola_ready);
+	free(cola_new);
+	free(cola_ready);
 	free(cola_exec);
 	free(cola_block);
 	free(cola_exit);
 
-
-	free(cola_CPU_Disponibles);
-	free(cola_CPU_Libres);
 	free(listaDeCPUExec);
 	free(listaDeCPULibres);
-	free(listaCpu);
 	free(listaSystemCall);
 
 	free(self->tcbKernel);

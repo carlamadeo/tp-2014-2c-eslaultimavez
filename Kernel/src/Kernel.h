@@ -25,7 +25,7 @@ typedef struct {
 
 typedef struct {
 	int quantum;
-} t_QUANTUM;
+}t_QUANTUM;
 
 
 typedef struct {
@@ -43,7 +43,7 @@ typedef struct {
 	char* systemCalls;
 	int tamanioStack;
 	t_TCB_Kernel* tcbKernel;
-} t_kernel;
+}t_kernel;
 
 
 typedef struct {
@@ -55,15 +55,16 @@ typedef struct {
 typedef struct {
 	int motivo;
 	t_TCB_Kernel* tcbKernel;
-} t_procesoBloquea;
+}t_procesoBloquea;
+
 
 typedef struct {
 	int id;
 	t_TCB_Kernel* TCB;
 	t_socket* socket;
-} t_cpu;
+}t_cpu;
 
-//Guardan un TCB,Socket, ID
+//Guardan un TCB, Socket, ID
 t_list *listaDeProgramasDisponibles;
 t_list* cola_new;
 t_list* cola_ready;
@@ -71,20 +72,19 @@ t_list* cola_exec;
 t_list* cola_block; //POR CUATRO, bloqueado por systemCall, por recurso, por esperando un hilo
 t_list* cola_exit;
 
-//Guardan solo TCB para planificador
-t_list* cola_CPU_Disponibles;
-t_list* cola_CPU_Libres;
+//Guardan solo TCB para planificador (t_cpu)
 t_list* listaDeCPUExec;
 t_list* listaDeCPULibres;
-t_list* listaCpu;
 t_list* listaSystemCall;
-t_list* listaDeEsperaRecurso;
+t_list* listaDeRecursos;
+t_list *listaBloqueadosPorOtroHilo;
 
 
 // Semaforos
 sem_t sem_A;
 sem_t sem_B;
 sem_t sem_C;
+sem_t sem_interrupcion;
 sem_t mutex_new;
 sem_t mutex_block;      // Mutex cola Block
 sem_t mutex_ready;      // Mutex cola Ready

@@ -112,6 +112,7 @@ void escuchar_conexiones_programa(t_kernel* self){
 void pasarProgramaNewAReady(t_kernel* self){
 
 	log_debug(self->loggerLoader, "Loader: Comienza a ejecutarse hilo de New a Ready");
+
 	while(1){
 		sem_wait(&sem_A);
 		log_info(self->loggerLoader, "Loader: Comienza a ejecutarse hilo de New a Ready");
@@ -124,7 +125,7 @@ void pasarProgramaNewAReady(t_kernel* self){
 		programaParaReady = list_remove(cola_new, 0); //se remueve el primer elemento de la cola NEW
 		pthread_mutex_unlock(&newMutex);
 
-		log_info(self->loggerLoader, "Loader: Mueve de New a Ready el proceso con PID:%d TID:%d KM:%d",programaParaReady->programaTCB->pid,programaParaReady->programaTCB->tid,programaParaReady->programaTCB->km);
+		log_info(self->loggerLoader, "Loader: Mueve de New a Ready el proceso con PID:%d TID:%d KM:%d", programaParaReady->programaTCB->pid,programaParaReady->programaTCB->tid,programaParaReady->programaTCB->km);
 
 		pthread_mutex_lock(&readyMutex);
 		list_add(cola_ready, programaParaReady); // se agrega el programa buscado a la cola READY
@@ -167,7 +168,7 @@ void atenderProgramaConsola(t_kernel* self,t_programaEnKernel* programa, fd_set*
 
 	if ((socket_recvPaquete(programa->socketProgramaConsola, paqueteDesconectoPrograma)) < 0) {
 
-		log_error(self->loggerLoader, "El programa Beso con PID: %d TID: %d ha cerrado la conexion.", programa->programaTCB->pid,programa->programaTCB->tid);
+		log_debug(self->loggerLoader, "El programa Beso con PID: %d TID: %d ha cerrado la conexion.", programa->programaTCB->pid,programa->programaTCB->tid);
 		FD_CLR(programa->socketProgramaConsola->descriptor, master); // eliminar del conjunto maestro
 		close(programa->socketProgramaConsola->descriptor);
 

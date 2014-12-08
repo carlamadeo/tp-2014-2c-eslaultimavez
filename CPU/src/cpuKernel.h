@@ -8,7 +8,7 @@
 typedef struct {
 	t_TCB_CPU* tcb;
 	int quantum;
-} t_TCB_nuevo;
+} t_TCB_CPU_nuevo;
 
 /*
  * Nombre: t_entrada_estandar
@@ -34,7 +34,7 @@ typedef struct{
 
 typedef struct{
 	int pid;
-	char* cadena;
+	char cadena[1000];
 } t_salida_estandar;
 
 /*
@@ -46,13 +46,17 @@ typedef struct{
  * */
 
 typedef struct {
-	t_TCB_CPU *tcb;
-	uint32_t direccion;
+	int pid;
+	int tid;
+	short km;
+	uint32_t base_segmento_codigo;
+	int tamanio_segmento_codigo;
+	uint32_t puntero_instruccion;
+	uint32_t base_stack;
+	uint32_t cursor_stack;
+	int32_t registro_de_programacion[5];
+	uint32_t direccionKM;
 } t_interrupcion;
-
-typedef struct {
-	uint32_t direccion;
-} t_interrupcionDireccion;
 
 /*
  * Nombre: t_join
@@ -61,6 +65,7 @@ typedef struct {
  * */
 
 typedef struct {
+	int pid;
 	int tid_llamador;
 	int tid_esperar;
 } t_join;
@@ -74,7 +79,9 @@ typedef struct {
  * */
 
 typedef struct {
-	t_TCB_CPU* tcb;
+	int pid;
+	int tid;
+	short km;
 	int32_t id_recurso;
 } t_bloquear;
 
@@ -102,7 +109,7 @@ typedef struct {
 
 
 typedef struct {
-	t_TCB_nuevo* tcbNuevo;
+	t_TCB_CPU_nuevo* tcbNuevo;
 	t_entrada_estandar* entradaEstandar;
 	t_salida_estandar*  salidaEstandar;
 	t_interrupcion* instruccion;
@@ -112,6 +119,7 @@ typedef struct {
 	t_crea_hilo* crearHijo;
 } t_ServiciosAlPlanificador;
 
+
 typedef struct{
 	int numero;
 } t_entrada_numeroCPU;
@@ -120,19 +128,28 @@ typedef struct{
 	char entradaEstandar[TAMANIO_MAXIMO];
 } t_entrada_charCPU;
 
+typedef struct {
+	int pid;
+	int tid;
+	int identificadorError;
+} t_error;
 
+
+int cpuFinalizarInterrupcion(t_CPU *self);
 void cpuConectarConKernel(t_CPU *self);
 void cpuRealizarHandshakeConKernel(t_CPU *self);
 int cpuRecibirTCB(t_CPU *self);
 int cpuRecibirQuantum(t_CPU *self);
 void cpuEnviarPaqueteAPlanificador(t_CPU *self, int paquete);
-void cpuCambioContexto(t_CPU *self);
-void cpuEnviaInterrupcion(t_CPU *self);
+void cpuTerminarQuantum(t_CPU *self);
+int cpuEnviaInterrupcion(t_CPU *self);
+void cpuRecibeInterrupcion(t_CPU *self);
 int cpuFinalizarProgramaExitoso(t_CPU *self);
 int cpuSolicitarEntradaEstandar(t_CPU *self, int tamanio, int tipo);
 int reciboEntradaEstandarINT(t_CPU *self, int *recibido);
 int reciboEntradaEstandarCHAR(t_CPU *self, char *recibido, int tamanio);
-int cpuEnviarSalidaEstandar(t_CPU *self, char *salidaEstandar);
+int cpuEnviarSalidaEstandar(t_CPU *self, char *salidaEstandar, int tamanio);
+
 
 
 #endif /* CPUKERNEL_H_ */

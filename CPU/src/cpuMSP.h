@@ -52,5 +52,6 @@ int cpuCrearSegmento(t_CPU *self, int pid, int tamanio);
 int cpuDestruirSegmento(t_CPU *self, uint32_t direccionVirtual);
 int cpuEscribirMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int tamanio);
 int cpuLeerMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int tamanio);
+int cpuLeerMemoriaSinKM(t_CPU *self, uint32_t direccionVirtual, char *programa, int tamanio);
 
 #endif /* CPUMPS_H_ */

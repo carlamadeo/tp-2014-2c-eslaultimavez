@@ -306,8 +306,8 @@ int mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tam
 
 	//TODO eliminarlo para la entrega!!
 	//Esto es para imprimir en el log lo que se escribio en memoria
-	memset(mostrarBuffer, 0, tamanio);
-	memmove(mostrarBuffer, buffer, tamanio);
+	memset(mostrarBuffer, 0, tamanio + 1);
+	memcpy(mostrarBuffer, buffer, tamanio);
 	log_info(self->logMSP, "Se ha escrito correctamente en memoria: %s", mostrarBuffer);
 	
 	list_destroy(paginasAMemoria);
@@ -497,7 +497,7 @@ void buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *pagin
 	int contador = 1;
 	int faltaLeer = tamanio;
 
-	memset(leido, 0, tamanio);
+	memset(leido, 0, tamanio + 1);
 
 	void iterarPaginasParaLeer(t_pagina *pagina){
 

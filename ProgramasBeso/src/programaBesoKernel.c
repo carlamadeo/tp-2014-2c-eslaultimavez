@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <sys/sendfile.h>
 
+
 void consolaHacerConexionconLoader(t_programaBESO* self){
 
 	self->socketKernel = socket_createClient();
@@ -21,12 +22,13 @@ void consolaHacerConexionconLoader(t_programaBESO* self){
 
 }
 
+
 void realizarHandshakeConLoader(t_programaBESO* self){
 
 	t_socket_paquete *paquete = (t_socket_paquete*) malloc(sizeof(t_socket_paquete));
 
 	if (socket_sendPaquete(self->socketKernel->socket, HANDSHAKE_PROGRAMA, 0, NULL) > 0)
-		log_info(self->loggerProgramaBESO, "Consola: Envia al Kernel: HANDSHAKE_PROGRAMA ");
+		log_info(self->loggerProgramaBESO, "Consola: Envia al Kernel: HANDSHAKE_PROGRAMA");
 
 	if (socket_recvPaquete(self->socketKernel->socket, paquete) >= 0) {
 		if(paquete->header.type == HANDSHAKE_LOADER)
@@ -37,8 +39,10 @@ void realizarHandshakeConLoader(t_programaBESO* self){
 
 }
 
+
 void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
-	int num;
+
+	int numero;
 	char *texto;
 
 	FILE *archivoBeso = fopen(parametro, "r");
@@ -66,118 +70,110 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 	}
 
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-	t_datosKernel* datosAKernel = malloc(sizeof(t_datosKernel));
+	t_datosKernel *datosAKernel = malloc(sizeof(t_datosKernel));
+	t_entrada_estandarConsola *recibidoDelKernel = malloc(sizeof(t_entrada_estandarConsola));
+	t_datosMostrarConsola *salidaEstandar = malloc(sizeof(t_datosMostrarConsola));
+	t_entrada_numero *unNumero = malloc(sizeof(t_entrada_numero));
+	t_entrada_texto *entradaError = malloc(sizeof(t_entrada_texto));
 
 	datosAKernel->codigoBeso = self->codigo;
 
 	log_info(self->loggerProgramaBESO, "Consola: Espera respuesta del kernel");
 
-	int fin= 0;
+	int fin = 0;
 	while(fin == 0){
+
 		if (socket_recvPaquete(self->socketKernel->socket, paquete) >= 0){
 
 			switch(paquete->header.type){
 
 			case FINALIZAR_PROGRAMA_EXITO:
-				log_info(self->loggerProgramaBESO,"Consola: FINALIZA CON EXITO, vamos los pibes!!!");
-				fin=1;
+				log_info(self->loggerProgramaBESO,"Consola: El programa \"%s\" ha sido ejecutado con exito", parametro);
+				fin = 1;
 				break;
+
 			case ENTRADA_ESTANDAR_INT:
-				log_info(self->loggerProgramaBESO,"Consola: recibe una ENTRADA_ESTANDAR_INT");
-				printf("Ingrese el numero PID del programa: \n");
-				scanf("%d", &num);
 
-				t_entrada_numero* unNum = malloc(sizeof(t_entrada_numero));
-				unNum->numero= num;
+				while(getchar() != '\n');
+				printf("Ingrese el numero que desea enviar al Kernel: ");
+				scanf("%d", &unNumero->numero);
 
-				//se manda un texto al planificador
-				socket_sendPaquete(self->socketKernel->socket, QUANTUM, sizeof(t_entrada_numero), unNum);
-				log_info(self->loggerProgramaBESO, "Consola: envia un texto: %s", unNum->numero);
-
-				break;
-			case ENTRADA_ESTANDAR_TEXT:
-
-				log_info(self->loggerProgramaBESO,"Consola: recibe una ENTRADA_ESTANDAR_TEXT");
-
-				t_socket_paquete *paqueteEntrada = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-				t_entrada_estandarConsola* entradaConsola = malloc(sizeof(t_entrada_estandarConsola));
-
-				if(paquete->header.type == ENTRADA_ESTANDAR_TEXT){
-
-					if(socket_recvPaquete(self->socketKernel->socket, paqueteEntrada) >= 0){
-						entradaConsola = (t_entrada_estandarConsola*) paqueteEntrada->data;
-
-						t_entrada_texto* unTexto = malloc(sizeof(t_entrada_texto));
-
-						texto = malloc(sizeof(char)*entradaConsola->tamanio + 1);
-						memset(texto, 0, entradaConsola->tamanio + 1);
-						memset(unTexto->texto, 0, TAMANIO_MAXIMO);
-						printf("Ingrese lo que desea escribir: \n");
-						fgets(texto, entradaConsola->tamanio + 1, stdin);
-						memcpy(unTexto->texto, texto, entradaConsola->tamanio);
-
-						//se manda un texto al planificador
-						if(socket_sendPaquete(self->socketKernel->socket, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_texto), unTexto) > 0)
-							log_info(self->loggerProgramaBESO, "Consola: envia un texto: %s", unTexto->texto);
-
-						else
-							log_info(self->loggerProgramaBESO, "Consola: error al enviar un texto.");
-
-						free(texto);
-
-					}
-
-					else
-						log_error(self->loggerProgramaBESO, "Consola: error al rebicir el mensaje UNA_ENTRADA_STANDAR.");
-				}
+				if(socket_sendPaquete(self->socketKernel->socket, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_numero), unNumero) > 0)
+					log_info(self->loggerProgramaBESO, "Consola: Envia un numero: %d", unNumero->numero);
 
 				else
-					log_error(self->loggerProgramaBESO,"Consola: error al recibir el paquete ENTRADA_ESTANDAR_TEXT");
+					log_info(self->loggerProgramaBESO, "Consola: Error al enviar un numero.");
 
+				free(unNumero);
 
 				break;
-			case ERROR_POR_TAMANIO_EXCEDIDO:
-				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error por tamaño de segmento excedido");
-				fin=1;
+
+			case ENTRADA_ESTANDAR_TEXT:
+
+				recibidoDelKernel = (t_entrada_estandarConsola*) (paquete->data);
+
+				t_entrada_texto* unTexto = malloc(sizeof(t_entrada_texto));
+
+				texto = malloc(sizeof(char)*recibidoDelKernel->tamanio + 1);
+				memset(texto, 0, recibidoDelKernel->tamanio + 1);
+				memset(unTexto->texto, 0, TAMANIO_MAXIMO);
+				printf("Ingrese el texto que desea enviar al Kernel: ");
+				fgets(texto, recibidoDelKernel->tamanio + 1, stdin);
+				memcpy(unTexto->texto, texto, recibidoDelKernel->tamanio);
+
+				if(socket_sendPaquete(self->socketKernel->socket, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_texto), unTexto) > 0)
+					log_info(self->loggerProgramaBESO, "Consola: Envia un texto: %s", unTexto->texto);
+
+				else
+					log_info(self->loggerProgramaBESO, "Consola: Error al enviar un texto.");
+
+				free(unTexto);
+				free(texto);
+				free(recibidoDelKernel);
+
 				break;
-			case ERROR_POR_MEMORIA_LLENA:
-				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error por memoria llena");
-				fin=1;
+
+			case SALIDA_ESTANDAR:
+
+				salidaEstandar = (t_datosMostrarConsola*) (paquete->data);
+				printf("Se ha recibido del Kernel: %s\n", salidaEstandar->mensaje);
+
+				free(salidaEstandar);
+
 				break;
-			case ERROR_POR_NUMERO_NEGATIVO:
-				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error por solicitar un tamaño de segmento negativo");
-				fin=1;
-				break;
-			case ERROR_POR_SEGMENTO_INVALIDO:
-				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error por segmento invalido");
-				fin=1;
-				break;
-			case ERROR_POR_SEGMENTATION_FAULT:
-				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error del tipo Segmentation Fault");
-				fin=1;
-				break;
+
+			//TODO Esto no se desde donde se manda
 			case ERROR_POR_DESCONEXION_DE_CPU:
 				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error del tipo ERROR_POR_DESCONEXION_DE_CPU");
-				fin=1;
+				fin = 1;
 				break;
+
 			case ERROR_POR_DESCONEXION_DE_CONSOLA:
 				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error del tipo ERROR_POR_DESCONEXION_DE_CONSOLA");
-				fin=1;
+				fin = 1;
 				break;
+
 			case ERROR_POR_EJECUCION_ILICITA:
 				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error del tipo ERROR_POR_EJECUCION_ILICITA");
-				fin=1;
+				fin = 1;
 				break;
+
 			case ERROR_POR_CODIGO_INESPERADO:
 				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error del tipo ERROR_POR_CODIGO_INESPERADO");
-				fin=1;
+				fin = 1;
 				break;
+
 			case ERROR_REGISTRO_DESCONOCIDO:
 				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error del tipo ERROR_REGISTRO_DESCONOCIDO");
-				fin=1;
+				fin = 1;
 				break;
+
 			default:
-				log_info(self->loggerProgramaBESO,"Consola: Recibe OK");
+				entradaError = (t_entrada_texto*) (paquete->data);
+				log_error(self->loggerProgramaBESO, "Consola: Se ha recibido un mensaje de error del Kernel: %s.", entradaError->texto);
+				fin = 1;
+
+				free(recibidoDelKernel);
 				break;
 
 			}// fin del switch
@@ -186,14 +182,17 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 		else{
 			log_error(self->loggerProgramaBESO, "Consola: El Kernel ha cerrado la conexion.");
 			close(self->socketKernel->socket->descriptor);
+
 			exit(-1);
 		}
 	}
 
 
+	log_debug(self->loggerProgramaBESO, "Consola: Finalizando...");
 	//free(datosAKernel->codigoBeso);
 	free(datosAKernel);
 	socket_freePaquete(paquete);
 	close(self->socketKernel->socket->descriptor);
+
 }
 

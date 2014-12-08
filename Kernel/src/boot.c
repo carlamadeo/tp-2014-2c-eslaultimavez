@@ -39,10 +39,12 @@ void crearTCBKERNEL(t_kernel* self){
 	self->tcbKernel->registro_de_programacion[2] = 0;
 	self->tcbKernel->registro_de_programacion[3] = 0;
 
-
+	t_programaEnKernel *programaTCBKernel = malloc(sizeof(t_programaEnKernel));
+	programaTCBKernel->programaTCB = self->tcbKernel;
+	programaTCBKernel->socketProgramaConsola = self->socketConsola;
 
 	sem_wait(&mutex_block);
-	list_add(cola_block,self->tcbKernel);
+	list_add(cola_block, programaTCBKernel);
 	sem_post(&mutex_block);
 	log_info(self->loggerLoader,"Boot: Agrego un elemento a la Cola Block con el PID:%d  TID:%d ", self->tcbKernel->pid, self->tcbKernel->tid);
 

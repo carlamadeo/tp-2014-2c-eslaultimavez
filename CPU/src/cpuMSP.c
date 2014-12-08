@@ -22,6 +22,7 @@ void cpuConectarConMPS(t_CPU *self) {
 	}
 }
 
+
 void cpuRealizarHandshakeConMSP(t_CPU *self) {
 
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
@@ -43,6 +44,7 @@ void cpuRealizarHandshakeConMSP(t_CPU *self) {
 	free(paquete);
 
 }
+
 
 int cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
 
@@ -83,6 +85,7 @@ int cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
 	return direccionBase;
 }
 
+
 int cpuDestruirSegmento(t_CPU *self, uint32_t direccionVirtual){
 
 	t_destruirSegmento* destruir_segmento = malloc(sizeof(t_destruirSegmento));
@@ -109,6 +112,7 @@ int cpuDestruirSegmento(t_CPU *self, uint32_t direccionVirtual){
 	free(confirmacion);
 	return intConfirmacion;
 }
+
 
 int cpuEscribirMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int tamanio){
 
@@ -141,6 +145,7 @@ int cpuEscribirMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, i
 	return intConfirmacion;
 }
 
+
 int cpuLeerMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int tamanio){
 
 	t_datos_aMSPLectura *datosAMSP = malloc(sizeof(t_datos_aMSPLectura));
@@ -152,7 +157,7 @@ int cpuLeerMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int t
 	datosAMSP->direccionVirtual = direccionVirtual;
 	int pid = 0;
 	if(self->tcb->km == 0) pid = self->tcb->pid;
-	datosAMSP->pid = pid; //esto devuelve un CERO, me parece que es un error!!!!
+	datosAMSP->pid = pid;
 	datosAMSP->tamanio = tamanio;
 
 	log_info(self->loggerCPU, "CPU: Solicitud de lectura de memoria para PID: %d, Direccion Virtual: %0.8p, Tamaño: %d.", datosAMSP->pid, datosAMSP->direccionVirtual, datosAMSP->tamanio);
@@ -162,8 +167,7 @@ int cpuLeerMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int t
 	socket_recvPaquete(self->socketMSP->socket, paqueteLectura);
 
 	unaLectura = (t_datos_deMSPLectura *) paqueteLectura->data;
-	//printf("Una lectura MSP: %s\n", unaLectura->lectura);
-	//printf("Un estado MSP: %d\n", unaLectura->estado);
+
 	memset(programa, 0, tamanio);
 	memcpy(programa, unaLectura->lectura, tamanio);  //en esta linea rompe Para que se usa un programa y como se carga
 
@@ -172,3 +176,34 @@ int cpuLeerMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int t
 	free(unaLectura);
 	return estado;
 }
+
+int cpuLeerMemoriaSinKM(t_CPU *self, uint32_t direccionVirtual, char *programa, int tamanio){
+
+	t_datos_aMSPLectura *datosAMSP = malloc(sizeof(t_datos_aMSPLectura));
+	t_socket_paquete *paqueteLectura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+	t_datos_deMSPLectura *unaLectura = (t_datos_deMSPLectura *)malloc(sizeof(t_datos_deMSPLectura));
+
+	int estado;
+
+	datosAMSP->direccionVirtual = direccionVirtual;
+	datosAMSP->pid = self->tcb->pid;
+	datosAMSP->tamanio = tamanio;
+
+	log_info(self->loggerCPU, "CPU: Solicitud de lectura de memoria para PID: %d, Direccion Virtual: %0.8p, Tamaño: %d.", datosAMSP->pid, datosAMSP->direccionVirtual, datosAMSP->tamanio);
+
+	socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, sizeof(t_datos_aMSPLectura), datosAMSP);
+
+	socket_recvPaquete(self->socketMSP->socket, paqueteLectura);
+
+	unaLectura = (t_datos_deMSPLectura *) paqueteLectura->data;
+
+	memset(programa, 0, tamanio + 1);
+	memcpy(programa, unaLectura->lectura, tamanio + 1);  //en esta linea rompe Para que se usa un programa y como se carga
+
+	estado = unaLectura->estado;
+
+	free(unaLectura);
+	return estado;
+}
+
+

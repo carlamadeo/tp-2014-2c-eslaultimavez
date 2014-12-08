@@ -63,18 +63,18 @@ int cpuRecibirTCB(t_CPU *self){
 		}
 
 		else{
-			log_error(self->loggerCPU, "CPU: error al recibir de planificador TCB_NUEVO");
-			return 1;
+			log_error(self->loggerCPU, "CPU: Error al recibir de planificador TCB_NUEVO");
+			return 0;
 		}
 	}
 
 	else{
 		log_error(self->loggerCPU, "CPU: Error al recibir un paquete del planificador");
-		return 1;
+		return 0;
 	}
 
 	free(paquetePlanificadorTCB);
-	return 0;
+	return 1;
 }
 
 
@@ -85,76 +85,85 @@ int cpuRecibirQuantum(t_CPU *self){
 
 	if(socket_recvPaquete(self->socketPlanificador->socket, paquetePlanificadorQuantum) >= 0){
 
-		t_quantumCPU* unQuantum = (t_quantumCPU*) paquetePlanificadorQuantum->data;
-		self->quantum = unQuantum->quantumCPU;
+		if(paquetePlanificadorQuantum->header.type == QUANTUM){
+			t_quantumCPU* unQuantum = (t_quantumCPU*) paquetePlanificadorQuantum->data;
+			self->quantum = unQuantum->quantumCPU;
 
-		log_debug(self->loggerCPU, "CPU: recibe un quantum: %d",self->quantum);
+			log_debug(self->loggerCPU, "CPU: Recibe un quantum: %d",self->quantum);
+		}
+
+		else{
+			log_error(self->loggerCPU, "CPU: Error al recibir un quantum");
+			return 0;
+		}
 	}
 
 	else{
-		log_error(self->loggerCPU, "CPU: error al recibir un quantum");
-		return 1;
+		log_error(self->loggerCPU, "CPU: Error al recibir un paquete del planificador");
+		return 0;
 	}
 
 	free(paquetePlanificadorQuantum);
-	return 0;
+	return 1;
 }
 
 
 void cpuEnviarPaqueteAPlanificador(t_CPU *self, int paquete){
 
-	if (socket_sendPaquete(self->socketPlanificador->socket, CAMBIO_DE_CONTEXTO, 0, NULL) <= 0)
+	if (socket_sendPaquete(self->socketPlanificador->socket, TERMINAR_QUANTUM, 0, NULL) <= 0)
 		log_error(self->loggerCPU, "CPU: Fallo envio de paquete a Kernel, PID: %d", self->tcb->pid);
-	else
-		log_info(self->loggerCPU, "CPU: Envia al Planificador un paquete N°: %d", paquete);
 
 }
 
 
-void cpuCambioContexto(t_CPU *self){
+void cpuTerminarQuantum(t_CPU *self){
 
+	cpuEnviarPaqueteAPlanificador(self, TERMINAR_QUANTUM);
 	//antes de hacer el send, deberia actualizarce el STACK
 	//el stack sufre modificaciones cuando se ejecutan las instrucciones ESO, no se actualiza, lo que se actualiza es el TCB.
-	if (socket_sendPaquete(self->socketPlanificador->socket, CAMBIO_DE_CONTEXTO, sizeof(t_TCB_CPU), self->tcb) <= 0)
-		log_error(self->loggerCPU, "CPU: Falló cambio de contexto");
+	if (socket_sendPaquete(self->socketPlanificador->socket, TERMINAR_QUANTUM, sizeof(t_TCB_CPU), self->tcb) <= 0)
+		log_error(self->loggerCPU, "CPU: Falló envio TERMINAR_QUANTUM");
 
 	else
-		log_info(self->loggerCPU, "CPU: Envia al Planificador: CAMBIO_DE_CONTEXTO");
-
+		log_info(self->loggerCPU, "CPU: Envia al Planificador: TERMINAR_QUANTUM");
 }
 
 
-void cpuEnviaInterrupcion(t_CPU *self){
+int cpuEnviaInterrupcion(t_CPU *self){
 
-	//Se manda TCB
-	cpuEnviarPaqueteAPlanificador(self, INTERRUPCION);
+	t_interrupcion *interrupcion = malloc(sizeof(t_interrupcion));
 
-	if (socket_sendPaquete(self->socketPlanificador->socket, TCB_NUEVO, sizeof(t_TCB_CPU), self->tcb) > 0){
-		log_info(self->loggerCPU, "CPU: envia un TCB en una interrupcion.");
-		printTCBCPU(self->tcb);
+	//Horrible, pero sino no anda
+	interrupcion->pid = self->tcb->pid;
+	interrupcion->tid = self->tcb->tid;
+	interrupcion->km = self->tcb->km;
+	interrupcion->base_segmento_codigo = self->tcb->base_segmento_codigo;
+	interrupcion->tamanio_segmento_codigo = self->tcb->tamanio_segmento_codigo;
+	interrupcion->tamanio_segmento_codigo = self->tcb->tamanio_segmento_codigo;
+	interrupcion->puntero_instruccion = self->tcb->puntero_instruccion;
+	interrupcion->base_stack = self->tcb->base_stack;
+	interrupcion->cursor_stack = self->tcb->cursor_stack;
+	interrupcion->registro_de_programacion[0] = self->tcb->registro_de_programacion[0];
+	interrupcion->registro_de_programacion[1] = self->tcb->registro_de_programacion[1];
+	interrupcion->registro_de_programacion[2] = self->tcb->registro_de_programacion[2];
+	interrupcion->registro_de_programacion[3] = self->tcb->registro_de_programacion[3];
+	interrupcion->registro_de_programacion[4] = self->tcb->registro_de_programacion[4];
+	interrupcion->direccionKM = self->unaDireccion;
 
-		printf("Valor de dirrecion: %0.8p \n",self->unaDireccion);
-		t_interrupcionDireccion* unaDire = malloc(sizeof(t_interrupcionDireccion));
-		unaDire->direccion = self->unaDireccion;
-		//Se manda una dirrecion
-		if (socket_sendPaquete(self->socketPlanificador->socket, INTERRUPCION, sizeof(t_interrupcionDireccion), unaDire) > 0)
-			log_info(self->loggerCPU, "CPU: envia una dirrecion en una interrupcion.");
+	if (socket_sendPaquete(self->socketPlanificador->socket, INTERRUPCION, sizeof(t_interrupcion), interrupcion) > 0)
+		log_info(self->loggerCPU, "CPU: Envia un TCB y una Direccion %0.8p en una Interrupcion.", interrupcion->direccionKM);
 
-		else
-			log_error(self->loggerCPU, "CPU: error al enviar una dirreccion en una interrupcion");
-
-		free(unaDire);
+	else{
+		log_error(self->loggerCPU, "CPU: Error al enviar datos de interrupcion al Kernel");
+		return MENSAJE_DE_ERROR;
 	}
 
-	else
-		log_error(self->loggerCPU, "CPU: error al envia un TCB en una interrupcion");
+	return SIN_ERRORES;
 
 }
 
 
 int cpuFinalizarProgramaExitoso(t_CPU *self){
-
-	log_info(self->loggerCPU, "CPU: Envia FINALIZAR_PROGRAMA_EXITO al Kernel!!!!");
 
 	socket_sendPaquete(self->socketPlanificador->socket, FINALIZAR_PROGRAMA_EXITO, 0, NULL);
 
@@ -163,11 +172,20 @@ int cpuFinalizarProgramaExitoso(t_CPU *self){
 		return MENSAJE_DE_ERROR;
 	}
 
-	else{
+	else
 		log_info(self->loggerCPU, "CPU: Finalizacion de proceso correctamente PID = %d", self->tcb->pid);
-		return SIN_ERRORES;
-	}
 
+	return SIN_ERRORES;
+}
+
+
+int cpuFinalizarInterrupcion(t_CPU *self){
+
+	socket_sendPaquete(self->socketPlanificador->socket, TERMINAR_INTERRUPCION, 0, NULL);
+
+	socket_sendPaquete(self->socketPlanificador->socket, TERMINAR_INTERRUPCION, sizeof(t_TCB_CPU), self->tcb);
+
+	return SIN_ERRORES;
 }
 
 
@@ -186,6 +204,9 @@ int cpuSolicitarEntradaEstandar(t_CPU *self, int tamanio, int tipo){
 		return MENSAJE_DE_ERROR;
 	}
 
+	else
+		log_info(self->loggerCPU, "CPU: La solicitud de entrada estandar al Kernel para PID %d y TID: %d se realizo correctamente", self->tcb->pid, self->tcb->tid);
+
 	free(envioEntradaEstandar);
 	return SIN_ERRORES;
 }
@@ -198,23 +219,24 @@ int reciboEntradaEstandarINT(t_CPU *self, int *recibido){
 
 	if(socket_recvPaquete(self->socketPlanificador->socket, paquete) > 0){
 
-		if(paquete->header.type == ENTRADA_ESTANDAR){
+		if(paquete->header.type == ENTRADA_ESTANDAR_INT){
 			datosRecibidos = (t_entrada_numeroCPU *) (paquete->data);
 			recibido = datosRecibidos->numero;
 		}
 
 		else {
-			log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado al recibir una entrada estandar del Kernel para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			printf("SE RECIBIO INT: %d\n", paquete->header.type);
+			log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado al recibir una entrada estandar INT del Kernel para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			return ERROR_POR_CODIGO_INESPERADO;
 		}
 	}
 
 	else
-		log_error(self->loggerCPU, "CPU: Ha ocurrido un error al recibir una entrada estandar del Kernel para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		log_error(self->loggerCPU, "CPU: Ha ocurrido un error al recibir una entrada estandar INT del Kernel para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
 	socket_freePaquete(paquete);
 	free(datosRecibidos);
-	return ENTRADA_ESTANDAR;
+	return SIN_ERRORES;
 }
 
 
@@ -225,40 +247,50 @@ int reciboEntradaEstandarCHAR(t_CPU *self, char *recibido, int tamanio){
 
 	if(socket_recvPaquete(self->socketPlanificador->socket, paquete) > 0){
 
-		if(paquete->header.type == ENTRADA_ESTANDAR){
+		if(paquete->header.type == ENTRADA_ESTANDAR_TEXT){
 			datosRecibidos = (t_entrada_charCPU *) (paquete->data);
 			memset(recibido, 0, 10); //TODO ver bien esto!!!
 			memcpy(recibido, datosRecibidos->entradaEstandar, tamanio + 1);
 		}
 
 		else {
-			log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado al recibir una entrada estandar del Kernel para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado al recibir una entrada estandar TEXT del Kernel para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			return ERROR_POR_CODIGO_INESPERADO;
 		}
 	}
 
 	else
-		log_info(self->loggerCPU, "CPU: Ha ocurrido un error al recibir una entrada estandar del Kernel para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		log_info(self->loggerCPU, "CPU: Ha ocurrido un error al recibir una entrada estandar TEXT del Kernel para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
 	socket_freePaquete(paquete);
 	free(datosRecibidos);
-	return ENTRADA_ESTANDAR;
+	return SIN_ERRORES;
 }
 
 
-int cpuEnviarSalidaEstandar(t_CPU *self, char *salidaEstandar){
+int cpuEnviarSalidaEstandar(t_CPU *self, char *salidaEstandar, int tamanio){
 
-	t_salida_estandar* salida_estandar = malloc(sizeof(t_salida_estandar));
+	t_salida_estandar *salida_estandar = malloc(sizeof(t_salida_estandar));
 	salida_estandar->pid = self->tcb->pid;
-	salida_estandar->cadena = salidaEstandar;
+	memset(salida_estandar->cadena, 0, tamanio);
+	memcpy(salida_estandar->cadena, salidaEstandar, tamanio + 1);
 
-	socket_sendPaquete(self->socketPlanificador->socket, SALIDA_ESTANDAR, 0, NULL);
-
-	if (socket_sendPaquete(self->socketPlanificador->socket, SALIDA_ESTANDAR, sizeof(t_salida_estandar), salida_estandar) <= 0){  //22 corresponde a interrupcion
+	if (socket_sendPaquete(self->socketPlanificador->socket, SALIDA_ESTANDAR, sizeof(t_salida_estandar), salida_estandar) <= 0){
 		log_error(self->loggerCPU, "CPU: Ha ocurrido un error al enviar una salida estandar al Kernel para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 		return MENSAJE_DE_ERROR;
 	}
 
 	free(salida_estandar);
-	return SALIDA_ESTANDAR;
+	return SIN_ERRORES;
+}
+
+void enviarMensajeDeErrorAKernel(t_CPU *self, int codigoError){
+	t_error *error = malloc(sizeof(t_error));
+	error->pid = self->tcb->pid;
+	error->tid = self->tcb->tid;
+	error->identificadorError = codigoError;
+
+	if (socket_sendPaquete(self->socketPlanificador->socket, MENSAJE_DE_ERROR, sizeof(t_error), error) >= 0)
+		log_error(self->loggerCPU, "CPU: Se ha enviado un mensaje de error al Kernel para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+
 }

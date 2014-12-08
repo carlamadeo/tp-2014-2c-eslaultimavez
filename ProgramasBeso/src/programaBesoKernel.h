@@ -10,8 +10,8 @@ typedef struct{
 }t_datosKernel;
 
 typedef struct{
-	char *mensaje;
 	int codigo;
+	char mensaje[TAMANIO_MAXIMO];
 }t_datosMostrarConsola;
 
 

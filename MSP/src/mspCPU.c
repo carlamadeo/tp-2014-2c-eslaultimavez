@@ -111,7 +111,7 @@ void escribirMemoriaCPU(t_socket_paquete *paquete, t_socket* socketClienteCPU){
 	t_datos_aCPUEscritura* datosACPU = malloc(sizeof(t_datos_aCPUEscritura));
 	t_datos_deCPUEscritura* datosDeCPU = (t_datos_deCPUEscritura*) (paquete->data);
 
-	log_info(self->logMSP, "MSP: CPU esta solicitando leer la memoria...");
+	log_info(self->logMSP, "MSP: CPU esta solicitando escribir la memoria...");
 
 	log_info(self->logMSP, "MSP: Abriendo el paquete del CPU: El paquete contiene PID: %d, Direccion Virtual : %0.8p, Tamaño: %d", datosDeCPU->pid, datosDeCPU->direccionVirtual, datosDeCPU->tamanio);
 
