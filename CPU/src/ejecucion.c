@@ -35,7 +35,11 @@ int cpuProcesarTCB(t_CPU *self){
 		encontrado = 0;
 		indice = 0;
 
-		log_info(self->loggerCPU, "CPU: --------------------QUANTUM = %d------------------", self->quantum);
+		if(self->tcb->km == 1)
+			log_info(self->loggerCPU, "CPU: ------------------QUANTUM infinito por KM 1------------------");
+
+		else
+			log_info(self->loggerCPU, "CPU: ------------------QUANTUM = %d------------------", self->quantum);
 
 		estado = cpuLeerMemoria(self, self->tcb->puntero_instruccion, datosDeMSP, tamanio);
 
@@ -44,7 +48,6 @@ int cpuProcesarTCB(t_CPU *self){
 			estado_ejecucion_instruccion = ERROR_DE_LECTURA_DE_MEMORIA;
 		}
 		//estado puede ser SIN_ERRORES o ERROR_POR_SEGMENTATION_FAULT
-		//TODO Ver manejo de errores con el Kernel!!!
 
 		while ((encontrado == 0) && (indice <= CANTIDAD_INSTRUCCIONES)){
 
@@ -58,9 +61,8 @@ int cpuProcesarTCB(t_CPU *self){
 
 		self->quantum = self->quantum - 1;
 
-		if((self->quantum == 0) && (self->tcb->km == 0) && (estado_ejecucion_instruccion != INTERRUPCION) && (estado_ejecucion_instruccion != FINALIZAR_PROGRAMA_EXITO))
+		if((self->quantum == 0) && (self->tcb->km == 0) && (estado_ejecucion_instruccion == SIN_ERRORES))
 			estado_ejecucion_instruccion = TERMINAR_QUANTUM;
-
 
 		switch(estado_ejecucion_instruccion){
 
@@ -79,6 +81,9 @@ int cpuProcesarTCB(t_CPU *self){
 
 		case INTERRUPCION:
 			salida = 1;
+			break;
+
+		case SIN_ERRORES:
 			break;
 
 		default:

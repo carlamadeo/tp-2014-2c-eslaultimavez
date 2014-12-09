@@ -77,10 +77,9 @@ int GETM_ESO(t_CPU *self){
 	char registroA, registroB;
 	int regA, regB;
 
-	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
-	int estado_bloque = estado_lectura;
+	int estado_bloque = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 
-	if (estado_lectura == SIN_ERRORES){
+	if (estado_bloque == SIN_ERRORES){
 
 		self->tcb->puntero_instruccion += tamanio;
 
@@ -100,38 +99,43 @@ int GETM_ESO(t_CPU *self){
 
 			int tamanioMSP = sizeof(int32_t);
 			char *lecturaMSP = malloc(sizeof(char)*tamanioMSP);
+
+
 			if(regB <= 5)
-				estado_lectura = cpuLeerMemoria(self, (uint32_t)self->tcb->registro_de_programacion[regB], lecturaMSP, tamanioMSP);
+				estado_bloque = cpuLeerMemoria(self, (uint32_t)self->tcb->registro_de_programacion[regB], lecturaMSP, tamanioMSP);
 
 			else{
 				switch(regB){
-				case 6:estado_lectura = cpuLeerMemoria(self, self->tcb->base_segmento_codigo, lecturaMSP, tamanioMSP);break;
-				case 7:estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaMSP, tamanioMSP);break;
-				case 8:estado_lectura = cpuLeerMemoria(self, self->tcb->base_stack, lecturaMSP, tamanioMSP);break;
-				case 9:estado_lectura = cpuLeerMemoria(self, self->tcb->cursor_stack, lecturaMSP, tamanioMSP);break;
+				case 6:estado_bloque = cpuLeerMemoria(self, self->tcb->base_segmento_codigo, lecturaMSP, tamanioMSP);break;
+				case 7:estado_bloque = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaMSP, tamanioMSP);break;
+				case 8:estado_bloque = cpuLeerMemoria(self, self->tcb->base_stack, lecturaMSP, tamanioMSP);break;
+				case 9:estado_bloque = cpuLeerMemoria(self, self->tcb->cursor_stack, lecturaMSP, tamanioMSP);break;
 				}
 			}
 
-			//David: en que momento se asigna el valor obtenido en el primer registro (regA)??? para mi falta:
-			if(regA <= 5)
-				self->tcb->registro_de_programacion[regA]=(int32_t)lecturaMSP;
+			if(estado_bloque == SIN_ERRORES){
+				//David: en que momento se asigna el valor obtenido en el primer registro (regA)??? para mi falta:
+				if(regA <= 5)
+					self->tcb->registro_de_programacion[regA]=(int32_t)lecturaMSP;
 
-			else{
-				switch(regA){
-				case 6:self->tcb->base_segmento_codigo=(int32_t)lecturaMSP;break;
-				case 7:self->tcb->puntero_instruccion=(int32_t)lecturaMSP;break;
-				case 8:self->tcb->base_stack=(int32_t)lecturaMSP;break;
-				case 9:self->tcb->cursor_stack=(int32_t)lecturaMSP;break;
+				else{
+					switch(regA){
+					case 6:self->tcb->base_segmento_codigo=(int32_t)lecturaMSP;break;
+					case 7:self->tcb->puntero_instruccion=(int32_t)lecturaMSP;break;
+					case 8:self->tcb->base_stack=(int32_t)lecturaMSP;break;
+					case 9:self->tcb->cursor_stack=(int32_t)lecturaMSP;break;
+					}
 				}
+
+				cpuInicializarRegistrosCPU(self, registros_cpu);
+				cambio_registros(registros_cpu);
+
+				free(lecturaMSP);
+				log_info(self->loggerCPU, "CPU: GETM ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			}
 
-			cpuInicializarRegistrosCPU(self, registros_cpu);
-			cambio_registros(registros_cpu);
-
-			estado_bloque = estado_lectura;
-			log_info(self->loggerCPU, "CPU: GETM ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-
-			//free(lecturaMSP);
+			else
+				log_error(self->loggerCPU, "CPU: Ha ocurrido un error al leer la memoria para el PID %d", self->tcb->pid);
 
 		}
 
@@ -141,7 +145,6 @@ int GETM_ESO(t_CPU *self){
 		}
 	}
 
-	free(lecturaDeMSP);
 	free(registros_cpu);
 	return estado_bloque;
 }
@@ -1779,7 +1782,6 @@ int INTE_ESO(t_CPU *self){
 
 		self->unaDireccion = direccion;
 
-		//cpuLeerMemoria(self, self->unaDireccion, lecturaDeMSP, tamanio);
 		cpuEnviaInterrupcion(self);
 
 		log_info(self->loggerCPU, "CPU: INTE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
@@ -1851,8 +1853,6 @@ int SHIF_ESO(t_CPU *self){
 
 			imprimirNumeroYRegistro(registro, numero, "SHIF");
 
-
-
 			log_info(self->loggerCPU, "CPU: SHIF ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
 			cambio_registros(registros_cpu);
@@ -1871,7 +1871,7 @@ int NOPP_ESO(t_CPU *self){
 	//no hace nada
 
 	log_info(self->loggerCPU, "CPU: NOPP ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-	return 1;
+	return SIN_ERRORES;
 }
 
 
@@ -1883,10 +1883,9 @@ int PUSH_ESO(t_CPU *self){
 	char registro;
 	int numero, reg;
 
-	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
-	int estado_bloque = estado_lectura;
+	int estado_bloque = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
 
-	if (estado_lectura == SIN_ERRORES){
+	if (estado_bloque == SIN_ERRORES){
 
 		self->tcb->puntero_instruccion += tamanio;
 
@@ -1922,11 +1921,11 @@ int PUSH_ESO(t_CPU *self){
 					}
 				}
 
-
 				estado_bloque = cpuEscribirMemoria(self, (uint32_t)self->tcb->cursor_stack, byte_a_escribir, numero);
 
 				free(byte_a_escribir);
 
+				//TODO No llega aca
 				if (estado_bloque == SIN_ERRORES){
 					self->tcb->cursor_stack += numero;
 					log_info(self->loggerCPU, "CPU: PUSH ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
@@ -1935,6 +1934,9 @@ int PUSH_ESO(t_CPU *self){
 				}
 			}
 		}
+
+		else
+			return ERROR_REGISTRO_DESCONOCIDO;
 	}
 
 	free(registros_cpu);
@@ -2269,7 +2271,7 @@ int CREA_ESO(t_CPU *self){ 	// CREA un hilo hijo de TCB
 		crear_hilo->tcb->puntero_instruccion = self->tcb->registro_de_programacion[1];	//Agregado Carla
 		crear_hilo->tcb->tid = self->tcb + 1;											//Agregado Carla
 		crear_hilo->tcb->km = 0;														//Agregado Carla
-		//Falta ver el tema del segmento de stack que no lo entiendo!!
+		//TODO Falta ver el tema del segmento de stack que no lo entiendo!!
 
 		if (socket_sendPaquete(self->socketPlanificador->socket, CREAR_HILO, sizeof(t_crea_hilo), crear_hilo) <= 0){
 			log_info(self->loggerCPU, "CPU: CREA ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
