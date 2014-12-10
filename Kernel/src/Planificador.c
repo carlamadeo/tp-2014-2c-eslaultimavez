@@ -264,7 +264,7 @@ void atenderCPU(t_kernel* self, t_socket *socketNuevaConexion, t_cpu *cpu, fd_se
 	//t_interrupcionKernel* interrupcion = malloc(sizeof(t_interrupcionKernel));
 
 	//socket_recvPaquete(socketNuevaConexion, paqueteCPUAtendido);
-	if (socket_recvPaquete(socketNuevaConexion, paqueteCPUAtendido) > 0){
+	if (socket_recvPaquete(cpu->socketCPU, paqueteCPUAtendido) > 0){
 
 		cpuOcupadaALibre(cpu);
 
@@ -332,10 +332,11 @@ void atenderCPU(t_kernel* self, t_socket *socketNuevaConexion, t_cpu *cpu, fd_se
 			ejecutar_UN_MENSAJE_DE_ERROR(self, paqueteCPUAtendido);
 			break;
 		}
-//	}else{   //fin switch(paqueteCPU->header.type)
-//		cpuOcupadaALibre(cpu);
-//		ejecutar_DESCONECTAR_CPU(self, cpu, master);
+	}else{   //fin switch(paqueteCPU->header.type)
+		cpuOcupadaALibre(cpu);
+		ejecutar_DESCONECTAR_CPU(self, cpu, master);
 	}
+
 	socket_freePaquete(paqueteCPUAtendido);
 }
 

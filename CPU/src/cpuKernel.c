@@ -108,17 +108,8 @@ int cpuRecibirQuantum(t_CPU *self){
 }
 
 
-void cpuEnviarPaqueteAPlanificador(t_CPU *self, int paquete){
-
-	if (socket_sendPaquete(self->socketPlanificador->socket, TERMINAR_QUANTUM, 0, NULL) <= 0)
-		log_error(self->loggerCPU, "CPU: Fallo envio de paquete a Kernel, PID: %d", self->tcb->pid);
-
-}
-
-
 void cpuTerminarQuantum(t_CPU *self){
 
-	cpuEnviarPaqueteAPlanificador(self, TERMINAR_QUANTUM);
 	//antes de hacer el send, deberia actualizarce el STACK
 	//el stack sufre modificaciones cuando se ejecutan las instrucciones ESO, no se actualiza, lo que se actualiza es el TCB.
 	if (socket_sendPaquete(self->socketPlanificador->socket, TERMINAR_QUANTUM, sizeof(t_TCB_CPU), self->tcb) <= 0)
@@ -165,8 +156,6 @@ int cpuEnviaInterrupcion(t_CPU *self){
 
 int cpuFinalizarProgramaExitoso(t_CPU *self){
 
-	socket_sendPaquete(self->socketPlanificador->socket, FINALIZAR_PROGRAMA_EXITO, 0, NULL);
-
 	if (socket_sendPaquete(self->socketPlanificador->socket, FINALIZAR_PROGRAMA_EXITO, sizeof(t_TCB_CPU), self->tcb) <= 0){
 		log_error(self->loggerCPU, "CPU: Error de finalizacion de proceso %d", self->tcb->pid);
 		return MENSAJE_DE_ERROR;
@@ -181,8 +170,6 @@ int cpuFinalizarProgramaExitoso(t_CPU *self){
 
 int cpuFinalizarInterrupcion(t_CPU *self){
 
-	socket_sendPaquete(self->socketPlanificador->socket, TERMINAR_INTERRUPCION, 0, NULL);
-
 	socket_sendPaquete(self->socketPlanificador->socket, TERMINAR_INTERRUPCION, sizeof(t_TCB_CPU), self->tcb);
 
 	return SIN_ERRORES;
@@ -196,8 +183,6 @@ int cpuSolicitarEntradaEstandar(t_CPU *self, int tamanio, int tipo){
 	envioEntradaEstandar->pid = self->tcb->pid;
 	envioEntradaEstandar->tamanio = tamanio;
 	envioEntradaEstandar->tipo = tipo;    //JORGE ESTO ESTA MAL!!!!!!!!!!!!!!!!!!!!!!
-
-	socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR, 0, NULL);
 
 	if (socket_sendPaquete(self->socketPlanificador->socket, ENTRADA_ESTANDAR, sizeof(t_entrada_estandar), envioEntradaEstandar) <= 0){  //22 corresponde a interrupcion
 		log_error(self->loggerCPU, "CPU: Ha ocurrido un error al solicitar una entrada estandar al Kernel para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
