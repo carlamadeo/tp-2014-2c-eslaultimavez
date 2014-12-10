@@ -73,7 +73,7 @@ void cargarTCBconOtroTCB_VOID(t_TCB_Kernel* destino, t_TCB_Kernel* origen){
 
 	destino->pid = origen->pid;
 	destino->tid = origen->tid;
-
+	destino->km = origen->km;
 	destino->base_stack = origen->base_stack;
 	destino->base_segmento_codigo = origen->base_segmento_codigo;
 	destino->tamanio_segmento_codigo = origen->tamanio_segmento_codigo;
@@ -333,6 +333,7 @@ void atenderCPU(t_kernel* self, t_socket *socketNuevaConexion, t_cpu *cpu, fd_se
 			break;
 		}
 	}else{   //fin switch(paqueteCPU->header.type)
+		printf("ENTRO ACA AHHHH\n");
 		cpuOcupadaALibre(cpu);
 		ejecutar_DESCONECTAR_CPU(self, cpu, master);
 	}
