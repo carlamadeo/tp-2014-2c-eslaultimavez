@@ -51,13 +51,9 @@ void pasarTCB_Ready_A_Exec(t_kernel* self){
 			list_add(cola_exec, programaParaExec); // se agrega el programa en cola EXEC
 			pthread_mutex_unlock(&execMutex);
 
-			log_info(self->loggerPlanificador,"Ready_A_Exec: Cantidad CPU LIBRE = %d / CPU EXEC = %d", list_size(listaDeCPULibres), list_size(listaDeCPUExec));
-
 			t_cpu* cpuLibre = list_remove(listaDeCPULibres, 0);
 			cargarTCBconOtroTCB_VOID(cpuLibre->TCB, programaParaExec->programaTCB);
-			cpuLibreAOcupada(cpuLibre);
-
-			log_info(self->loggerPlanificador,"Ready_A_Exec: Cantidad CPU LIBRE = %d / CPU EXEC = %d",list_size(listaDeCPULibres), list_size(listaDeCPUExec));
+			cpuLibreAOcupada(self,cpuLibre);
 
 			mandarEjecutarPrograma(self, cpuLibre);
 		}else{
@@ -111,7 +107,9 @@ void mandarEjecutarPrograma(t_kernel* self,t_cpu* cpuLibre){
 }
 
 
-void cpuLibreAOcupada(t_cpu *CPU){
+void cpuLibreAOcupada(t_kernel* self,t_cpu *CPU){
+
+	log_info(self->loggerPlanificador,"Ready_A_Exec: Cantidad CPU LIBRE = %d / CPU EXEC = %d", list_size(listaDeCPULibres), list_size(listaDeCPUExec));
 
 	bool matchCPU(t_cpu *unaCPU){
 		return unaCPU->id == CPU->id;
@@ -124,9 +122,21 @@ void cpuLibreAOcupada(t_cpu *CPU){
 	pthread_mutex_lock(&cpuLibreMutex);
 	list_add(listaDeCPUExec, cpuBuscada);
 	pthread_mutex_unlock(&cpuLibreMutex);
+
+
+	log_info(self->loggerPlanificador,"Ready_A_Exec: Cantidad CPU LIBRE = %d / CPU EXEC = %d",list_size(listaDeCPULibres), list_size(listaDeCPUExec));
+
+
+
 }
 
-void cpuOcupadaALibre(t_cpu *CPU){
+
+
+
+void cpuOcupadaALibre(t_kernel* self,t_cpu *CPU){
+
+	log_info(self->loggerPlanificador,"Ready_A_Exec: Cantidad CPU LIBRE = %d / CPU EXEC = %d", list_size(listaDeCPULibres), list_size(listaDeCPUExec));
+
 
 	bool matchCPU(t_cpu *unaCPU){
 		return unaCPU->id == CPU->id;
@@ -138,6 +148,10 @@ void cpuOcupadaALibre(t_cpu *CPU){
 	pthread_mutex_lock(&cpuLibreMutex);
 	list_add(listaDeCPULibres, cpuBuscada);
 	pthread_mutex_unlock(&cpuLibreMutex);
+
+
+	log_info(self->loggerPlanificador,"Ready_A_Exec: Cantidad CPU LIBRE = %d / CPU EXEC = %d", list_size(listaDeCPULibres), list_size(listaDeCPUExec));
+
 }
 
 
@@ -227,6 +241,9 @@ void atenderNuevaConexionCPU(t_kernel* self, t_socket* socketNuevoCliente, fd_se
 			log_info(self->loggerPlanificador, "Planificador: Envia HANDSHAKE_PLANIFICADOR.");
 			idCPU++;
 			agregarEnListaDeCPU(self, idCPU, socketNuevoCliente);
+			log_info(self->loggerPlanificador,"Planificador:  se conecto una CPU...");
+			log_info(self->loggerPlanificador,"Planificador:  tamanio de la lista de CPU Exec   :%d", list_size(listaDeCPUExec));
+			log_info(self->loggerPlanificador,"Planificador:  tamanio de la lista de CPU Libres :%d", list_size(listaDeCPULibres));
 			sem_post(&sem_C);
 		}else
 			log_error(self->loggerPlanificador, "Planificador: Error en el HANDSHAKE_PLANIFICADOR con la CPU.");
@@ -258,14 +275,16 @@ void agregarEnListaDeCPU(t_kernel* self, int id, t_socket* socketCPU){
 
 void atenderCPU(t_kernel* self, t_socket *socketNuevaConexion, t_cpu *cpu, fd_set* master){
 
+	printf("TEST atender.\n");
+
 	t_socket_paquete *paqueteCPUAtendido = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
 	//t_interrupcionKernel* interrupcion = malloc(sizeof(t_interrupcionKernel));
 
-	socket_recvPaquete(socketNuevaConexion, paqueteCPUAtendido);
-	//if (socket_recvPaquete(socketNuevaConexion, paqueteCPUAtendido) > 0){
+	//socket_recvPaquete(socketNuevaConexion, paqueteCPUAtendido);
+	if (socket_recvPaquete(socketNuevaConexion, paqueteCPUAtendido) > 0){
 
-		cpuOcupadaALibre(cpu);
+		cpuOcupadaALibre(self,cpu);
 
 		printf("Valor para el switch ACA: %d\n", paqueteCPUAtendido->header.type);
 
@@ -331,10 +350,9 @@ void atenderCPU(t_kernel* self, t_socket *socketNuevaConexion, t_cpu *cpu, fd_se
 			ejecutar_UN_MENSAJE_DE_ERROR(self, paqueteCPUAtendido);
 			break;
 		}
-//	}else{   //fin switch(paqueteCPU->header.type)
-//		cpuOcupadaALibre(cpu);
-//		ejecutar_DESCONECTAR_CPU(self, cpu, master);
-//	}
+	}else{   //fin switch(paqueteCPU->header.type)
+		ejecutar_DESCONECTAR_CPU(self, cpu, master);
+	}
 	socket_freePaquete(paqueteCPUAtendido);
 }
 
@@ -350,33 +368,47 @@ void ejecutar_DESCONECTAR_CPU(t_kernel* self, t_cpu* cpu, fd_set* master){
 	bool esCpu(t_cpu* cpuEnLista){
 		return (cpuEnLista->id == cpu->id);
 	}
-	sem_wait(&mutex_cpuExec);
+	pthread_mutex_lock(&cpuLibreMutex);
 	t_cpu* cpuRemovido = list_remove_by_condition(listaDeCPUExec, (void*)esCpu);
-	sem_post(&mutex_cpuExec);
+	pthread_mutex_unlock(&cpuLibreMutex);
 
 	//3) Tercer paso, se pregunta si tiene programa ejecutando
 	if(cpuRemovido!=NULL){
 		bool esPrograma(t_programaEnKernel* programaEnLista){
 			return ((programaEnLista->programaTCB->pid == cpuRemovido->TCB->pid)&&(programaEnLista->programaTCB->tid == cpuRemovido->TCB->pid));
 		}
-		//sem_wait(&sem_cpuExec);
-		sem_wait(&mutex_exec);
+
+		pthread_mutex_lock(&cpuLibreMutex);
 		t_programaEnKernel* programaRemovido = list_remove_by_condition(cola_exec, (void*)esPrograma);
-		sem_post(&mutex_exec);
-		sem_wait(&mutex_exit);
+		pthread_mutex_lock(&cpuLibreMutex);
+
+		pthread_mutex_lock(&exitMutex);
 		list_add(cola_exit, programaRemovido);
-		sem_post(&mutex_exit);
-		//sem_post(&sem_multiprog);
+		pthread_mutex_unlock(&exitMutex);
+
+		//Por ultimo se le avisa al programa Beso que se desconecto la CPU
+		if (socket_sendPaquete(programaRemovido->socketProgramaConsola, ERROR_POR_DESCONEXION_DE_CPU, 0, NULL) >= 0)
+			log_info(self->loggerPlanificador, "Planificador: Envia ERROR_POR_DESCONEXION_DE_CPU a un programa Beso.");
+		else
+			log_error(self->loggerPlanificador, "Planificador: error al enviar ERROR_POR_DESCONEXION_DE_CPU a un programa Beso.");
+
+
+		log_info(self->loggerPlanificador,"Planificador:  se desconecta una CPU que procesaba un TCB...");
+		log_info(self->loggerPlanificador,"Planificador:  tamanio de la lista de CPU Exec   :%d", list_size(listaDeCPUExec));
+		log_info(self->loggerPlanificador,"Planificador:  tamanio de la lista de CPU Libres :%d", list_size(listaDeCPULibres));
+
 	}else{
 		//sino solo borra de la lista de CPUs libres
 		sem_wait(&mutex_cpuLibre);
 		cpuRemovido = list_remove_by_condition(listaDeCPULibres, (void*)esCpu);
-		//avisarQueTerminoUnProgramaDestruirSusSegmentos(cpuRemovido->TCB->pid)
 		sem_post(&mutex_cpuLibre);
-		//sem_wait(&sem_cpuLibre);
+		//avisarQueTerminoUnProgramaDestruirSusSegmentos(cpuRemovido->TCB->pid)
+
+		log_info(self->loggerPlanificador,"Planificador:  se desconecta una CPU libre...");
+		log_info(self->loggerPlanificador,"Planificador:  tamanio de la lista de CPU Exec %d", list_size(listaDeCPUExec));
+		log_info(self->loggerPlanificador,"Planificador:  tamanio de la lista de CPU Libres %d", list_size(listaDeCPULibres));
 	}
-	log_info(self->loggerPlanificador,"Planificador:  tamanio de la lista de CPU Exec %d", list_size(listaDeCPUExec));
-	log_info(self->loggerPlanificador,"Planificador:  tamanio de la lista de CPU Libres %d", list_size(listaDeCPULibres));
+
 }
 
 
