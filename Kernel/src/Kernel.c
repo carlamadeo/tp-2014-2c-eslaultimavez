@@ -22,6 +22,8 @@ pthread_mutex_t readyMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t newMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t cpuMutex = PTHREAD_MUTEX_INITIALIZER;
 
+
+
 //t_list *listaDeProgramasDisponibles;
 //t_list* cola_new;
 //t_list* cola_ready;

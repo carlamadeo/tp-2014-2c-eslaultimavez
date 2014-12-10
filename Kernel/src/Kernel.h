@@ -5,6 +5,7 @@
 #include <commons/collections/list.h>
 #include "commons/log.h"
 #include "commons/socketInBigBang.h"
+#include "commons/protocolStructInBigBang.h"
 #include <pthread.h>
 /*----------------------Estructuras del Kernel----------------------------------------*/
 #define MAXDATASIZE 1024
@@ -61,7 +62,7 @@ typedef struct {
 typedef struct {
 	int id;
 	t_TCB_Kernel* TCB;
-	t_socket* socket;
+	t_socket* socketCPU;
 }t_cpu;
 
 //Guardan un TCB, Socket, ID

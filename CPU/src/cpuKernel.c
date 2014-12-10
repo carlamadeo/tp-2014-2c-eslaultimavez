@@ -33,7 +33,7 @@ void cpuRealizarHandshakeConKernel(t_CPU *self){
 	if (socket_recvPaquete(self->socketPlanificador->socket, paquete) >= 0) {
 
 		if(paquete->header.type == HANDSHAKE_PLANIFICADOR)
-			log_info(self->loggerCPU, "CPU: Recibe del Planificador HANDSHAKE_PLANIFICADOR con descriptor %d");
+			log_info(self->loggerCPU, "CPU: Recibe del Planificador HANDSHAKE_PLANIFICADOR con descriptor %d", self->socketPlanificador->socket->descriptor);
 
 		else
 			log_error(self->loggerCPU, "CPU: Error al recibir HANDSHAKE_PLANIFICADOR del Planificador");

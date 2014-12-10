@@ -2,20 +2,6 @@
 #include "kernelMSP.h"
 #include "commons/protocolStructInBigBang.h"
 
-
-
-void agregarEnListaDeCPU(t_kernel* self, int id, t_socket* socketCPU){
-
-	t_cpu *unaCpu;
-	unaCpu = malloc( sizeof(t_cpu) );
-	unaCpu->id = id;
-	unaCpu->socket = socketCPU;
-	list_add(listaDeCPULibres, unaCpu);
-	log_info(self->loggerPlanificador, "Planificador: Tiene una nueva CPU con ID: %d",unaCpu->id);
-	//free(unaCpu);
-}
-
-
 /***************************************************************************************************\
  *								--Comienzo Finalizar Programa con Exito--							*
 \***************************************************************************************************/
@@ -101,20 +87,6 @@ void ejecutar_TERMINAR_QUANTUM(t_kernel* self, t_socket_paquete *paqueteTCB){
 }
 
 
-void pasarCPUdeExecALibre(t_cpu *CPU){
-
-	bool matchCPU(t_cpu *unaCPU){
-		return unaCPU == CPU;
-	}
-
-	//TODO Ver si necesito un mutex aca tambien
-	t_cpu *cpuBuscada = list_remove_by_condition(listaDeCPUExec, matchCPU);
-
-	//TODO Ver si necesito un mutex aca tambien
-	list_add(listaDeCPULibres, cpuBuscada);
-
-	sem_post(&sem_C);
-}
 
 
 void pasarProgramaDeExecAReady(t_TCB_Kernel *TCB){
@@ -126,7 +98,7 @@ void pasarProgramaDeExecAReady(t_TCB_Kernel *TCB){
 	t_programaEnKernel *program = list_get(cola_exec, 0);
 
 	pthread_mutex_lock(&execMutex);
-	t_programaEnKernel *programaBuscado = list_remove_by_condition(cola_exec, matchPrograma);
+	t_programaEnKernel *programaBuscado = list_remove_by_condition(cola_exec,(void*)matchPrograma);
 	pthread_mutex_unlock(&execMutex);
 
 	programaBuscado->programaTCB = TCB;
@@ -325,7 +297,7 @@ void ejecutar_UNA_ENTRADA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete*
 
 			log_info(self->loggerPlanificador, "Planificador: Recibe un ENTRADA_ESTANDAR_INT: %d", unaEntradaDevueltaINT->numero);
 
-			if(socket_sendPaquete(cpu->socket, ENTRADA_ESTANDAR_INT, sizeof(t_entrada_numeroKernel), unaEntradaDevueltaINT) <= 0)
+			if(socket_sendPaquete(cpu->socketCPU, ENTRADA_ESTANDAR_INT, sizeof(t_entrada_numeroKernel), unaEntradaDevueltaINT) <= 0)
 				log_debug(self->loggerPlanificador, "Planificador: Envia %d a CPU", unaEntradaDevueltaINT->numero);
 
 			socket_freePaquete(paqueteEntradaINT);
@@ -352,7 +324,7 @@ void ejecutar_UNA_ENTRADA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete*
 
 			log_info(self->loggerPlanificador, "Planificador: Recibe un ENTRADA_ESTANDAR_TEXT: %s", unaEntradaDevueltaTexto->texto);
 
-			if(socket_sendPaquete(cpu->socket, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_textoKernel), unaEntradaDevueltaTexto) <= 0)
+			if(socket_sendPaquete(cpu->socketCPU, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_textoKernel), unaEntradaDevueltaTexto) <= 0)
 				log_debug(self->loggerPlanificador, "Planificador: Envia %s a CPU", unaEntradaDevueltaTexto->texto);
 
 			socket_freePaquete(paqueteEntradaTexto);

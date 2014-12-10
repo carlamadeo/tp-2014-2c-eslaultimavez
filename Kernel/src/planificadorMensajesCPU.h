@@ -105,7 +105,8 @@ void agregarEnListaDeCPU(t_kernel* self, int id, t_socket* socketCPU);
 
 void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket_paquete *paqueteTCB);
 void ejecutar_TERMINAR_QUANTUM(t_kernel* self, t_socket_paquete *paqueteTCB);
-void pasarCPUdeExecALibre(t_cpu *CPU);
+void cpuLibreAOcupada(t_cpu *CPU);
+void cpuOcupadaALibre(t_cpu *CPU);
 void pasarProgramaDeExecAReady(t_TCB_Kernel *TCB);
 
 void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete);

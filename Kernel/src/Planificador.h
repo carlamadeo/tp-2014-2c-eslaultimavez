@@ -1,7 +1,6 @@
 #ifndef PLANIFICADOR_H_
 #define PLANIFICADOR_H_
 
-#include "planificadorMensajesCPU.h"
 #include "Kernel.h"
 
 
@@ -14,10 +13,15 @@ pthread_mutex_t newMutex;
 pthread_mutex_t blockMutex;
 pthread_mutex_t cpuMutex;
 
+//pthread_mutex_t cpuLibre;
+//pthread_mutex_t cpuOcupada;
+extern pthread_mutex_t cpuLibre;
+extern pthread_mutex_t cpuOcupada;
 
 
-t_TCB_Kernel* test_TCB_Kernel ();
-void mandarEjecutarPrograma(t_kernel* self,t_programaEnKernel* programa, t_socket* socket);
+void cargarTCBconOtroTCB_VOID(t_TCB_Kernel* destino, t_TCB_Kernel* origen);
+t_TCB_Kernel* inicializarUnTCB();
+void mandarEjecutarPrograma(t_kernel* self,t_cpu* cpuLibre);
 void pasarTCB_Ready_A_Exec(t_kernel* self);
 void planificadorEscucharConexionesCPU(t_kernel* self);
 void kernel_comenzar_Planificador(t_kernel* self);

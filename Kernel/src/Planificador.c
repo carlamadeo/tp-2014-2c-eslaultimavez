@@ -1,12 +1,12 @@
 #include "planificadorMensajesCPU.h"
-#include "commons/protocolStructInBigBang.h"
 #include <errno.h>
 #include <unistd.h>
 
 //t_list* cola_new;
 //t_list* cola_ready;
 int idCPU = 250;
-
+pthread_mutex_t cpuLibreMutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t cpuOcupadaMutex = PTHREAD_MUTEX_INITIALIZER;
 
 void kernel_comenzar_Planificador(t_kernel* self){
 
@@ -30,43 +30,37 @@ void kernel_comenzar_Planificador(t_kernel* self){
 
 void pasarTCB_Ready_A_Exec(t_kernel* self){
 
-	log_debug(self->loggerPlanificador,"Planificador: Comienza a ejecutarse Hilo de Ready a Exec.");
+	log_debug(self->loggerPlanificador,"Ready_A_Exec: Comienza a ejecutarse Hilo de Ready a Exec.");
 
 	while(1){
 
 		sem_wait(&sem_B);
 		sem_wait(&sem_C);
 
-		log_debug(self->loggerPlanificador,"Planificador: Comienza a ejecutarse Hilo de Ready a Exec.");
-		log_info(self->loggerPlanificador,"Planificador: Se encuentra un proceso en ready");
-		log_info(self->loggerPlanificador,"Planificador: Se encuentra una CPU libre");
+		log_info(self->loggerPlanificador,"Ready_A_Exec: Se encuentra un proceso en ready");
+		log_info(self->loggerPlanificador,"Ready_A_Exec: Se encuentra una CPU libre");
 
 		pthread_mutex_lock(&readyMutex);
 		t_programaEnKernel* programaParaExec = list_remove(cola_ready, 0); //se remueve el primer elemento de la cola READY
 		pthread_mutex_unlock(&readyMutex);
 
 		if(programaParaExec != NULL){
-			log_info(self->loggerPlanificador,"Planificador: Mando a ejecutar el proceso Beso con PID: %d TID: %d KM: %d", programaParaExec->programaTCB->pid, programaParaExec->programaTCB->tid, programaParaExec->programaTCB->km);
+			log_info(self->loggerPlanificador,"Ready_A_Exec: Mando a ejecutar el proceso Beso con PID: %d TID: %d KM: %d", programaParaExec->programaTCB->pid, programaParaExec->programaTCB->tid, programaParaExec->programaTCB->km);
 
 			pthread_mutex_lock(&execMutex);
 			list_add(cola_exec, programaParaExec); // se agrega el programa en cola EXEC
 			pthread_mutex_unlock(&execMutex);
 
-			log_info(self->loggerPlanificador,"Planificador: Cantidad de exec %d", list_size(cola_exec));
-			log_info(self->loggerPlanificador,"Planificador: Cantidad CPU LIBRE = %d / CPU EXEC = %d", list_size(listaDeCPULibres), list_size(listaDeCPUExec));
+			log_info(self->loggerPlanificador,"Ready_A_Exec: Cantidad CPU LIBRE = %d / CPU EXEC = %d", list_size(listaDeCPULibres), list_size(listaDeCPUExec));
 
 			t_cpu* cpuLibre = list_remove(listaDeCPULibres, 0);
-			cpuLibre->TCB = programaParaExec->programaTCB;
-			list_add(listaDeCPUExec, cpuLibre);
-			log_info(self->loggerPlanificador,"Planificador: Cantidad CPU LIBRE = %d / CPU EXEC = %d",list_size(listaDeCPULibres), list_size(listaDeCPUExec));
+			cargarTCBconOtroTCB_VOID(cpuLibre->TCB, programaParaExec->programaTCB);
+			cpuLibreAOcupada(cpuLibre);
 
-			mandarEjecutarPrograma(self, programaParaExec, cpuLibre->socket);
+			log_info(self->loggerPlanificador,"Ready_A_Exec: Cantidad CPU LIBRE = %d / CPU EXEC = %d",list_size(listaDeCPULibres), list_size(listaDeCPUExec));
 
-			pasarCPUdeExecALibre(cpuLibre);
-
-		}
-
-		else{
+			mandarEjecutarPrograma(self, cpuLibre);
+		}else{
 			printf("HUBO UN PROBLEMA EN LA MULTIPROGRAMACION\n");
 		}
 	}
@@ -74,26 +68,78 @@ void pasarTCB_Ready_A_Exec(t_kernel* self){
 }
 
 
-void mandarEjecutarPrograma(t_kernel* self, t_programaEnKernel* programa, t_socket* socketCPU){
+//Pregunta si estos son todos los campos!!! Cursos de Stack???
+void cargarTCBconOtroTCB_VOID(t_TCB_Kernel* destino, t_TCB_Kernel* origen){
+
+	destino->pid = origen->pid;
+	destino->tid = origen->tid;
+
+	destino->base_stack = origen->base_stack;
+	destino->base_segmento_codigo = origen->base_segmento_codigo;
+	destino->tamanio_segmento_codigo = origen->tamanio_segmento_codigo;
+	destino->cursor_stack = origen->cursor_stack;
+	destino->puntero_instruccion = origen->puntero_instruccion;
+	destino->registro_de_programacion[0]= origen->registro_de_programacion[0];
+	destino->registro_de_programacion[1]= origen->registro_de_programacion[1];
+	destino->registro_de_programacion[2]= origen->registro_de_programacion[2];
+	destino->registro_de_programacion[3]= origen->registro_de_programacion[3];
+	destino->registro_de_programacion[4]= origen->registro_de_programacion[4];
+
+}
+
+
+void mandarEjecutarPrograma(t_kernel* self,t_cpu* cpuLibre){
 
 	t_TCB_Kernel* unTCBaEXEC = malloc (sizeof(t_TCB_Kernel));
-	unTCBaEXEC = programa->programaTCB;
-	log_info(self->loggerPlanificador,"PID = %d CURSOR POINTER = %d", programa->programaTCB->pid, programa->programaTCB->puntero_instruccion);
+	unTCBaEXEC = cpuLibre->TCB;
 
 	t_QUANTUM* unQuantum = malloc(sizeof(t_QUANTUM));
 	unQuantum->quantum = self->quantum;
 
 	//se manda un QUANTUM a CPU
-	socket_sendPaquete(socketCPU, QUANTUM, sizeof(t_QUANTUM), unQuantum);
-	log_debug(self->loggerPlanificador, "Planificador: Envia un quantum: %d", unQuantum->quantum);
+	if(socket_sendPaquete(cpuLibre->socketCPU, QUANTUM, sizeof(t_QUANTUM), unQuantum)>0){
+		log_info(self->loggerPlanificador,"Ready_A_Exec: Envia un quantum: %d", unQuantum->quantum);
+	}else
+		log_error(self->loggerPlanificador,"Ready_A_Exec: error el enviar a ejecutar el quantim a una CPU");
 
-	if(socket_sendPaquete(socketCPU, TCB_NUEVO, sizeof(t_TCB_Kernel), unTCBaEXEC) > 0) ////CPU_NUEVO_PCB
-		log_info(self->loggerPlanificador,"Planificador: Envia el TCB con direccion %0.8p a ejecutar en una CPU", unTCBaEXEC->puntero_instruccion);
 
+	if(socket_sendPaquete(cpuLibre->socketCPU, TCB_NUEVO, sizeof(t_TCB_Kernel), unTCBaEXEC) > 0) ////CPU_NUEVO_PCB
+		log_info(self->loggerPlanificador,"Ready_A_Exec: el enviar a ejecutar un TCB a CPU");
 	else
-		log_info(self->loggerPlanificador,"Planificador: Error el enviar a ejecutar un TCB a CPU");
+		log_error(self->loggerPlanificador,"Ready_A_Exec: error el enviar a ejecutar un TCB a CPU");
 
 }
+
+
+void cpuLibreAOcupada(t_cpu *CPU){
+
+	bool matchCPU(t_cpu *unaCPU){
+		return unaCPU->id == CPU->id;
+	}
+
+	pthread_mutex_lock(&cpuOcupadaMutex);
+	t_cpu *cpuBuscada = list_remove_by_condition(listaDeCPULibres,(void*) matchCPU);
+	pthread_mutex_unlock(&cpuOcupadaMutex);
+
+	pthread_mutex_lock(&cpuLibreMutex);
+	list_add(listaDeCPUExec, cpuBuscada);
+	pthread_mutex_unlock(&cpuLibreMutex);
+}
+
+void cpuOcupadaALibre(t_cpu *CPU){
+
+	bool matchCPU(t_cpu *unaCPU){
+		return unaCPU->id == CPU->id;
+	}
+	pthread_mutex_lock(&cpuOcupadaMutex);
+	t_cpu *cpuBuscada = list_remove_by_condition(listaDeCPUExec,(void*)matchCPU);
+	pthread_mutex_unlock(&cpuOcupadaMutex);
+
+	pthread_mutex_lock(&cpuLibreMutex);
+	list_add(listaDeCPULibres, cpuBuscada);
+	pthread_mutex_unlock(&cpuLibreMutex);
+}
+
 
 
 void planificadorEscucharConexionesCPU(t_kernel* self){
@@ -154,9 +200,9 @@ void planificadorEscucharConexionesCPU(t_kernel* self){
 					}
 
 					else{ //sino no es una nueva conexion busca un programa en la lista
-						log_debug(self->loggerPlanificador, "Planificador: Mensaje del Programa descriptor = %d.", i);
+						log_info(self->loggerPlanificador,"Planificador: Mensaje del Programa descriptor = %d.", i);
 						t_cpu* cpuCliente = obtenerCPUSegunDescriptor(self, i);
-						log_debug(self->loggerPlanificador, "Planificador: Mensaje del CPU: %d", cpuCliente->socket->descriptor);
+						log_info(self->loggerPlanificador,"Planificador: Mensaje del CPU: %d", cpuCliente->socketCPU->descriptor);
 						atenderCPU(self, socketNuevaConexionCPU, cpuCliente, &master);
 					}
 				}//fin del if FD_ISSET
@@ -175,18 +221,14 @@ void atenderNuevaConexionCPU(t_kernel* self, t_socket* socketNuevoCliente, fd_se
 		log_error(self->loggerPlanificador, "Planificador: Conexión cerrada con el CPU.");
 		FD_CLR(socketNuevoCliente->descriptor, master);
 		close(socketNuevoCliente->descriptor);
-	}
-
-	else{
+	}else{
 		//Si recibe una señal de la CPU hace el HANDSHAKE
 		if (socket_sendPaquete(socketNuevoCliente, HANDSHAKE_PLANIFICADOR, 0, NULL) >= 0){
 			log_info(self->loggerPlanificador, "Planificador: Envia HANDSHAKE_PLANIFICADOR.");
 			idCPU++;
 			agregarEnListaDeCPU(self, idCPU, socketNuevoCliente);
 			sem_post(&sem_C);
-		}
-
-		else
+		}else
 			log_error(self->loggerPlanificador, "Planificador: Error en el HANDSHAKE_PLANIFICADOR con la CPU.");
 	}
 
@@ -197,31 +239,22 @@ void atenderNuevaConexionCPU(t_kernel* self, t_socket* socketNuevoCliente, fd_se
 		*fdmax = socketNuevoCliente->descriptor; /*actualizar el máximo*/
 	}
 
-	/*t_programaEnKernel* unTCBCOLA = obtenerTCBdeReady(self);
-
-	if (unTCBCOLA!= NULL){
-		t_TCB_Kernel* unTCBaCPU = malloc(sizeof(t_TCB_Kernel));
-		unTCBaCPU = unTCBCOLA->programaTCB;
-
-		t_QUANTUM* unQuantum = malloc(sizeof(t_QUANTUM));
-		unQuantum->quantum = self->quantum;
-
-		//se manda un QUANTUM a CPU
-		socket_sendPaquete(socketNuevoCliente, QUANTUM, sizeof(t_QUANTUM), unQuantum);
-		log_debug(self->loggerPlanificador, "Planificador: Envia un quantum: %d", unQuantum->quantum);
-
-		//se mande un TCB a CPU
-		socket_sendPaquete(socketNuevoCliente, TCB_NUEVO,sizeof(t_TCB_Kernel), unTCBaCPU);
-		log_debug(self->loggerPlanificador, "Planificador: Envia TCB_NUEVO con PID: %d TID:%d KM:%d", unTCBaCPU->pid,unTCBaCPU->tid,unTCBaCPU->km );
-
-		printTCBKernel(unTCBaCPU);
-		free(unQuantum);
-		//free(unTCBaCPU);
-	}*/
 
 	socket_freePaquete(paquete);
 }
 
+void agregarEnListaDeCPU(t_kernel* self, int id, t_socket* socketCPU){
+
+	t_cpu *unaCpu;
+	unaCpu = malloc( sizeof(t_cpu) );
+	unaCpu->id = id;
+	unaCpu->socketCPU = socketCPU;
+	unaCpu->TCB = inicializarUnTCB();
+	list_add(listaDeCPULibres, unaCpu);
+	log_info(self->loggerPlanificador,"Planificador: Tiene una nueva CPU con ID: %d",unaCpu->id);
+	log_info(self->loggerPlanificador,"Planificador: Tiene una nueva CPU con descriptor: %d",unaCpu->socketCPU->descriptor);
+	//free(unaCpu);
+}
 
 void atenderCPU(t_kernel* self, t_socket *socketNuevaConexion, t_cpu *cpu, fd_set* master){
 
@@ -229,9 +262,10 @@ void atenderCPU(t_kernel* self, t_socket *socketNuevaConexion, t_cpu *cpu, fd_se
 
 	//t_interrupcionKernel* interrupcion = malloc(sizeof(t_interrupcionKernel));
 
-	if (socket_recvPaquete(socketNuevaConexion, paqueteCPUAtendido) > 0){
+	socket_recvPaquete(socketNuevaConexion, paqueteCPUAtendido);
+	//if (socket_recvPaquete(socketNuevaConexion, paqueteCPUAtendido) > 0){
 
-		//removerCPUdeLibreYPasarlaAExec(cpu);
+		cpuOcupadaALibre(cpu);
 
 		printf("Valor para el switch ACA: %d\n", paqueteCPUAtendido->header.type);
 
@@ -297,13 +331,10 @@ void atenderCPU(t_kernel* self, t_socket *socketNuevaConexion, t_cpu *cpu, fd_se
 			ejecutar_UN_MENSAJE_DE_ERROR(self, paqueteCPUAtendido);
 			break;
 		}
-	}
-
-
-
-	else{
-		//ejecutar_DESCONECTAR_CPU(self, cpu, master);
-	}//fin switch(paqueteCPU->header.type)
+//	}else{   //fin switch(paqueteCPU->header.type)
+//		cpuOcupadaALibre(cpu);
+//		ejecutar_DESCONECTAR_CPU(self, cpu, master);
+//	}
 	socket_freePaquete(paqueteCPUAtendido);
 }
 
@@ -311,8 +342,8 @@ void atenderCPU(t_kernel* self, t_socket *socketNuevaConexion, t_cpu *cpu, fd_se
 void ejecutar_DESCONECTAR_CPU(t_kernel* self, t_cpu* cpu, fd_set* master){
 
 	//1) Primer paso, se elimina de conjunto maestro
-	FD_CLR(cpu->socket->descriptor, master);
-	close(cpu->socket->descriptor);
+	FD_CLR(cpu->socketCPU->descriptor, master);
+	close(cpu->socketCPU->descriptor);
 
 
 	//2) Segundo paso, se trae el CPU que se quiere desconectar de la lista de ejecutados
@@ -352,9 +383,9 @@ void ejecutar_DESCONECTAR_CPU(t_kernel* self, t_cpu* cpu, fd_set* master){
 t_cpu* obtenerCPUSegunDescriptor(t_kernel* self, int descriptor){
 
 	log_info(self->loggerPlanificador,"Planificador: buscando el descriptor %d de un CPU", descriptor);
-
+	log_info(self->loggerPlanificador,"Planificador: tamanio lista CPUS Exec: %d", list_size(listaDeCPUExec));
 	bool _esCPUDescriptor(t_cpu* cpu) {
-		return (cpu->socket->descriptor == descriptor);
+		return (cpu->socketCPU->descriptor == descriptor);
 	}
 
 	t_cpu* cpuBuscado = list_find(listaDeCPUExec, (void*)_esCPUDescriptor);
@@ -365,7 +396,7 @@ t_cpu* obtenerCPUSegunDescriptor(t_kernel* self, int descriptor){
 		pthread_mutex_unlock(&cpuMutex);
 	}
 
-	log_info(self->loggerPlanificador,"Planificador: Se encontro CPU con descriptor: %d",cpuBuscado->socket->descriptor);
+	log_info(self->loggerPlanificador,"Planificador: Se encontro CPU con descriptor: %d",cpuBuscado->socketCPU->descriptor);
 
 	//cpuBuscado->socket->descriptor = descriptor;
 	return cpuBuscado;
@@ -392,22 +423,24 @@ t_programaEnKernel* obtenerTCBdeReady(t_kernel* self){
 
 	return NULL;
 }
-//t_TCB_Kernel* test_TCB_Kernel (){
-//	t_TCB_Kernel* test_TCB_Kernel = malloc(sizeof(t_TCB_Kernel));
-//
-//	test_TCB_Kernel->pid= 0;
-//	test_TCB_Kernel->tid= 523;
-//	test_TCB_Kernel->km = 1;
-//	test_TCB_Kernel->base_segmento_codigo = 1048576;
-//	test_TCB_Kernel->tamanio_segmento_codigo = 1000;
-//	test_TCB_Kernel->base_stack = 2097152;
-//	test_TCB_Kernel->cursor_stack = 2097152;
-//	test_TCB_Kernel->puntero_instruccion = 1048576;
-//	//test_TCB_Kernel->registro_de_programacion = 56;
-//
-//
-//	return test_TCB_Kernel;
-//}
+t_TCB_Kernel* inicializarUnTCB(){
+	t_TCB_Kernel* test_TCB = malloc(sizeof(t_TCB_Kernel));
+
+	test_TCB->pid= 0;
+	test_TCB->tid= 0;
+	test_TCB->km = 0;
+	test_TCB->base_segmento_codigo = 0;
+	test_TCB->tamanio_segmento_codigo = 0;
+	test_TCB->base_stack = 0;
+	test_TCB->cursor_stack = 0;
+	test_TCB->puntero_instruccion = 0;
+	test_TCB->registro_de_programacion[0] = 0;
+	test_TCB->registro_de_programacion[1] = 0;
+	test_TCB->registro_de_programacion[2] = 0;
+	test_TCB->registro_de_programacion[3] = 0;
+	test_TCB->registro_de_programacion[4] = 0;
+	return test_TCB;
+}
 
 void finalizarProgramaEnPlanificacion(t_programaEnKernel* programa){
 	sem_wait(&mutex_exit);//BLOQUEO LISTA DE EXIT
