@@ -111,7 +111,7 @@ void escuchar_conexiones_programa(t_kernel* self){
 
 void pasarProgramaNewAReady(t_kernel* self){
 
-	log_info(self->loggerLoader,"New_A_Ready: Comienza a ejecutarse hilo de New a Ready");
+	log_debug(self->loggerLoader,"New_A_Ready: Comienza a ejecutarse hilo de New a Ready");
 
 	while(1){
 		sem_wait(&sem_A);
@@ -119,18 +119,22 @@ void pasarProgramaNewAReady(t_kernel* self){
 		t_programaEnKernel* programaParaReady = malloc(sizeof(t_programaEnKernel));
 
 		log_info(self->loggerLoader,"New_A_Ready: Tamanio de la cola New: %d", list_size(cola_new));
+		if(list_size(cola_new)>0){
+			pthread_mutex_lock(&newMutex);
+			programaParaReady = list_remove(cola_new, 0); //se remueve el primer elemento de la cola NEW
+			pthread_mutex_unlock(&newMutex);
 
-		pthread_mutex_lock(&newMutex);
-		programaParaReady = list_remove(cola_new, 0); //se remueve el primer elemento de la cola NEW
-		pthread_mutex_unlock(&newMutex);
+			log_info(self->loggerLoader,"New_A_Ready: Mueve de New a Ready el proceso con PID:%d TID:%d KM:%d", programaParaReady->programaTCB->pid,programaParaReady->programaTCB->tid,programaParaReady->programaTCB->km);
 
-		log_info(self->loggerLoader,"New_A_Ready: Mueve de New a Ready el proceso con PID:%d TID:%d KM:%d", programaParaReady->programaTCB->pid,programaParaReady->programaTCB->tid,programaParaReady->programaTCB->km);
+			pthread_mutex_lock(&readyMutex);
+			list_add(cola_ready, programaParaReady); // se agrega el programa buscado a la cola READY
+			pthread_mutex_unlock(&readyMutex);
 
-		pthread_mutex_lock(&readyMutex);
-		list_add(cola_ready, programaParaReady); // se agrega el programa buscado a la cola READY
-		pthread_mutex_unlock(&readyMutex);
+			log_info(self->loggerLoader,"Hilo NEW_to_READY: tamanio de la cola New: %d", list_size(cola_new));
+			log_info(self->loggerLoader,"Hilo NEW_to_READY: tamanio de la cola Ready: %d",list_size(cola_ready));
+			sem_post(&sem_B);
 
-		sem_post(&sem_B);
+		}
 	}
 
 }
@@ -176,14 +180,23 @@ void atenderProgramaConsola(t_kernel* self,t_programaEnKernel* programa, fd_set*
 		}
 
 		list_remove_by_condition(listaDeProgramasDisponibles, (void*)esProgramaDesconectado);
+		t_programaEnKernel* unProgramaExit = list_remove_by_condition(cola_ready, (void*)esProgramaDesconectado);//TODO ver si se lo manda a la cola EXIT
+
+		list_add(cola_exit, unProgramaExit->programaTCB);
+
+		log_info(self->loggerLoader,"Loader: cantidad de TCBs enviados al Kernel :%d", list_size(listaDeProgramasDisponibles));
+		log_info(self->loggerLoader,"Loader: cantidad de TCBs en la cola NEW  :%d", list_size(cola_new));
+		log_info(self->loggerLoader,"Loader: cantidad de TCBs en la cola READY:%d", list_size(cola_ready));
+		log_info(self->loggerLoader,"Loader: cantidad de TCBs en la cola EXEC :%d", list_size(cola_exec));
+		log_info(self->loggerLoader,"Loader: cantidad de TCBs en la cola BLOCK:%d", list_size(cola_block));
+		log_info(self->loggerLoader,"Loader: cantidad de TCBs en la cola Exit:%d", list_size(cola_exit));
+
 
 	}
 
 	else{
-
-		if(paqueteDesconectoPrograma->header.type == FINALIZAR_PROGRAMA_EXITO)
-			log_info(self->loggerLoader,"Loader: Termino exitosamente el programa con PID:%d TID:%d",programa->programaTCB->pid,programa->programaTCB->tid);
-
+		if (paqueteDesconectoPrograma->header.type == ERROR_POR_DESCONEXION_DE_CONSOLA)
+			log_info(self->loggerLoader,"Loader: envia un ERROR_POR_DESCONEXION_DE_CONSOLA");
 		else
 			log_error(self->loggerLoader,"Loader: error al recibir el paquete de FINALIZAR_PROGRAMA_EXITO de programa PID:%d TID:%d",programa->programaTCB->pid,programa->programaTCB->tid);
 	}
@@ -212,7 +225,6 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 
 		if (socket_sendPaquete(socketNuevoCliente, HANDSHAKE_LOADER, 0, NULL) >= 0)
 			log_info(self->loggerLoader, "Loader: Envia a Consola HANDSHAKE_LOADER");
-
 		else
 			log_error(self->loggerLoader, "Loader: Error al enviar los datos de la Consola.");
 
@@ -264,8 +276,6 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 			}
 
 			sem_post(&sem_A);
-			//pasarProgramaNewAReady(self);
-
 		}
 
 		else{
@@ -273,7 +283,6 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 			//1) avisarle al programa que tiene un error
 			log_error(self->loggerLoader, "Loader: Error al crear unTCB.");
 			//2) avisar a la MSP que hay un error y destruir segmento
-
 		}
 
 		//free(unPrograma);
