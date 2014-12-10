@@ -108,6 +108,8 @@ void ejecutar_TERMINAR_QUANTUM(t_kernel* self, t_socket_paquete *paqueteTCB);
 void cpuLibreAOcupada(t_cpu *CPU);
 void cpuOcupadaALibre(t_cpu *CPU);
 void pasarProgramaDeExecAReady(t_TCB_Kernel *TCB);
+int programaBesoExiste(t_kernel* self, t_TCB_Kernel* TCBRecibido);
+
 
 void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete);
 void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete);

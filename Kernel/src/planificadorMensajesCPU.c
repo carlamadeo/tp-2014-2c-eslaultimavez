@@ -82,11 +82,38 @@ void ejecutar_TERMINAR_QUANTUM(t_kernel* self, t_socket_paquete *paqueteTCB){
 	t_TCB_Kernel* TCBRecibido = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
 	TCBRecibido = (t_TCB_Kernel*) paqueteTCB->data;
 
-	pasarProgramaDeExecAReady(TCBRecibido);
+	int existeProgramaBeso =programaBesoExiste(self, TCBRecibido);
+
+	if(existeProgramaBeso != ERROR_POR_DESCONEXION_DE_CONSOLA){
+		pasarProgramaDeExecAReady(TCBRecibido);
+	}
 
 }
 
+int programaBesoExiste(t_kernel* self, t_TCB_Kernel* TCBRecibido){
 
+	bool _existeProgramaBeso(t_programaEnKernel *unPrograma){
+		return ((unPrograma->programaTCB->pid == TCBRecibido->pid) && (unPrograma->programaTCB->tid == TCBRecibido->tid));
+	}
+
+	t_programaEnKernel *programaBuscado = NULL;
+
+	pthread_mutex_lock(&programasBesoDisponibleMutex);
+	programaBuscado = list_find(listaDeProgramasDisponibles,(void*)_existeProgramaBeso);
+	pthread_mutex_unlock(&programasBesoDisponibleMutex);
+
+	if (programaBuscado == NULL){
+
+		pthread_mutex_lock(&cola_exit);
+		list_add(cola_exit, programaBuscado);
+		pthread_mutex_unlock(&cola_exit);
+		log_info(self->loggerPlanificador, "Planificador: se agrego un elemento a la cola exit PID:%d TID:%d",TCBRecibido->pid, TCBRecibido->tid);
+
+		return ERROR_POR_DESCONEXION_DE_CONSOLA;
+	}
+
+	return 10242015643; //este valor en realidad no importa, lo que importa es el ERROR_POR_DESCONEXION_DE_CONSOLA
+}
 
 
 void pasarProgramaDeExecAReady(t_TCB_Kernel *TCB){

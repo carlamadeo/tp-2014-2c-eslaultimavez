@@ -71,7 +71,7 @@ t_list* cola_new;
 t_list* cola_ready;
 t_list* cola_exec;
 t_list* cola_block; //POR CUATRO, bloqueado por systemCall, por recurso, por esperando un hilo
-t_list* cola_exit;
+t_list* cola_exit;  //guarda solo TCB, no t_programaEnKernel
 
 //Guardan solo TCB para planificador (t_cpu)
 t_list* listaDeCPUExec;

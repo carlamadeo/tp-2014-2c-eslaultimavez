@@ -13,6 +13,8 @@ pthread_mutex_t newMutex;
 pthread_mutex_t blockMutex;
 pthread_mutex_t cpuMutex;
 
+pthread_mutex_t programasBesoDisponibleMutex;
+
 //pthread_mutex_t cpuLibre;
 //pthread_mutex_t cpuOcupada;
 extern pthread_mutex_t cpuLibre;
