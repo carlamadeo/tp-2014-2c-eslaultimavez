@@ -51,7 +51,7 @@ void pasarTCB_Ready_A_Exec(t_kernel* self){
 			list_add(cola_exec, programaParaExec); // se agrega el programa en cola EXEC
 			pthread_mutex_unlock(&execMutex);
 
-			t_cpu* cpuLibre = list_remove(listaDeCPULibres, 0);
+			t_cpu* cpuLibre = list_get(listaDeCPULibres, 0);
 			cargarTCBconOtroTCB_VOID(cpuLibre->TCB, programaParaExec->programaTCB);
 			cpuLibreAOcupada(self,cpuLibre);
 
@@ -281,8 +281,8 @@ void atenderCPU(t_kernel* self, t_socket *socketNuevaConexion, t_cpu *cpu, fd_se
 
 	//t_interrupcionKernel* interrupcion = malloc(sizeof(t_interrupcionKernel));
 
-	//socket_recvPaquete(socketNuevaConexion, paqueteCPUAtendido);
-	if (socket_recvPaquete(socketNuevaConexion, paqueteCPUAtendido) > 0){
+	socket_recvPaquete(socketNuevaConexion, paqueteCPUAtendido);
+	//if (socket_recvPaquete(socketNuevaConexion, paqueteCPUAtendido) > 0){
 
 		cpuOcupadaALibre(self,cpu);
 
@@ -350,9 +350,9 @@ void atenderCPU(t_kernel* self, t_socket *socketNuevaConexion, t_cpu *cpu, fd_se
 			ejecutar_UN_MENSAJE_DE_ERROR(self, paqueteCPUAtendido);
 			break;
 		}
-	}else{   //fin switch(paqueteCPU->header.type)
-		ejecutar_DESCONECTAR_CPU(self, cpu, master);
-	}
+//	}else{   //fin switch(paqueteCPU->header.type)
+//		ejecutar_DESCONECTAR_CPU(self, cpu, master);
+//	}
 	socket_freePaquete(paqueteCPUAtendido);
 }
 

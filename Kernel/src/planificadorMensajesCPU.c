@@ -82,12 +82,11 @@ void ejecutar_TERMINAR_QUANTUM(t_kernel* self, t_socket_paquete *paqueteTCB){
 	t_TCB_Kernel* TCBRecibido = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
 	TCBRecibido = (t_TCB_Kernel*) paqueteTCB->data;
 
+	printf("Se recibe TCB de CPU.\n");
+	printTCBKernel(TCBRecibido);
 	pasarProgramaDeExecAReady(TCBRecibido);
 
 }
-
-
-
 
 void pasarProgramaDeExecAReady(t_TCB_Kernel *TCB){
 
