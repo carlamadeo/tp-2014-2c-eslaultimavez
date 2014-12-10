@@ -33,7 +33,6 @@ void pasarTCB_Ready_A_Exec(t_kernel* self){
 	log_debug(self->loggerPlanificador,"Ready_A_Exec: Comienza a ejecutarse Hilo de Ready a Exec.");
 
 	while(1){
-		printf("ESTOY ACAAAA\n");
 
 		sem_wait(&sem_B);
 		sem_wait(&sem_C);
@@ -139,6 +138,8 @@ void cpuOcupadaALibre(t_cpu *CPU){
 	pthread_mutex_lock(&cpuLibreMutex);
 	list_add(listaDeCPULibres, cpuBuscada);
 	pthread_mutex_unlock(&cpuLibreMutex);
+
+	sem_post(&sem_C);
 }
 
 
@@ -243,7 +244,6 @@ void atenderNuevaConexionCPU(t_kernel* self, t_socket* socketNuevoCliente, fd_se
 	socket_freePaquete(paquete);
 }
 
-
 void agregarEnListaDeCPU(t_kernel* self, int id, t_socket* socketCPU){
 
 	t_cpu *unaCpu;
@@ -256,7 +256,6 @@ void agregarEnListaDeCPU(t_kernel* self, int id, t_socket* socketCPU){
 	log_info(self->loggerPlanificador,"Planificador: Tiene una nueva CPU con descriptor: %d",unaCpu->socketCPU->descriptor);
 	sem_post(&sem_C);
 }
-
 
 void atenderCPU(t_kernel* self, t_socket *socketNuevaConexion, t_cpu *cpu, fd_set* master){
 
@@ -425,8 +424,6 @@ t_programaEnKernel* obtenerTCBdeReady(t_kernel* self){
 
 	return NULL;
 }
-
-
 t_TCB_Kernel* inicializarUnTCB(){
 	t_TCB_Kernel* test_TCB = malloc(sizeof(t_TCB_Kernel));
 
