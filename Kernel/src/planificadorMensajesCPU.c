@@ -20,7 +20,7 @@ void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket_paquete *paquete
 	t_programaEnKernel* unTcbProcesado = list_remove_by_condition(cola_exec, (void*)_tcbParaExit);
 
 	if(unTcbProcesado != NULL){
-		socket_sendPaquete(unTcbProcesado->socketProgramaConsola, FINALIZAR_PROGRAMA_EXITO, 0 ,NULL);
+		socket_sendPaquete(unTcbProcesado->socketProgramaConsola, FINALIZAR_PROGRAMA_EXITO, 0, NULL);
 
 		pthread_mutex_lock(&exitMutex);
 		list_add(cola_exit, unTcbProcesado);
@@ -60,7 +60,7 @@ void desbloquearHilosBloqueadosPorElQueFinalizo(t_programaEnKernel* unTcbProcesa
 
 			if(programaADesbloquear != NULL){
 				pthread_mutex_lock(&blockMutex);
-				pasarProgramaDeBlockAReady(programaADesbloquear->programaTCB);
+				pasarProgramaDeBlockAReady(programaADesbloquear->programaTCB, 0);
 				pthread_mutex_unlock(&blockMutex);
 			}
 		}
@@ -82,7 +82,7 @@ void ejecutar_TERMINAR_QUANTUM(t_kernel* self, t_socket_paquete *paqueteTCB){
 	t_TCB_Kernel* TCBRecibido = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
 	TCBRecibido = (t_TCB_Kernel*) paqueteTCB->data;
 
-	int existeProgramaBeso =programaBesoExiste(self, TCBRecibido);
+	int existeProgramaBeso = programaBesoExiste(self, TCBRecibido);
 
 	if(existeProgramaBeso != ERROR_POR_DESCONEXION_DE_CONSOLA){
 		pasarProgramaDeExecAReady(TCBRecibido);
@@ -138,7 +138,7 @@ void pasarProgramaDeExecAReady(t_TCB_Kernel *TCB){
 }
 
 /***************************************************************************************************\
- *								--Comienzo Ejecutar una Interrupcion--							*
+ *								--Comienzo Ejecutar una Interrupcion--								*
 \***************************************************************************************************/
 
 
@@ -151,7 +151,7 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
 	convertirLaInterrupcionEnTCB(interrupcion, TCBInterrupcion); //QUE FEO!!
 
-	pasarProgramaDeExecABlock(TCBInterrupcion);
+	t_socket *socketConsola = pasarProgramaDeExecABlock(TCBInterrupcion);
 
 	agregarTCBAColaSystemCalls(TCBInterrupcion, interrupcion->direccionKM);
 
@@ -160,7 +160,7 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
 	modificarTCBKM(self->tcbKernel, TCBSystemCall);
 
-	pasarProgramaDeBlockAReady(self->tcbKernel);
+	pasarProgramaDeBlockAReady(self->tcbKernel, socketConsola);
 
 	free(interrupcion);
 
@@ -183,14 +183,14 @@ void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
 	volverTCBAModoNoKernel(self->tcbKernel, TCBFinInterrupcion->programa->programaTCB);
 
-	pasarProgramaDeBlockAReady(TCBFinInterrupcion->programa->programaTCB);
+	pasarProgramaDeBlockAReady(TCBFinInterrupcion->programa->programaTCB, 0);
 
 	sem_post(&sem_interrupcion);
 
 }
 
 
-void pasarProgramaDeExecABlock(t_TCB_Kernel *TCB){
+t_socket *pasarProgramaDeExecABlock(t_TCB_Kernel *TCB){
 
 	bool matchPrograma(t_programaEnKernel *unPrograma){
 		return (unPrograma->programaTCB->pid == TCB->pid) && (unPrograma->programaTCB->tid == TCB->tid);
@@ -205,6 +205,8 @@ void pasarProgramaDeExecABlock(t_TCB_Kernel *TCB){
 	pthread_mutex_lock(&blockMutex);
 	list_add(cola_block, programaBuscado);
 	pthread_mutex_unlock(&blockMutex);
+
+	return programaBuscado->socketProgramaConsola;
 }
 
 
@@ -245,7 +247,7 @@ void modificarTCBKM(t_TCB_Kernel *TCBKernel, t_TCBSystemCalls *TCBSystemCall){
 }
 
 
-void pasarProgramaDeBlockAReady(t_TCB_Kernel *TCB){
+void pasarProgramaDeBlockAReady(t_TCB_Kernel *TCB, t_socket *socketConsola){
 
 	bool matchPrograma(t_programaEnKernel *unPrograma){
 		return unPrograma->programaTCB->pid == TCB->pid;
@@ -254,6 +256,10 @@ void pasarProgramaDeBlockAReady(t_TCB_Kernel *TCB){
 	pthread_mutex_lock(&execMutex);
 	t_programaEnKernel *programaBuscado = list_remove_by_condition(cola_block, matchPrograma);
 	pthread_mutex_unlock(&execMutex);
+
+	if(TCB->km == 1){
+		programaBuscado->socketProgramaConsola = socketConsola;
+	}
 
 	programaBuscado->programaTCB = TCB;
 
@@ -508,7 +514,7 @@ void ejecutar_UN_WAKE_HILO(t_kernel* self, t_socket_paquete* paquete){
 		t_programaEnKernel *programaADesbloquear = list_remove(recursoEncontrado->listaBloqueados, 0);
 
 		if(programaADesbloquear != NULL)
-			pasarProgramaDeBlockAReady(programaADesbloquear->programaTCB);
+			pasarProgramaDeBlockAReady(programaADesbloquear->programaTCB, 0);
 
 	}
 

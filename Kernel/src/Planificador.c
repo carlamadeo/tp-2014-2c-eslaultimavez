@@ -126,6 +126,7 @@ void cpuLibreAOcupada(t_cpu *CPU){
 	pthread_mutex_unlock(&cpuLibreMutex);
 }
 
+
 void cpuOcupadaALibre(t_cpu *CPU){
 
 	bool matchCPU(t_cpu *unaCPU){
@@ -357,30 +358,55 @@ void ejecutar_DESCONECTAR_CPU(t_kernel* self, t_cpu* cpu, fd_set* master){
 	bool esCpu(t_cpu* cpuEnLista){
 		return (cpuEnLista->id == cpu->id);
 	}
+
 	sem_wait(&mutex_cpuExec);
 	cpuRemovido = list_remove_by_condition(listaDeCPUExec, (void*)esCpu);
 	sem_post(&mutex_cpuExec);
 
 	//3) Tercer paso, se pregunta si tiene programa ejecutando
-	if(cpuRemovido!=NULL){
+	if(cpuRemovido != NULL){
+
 		bool esPrograma(t_programaEnKernel* programaEnLista){
-			return ((programaEnLista->programaTCB->pid == cpuRemovido->TCB->pid)&&(programaEnLista->programaTCB->tid == cpuRemovido->TCB->pid));
+			return ((programaEnLista->programaTCB->pid == cpuRemovido->TCB->pid) && (programaEnLista->programaTCB->tid == cpuRemovido->TCB->tid));
 		}
+
 		//sem_wait(&sem_cpuExec);
 		sem_wait(&mutex_exec);
 		t_programaEnKernel* programaRemovido = list_remove_by_condition(cola_exec, (void*)esPrograma);
 		sem_post(&mutex_exec);
-		sem_wait(&mutex_exit);
-		list_add(cola_exit, programaRemovido);
-		sem_post(&mutex_exit);
 
+		if(programaRemovido->programaTCB->km == 1){
+
+			bool esProgramaInterrupcion(t_programaEnKernel* programaEnLista){
+				return ((programaEnLista->programaTCB->pid == cpuRemovido->TCB->pid) && (programaEnLista->programaTCB->tid == cpuRemovido->TCB->tid));
+			}
+
+			pthread_mutex_lock(&blockMutex);
+			t_programaEnKernel* programaInterrupcion = list_remove_by_condition(cola_block, (void*)esProgramaInterrupcion);
+			pthread_mutex_unlock(&blockMutex);
+
+			sem_wait(&mutex_exit);
+			list_add(cola_exit, programaInterrupcion->programaTCB);
+			sem_post(&mutex_exit);
+
+			self->tcbKernel = programaRemovido->programaTCB;
+
+			pthread_mutex_lock(&blockMutex);
+			list_add(cola_block, programaRemovido);
+			pthread_mutex_unlock(&blockMutex);
+		}
+
+		else{
+			sem_wait(&mutex_exit);
+			list_add(cola_exit, programaRemovido->programaTCB);
+			sem_post(&mutex_exit);
+		}
 
 		//se le avisa al programa Beso que se desconecto la CPU
 		if (socket_sendPaquete(programaRemovido->socketProgramaConsola, ERROR_POR_DESCONEXION_DE_CPU, 0, NULL) >= 0)
 			log_info(self->loggerPlanificador, "Planificador: Envia ERROR_POR_DESCONEXION_DE_CPU a un programa Beso.");
 		else
 			log_error(self->loggerPlanificador, "Planificador: error al enviar ERROR_POR_DESCONEXION_DE_CPU a un programa Beso.");
-
 
 		//TODO importante hacer esta funcion para que la MSP borre un el contenido del programa beso
 		//avisarQueTerminoUnProgramaDestruirSusSegmentos(cpuRemovido->TCB->pid);
@@ -391,6 +417,7 @@ void ejecutar_DESCONECTAR_CPU(t_kernel* self, t_cpu* cpu, fd_set* master){
 		cpuRemovido = list_remove_by_condition(listaDeCPULibres, (void*)esCpu);
 		sem_post(&mutex_cpuLibre);
 	}
+
 	log_info(self->loggerPlanificador,"Planificador: tamanio de la lista de CPU Exec %d", list_size(listaDeCPUExec));
 	log_info(self->loggerPlanificador,"Planificador: tamanio de la lista de CPU Libres %d", list_size(listaDeCPULibres));
 }
@@ -439,6 +466,8 @@ t_programaEnKernel* obtenerTCBdeReady(t_kernel* self){
 
 	return NULL;
 }
+
+
 t_TCB_Kernel* inicializarUnTCB(){
 	t_TCB_Kernel* test_TCB = malloc(sizeof(t_TCB_Kernel));
 
@@ -457,6 +486,7 @@ t_TCB_Kernel* inicializarUnTCB(){
 	test_TCB->registro_de_programacion[4] = 0;
 	return test_TCB;
 }
+
 
 void finalizarProgramaEnPlanificacion(t_programaEnKernel* programa){
 	sem_wait(&mutex_exit);//BLOQUEO LISTA DE EXIT

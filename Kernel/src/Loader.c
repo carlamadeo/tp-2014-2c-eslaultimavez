@@ -182,7 +182,7 @@ void atenderProgramaConsola(t_kernel* self,t_programaEnKernel* programa, fd_set*
 		list_remove_by_condition(listaDeProgramasDisponibles, (void*)esProgramaDesconectado);
 		t_programaEnKernel* unProgramaExit = list_remove_by_condition(cola_ready, (void*)esProgramaDesconectado);//TODO ver si se lo manda a la cola EXIT
 
-		list_add(cola_exit, unProgramaExit->programaTCB);
+		//list_add(cola_exit, unProgramaExit->programaTCB);
 
 		log_info(self->loggerLoader,"Loader: cantidad de TCBs enviados al Kernel :%d", list_size(listaDeProgramasDisponibles));
 		log_info(self->loggerLoader,"Loader: cantidad de TCBs en la cola NEW  :%d", list_size(cola_new));

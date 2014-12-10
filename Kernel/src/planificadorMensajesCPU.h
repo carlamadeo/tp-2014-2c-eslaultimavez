@@ -113,10 +113,10 @@ int programaBesoExiste(t_kernel* self, t_TCB_Kernel* TCBRecibido);
 
 void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete);
 void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete);
-void pasarProgramaDeExecABlock(t_TCB_Kernel *TCBInterrupcion);
+t_socket *pasarProgramaDeExecABlock(t_TCB_Kernel *TCB);
 void agregarTCBAColaSystemCalls(t_TCB_Kernel* TCBInterrupcion, uint32_t direccionKM);
 void modificarTCBKM(t_TCB_Kernel *TCBKernel, t_TCBSystemCalls *TCBSystemCall);
-void pasarProgramaDeBlockAReady(t_TCB_Kernel *TCB);
+void pasarProgramaDeBlockAReady(t_TCB_Kernel *TCB, t_socket *socketConsola);
 void convertirLaInterrupcionEnTCB(t_interrupcionKernel *interrupcion, t_TCB_Kernel *TCBInterrupcion);
 void volverTCBAModoNoKernel(t_TCB_Kernel * TCBKernel, t_TCB_Kernel *unTCB);
 
