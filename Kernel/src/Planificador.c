@@ -288,7 +288,7 @@ void atenderCPU(t_kernel* self, t_socket *socketNuevaConexion, t_cpu *cpu, fd_se
 		case MENSAJE_DE_ERROR:
 			cpuOcupadaALibre(cpu);
 			log_info(self->loggerPlanificador, "Planificador: Recibe un MENSAJE_DE_ERROR");
-			//TODO Falta enviarle a la consola el mensaje de error
+			ejecutar_UN_MENSAJE_DE_ERROR(self, paqueteCPUAtendido);
 			break;
 
 		case INTERRUPCION:

@@ -534,6 +534,7 @@ void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self, t_socket_paquete* paquete){
 	bool matchProgramaConsola(t_programaEnKernel* programa){
 		return (programa->programaTCB->pid == errorParaConsola->pid);
 	}
+	printf("LIST SIZE %d\n", list_size(listaDeProgramasDisponibles));
 
 	t_programaEnKernel *programaAEnviar = list_remove_by_condition(listaDeProgramasDisponibles, matchProgramaConsola);
 
@@ -543,7 +544,7 @@ void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self, t_socket_paquete* paquete){
 
 	case ERROR_REGISTRO_DESCONOCIDO:
 
-		mensaje = "Ha ocurrido un error al por un registro desconocido";
+		mensaje = "Ha ocurrido un error por un registro desconocido";
 
 		break;
 
@@ -579,23 +580,25 @@ void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self, t_socket_paquete* paquete){
 
 	case ERROR_POR_SEGMENTATION_FAULT:
 
-		mensaje = "Ha ocurrido un error al de Segmentation Fault";
+		mensaje = "Ha ocurrido un error por Segmentation Fault";
 
 		break;
 
 	default:
+
+		mensaje = "Ha ocurrido un error desconocido";
+
 		break;
 	}
 
 	memset(enviarMensaje->texto, 0, 150);
 	memcpy(enviarMensaje->texto, mensaje, strlen(mensaje) + 1);
 
-	if(socket_sendPaquete(programaAEnviar->socketProgramaConsola, MENSAJE_DE_ERROR, sizeof(t_entrada_textoKernel), enviarMensaje) <= 0)
+	if(socket_sendPaquete(programaAEnviar->socketProgramaConsola, MENSAJE_DE_ERROR, sizeof(t_entrada_textoKernel), enviarMensaje) >= 0)
 		log_debug(self->loggerPlanificador, "Planificador: Envia ERROR a la Consola");
 
-	free(mensaje);
-	free(programaAEnviar);
 	free(enviarMensaje);
+	free(errorParaConsola);
 }
 
 

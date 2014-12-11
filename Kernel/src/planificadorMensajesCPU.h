@@ -98,6 +98,7 @@ typedef struct{
 
 typedef struct {
 	int pid;
+	int tid;
 	int identificadorError;
 } t_errorKernel;
 
