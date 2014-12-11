@@ -16,6 +16,7 @@ char *instrucciones_eso[] = {"LOAD", "GETM", "SETM", "MOVR", "ADDR", "SUBR", "MU
 		"COMP", "CGEQ", "CLEQ", "GOTO", "JMPZ", "JPNZ", "INTE", "SHIF", "NOPP", "PUSH", "TAKE", "XXXX", "MALC", "FREE", "INNN",
 		"INNC", "OUTN", "OUTC", "CREA", "JOIN", "BLOK", "WAKE"};
 
+
 int cpuProcesarTCB(t_CPU *self){
 
 	int tamanio = sizeof(char) * 4;
@@ -31,7 +32,7 @@ int cpuProcesarTCB(t_CPU *self){
 	log_info(self->loggerCPU, "CPU: Comienzo a procesar el TCB de pid: %d y direccion: %0.8p", self->tcb->pid, self->tcb->puntero_instruccion);
 
 	while(!salida && ((self->quantum > 0) || (self->tcb->km == 1))){
-
+		printTCBCPU(self->tcb);
 		encontrado = 0;
 		indice = 0;
 
@@ -47,7 +48,6 @@ int cpuProcesarTCB(t_CPU *self){
 			log_error(self->loggerCPU, "CPU: error al intentar cpuLeerMemoria, con N°: %d", estado);
 			estado_ejecucion_instruccion = ERROR_DE_LECTURA_DE_MEMORIA;
 		}
-		//estado puede ser SIN_ERRORES o ERROR_POR_SEGMENTATION_FAULT
 
 		while ((encontrado == 0) && (indice <= CANTIDAD_INSTRUCCIONES)){
 

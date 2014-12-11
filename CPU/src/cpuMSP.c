@@ -172,7 +172,6 @@ int cpuLeerMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, int t
 	memcpy(programa, unaLectura->lectura, tamanio);  //en esta linea rompe Para que se usa un programa y como se carga
 
 	estado = unaLectura->estado;
-	printf("ACA ES EL ESTADO %d\n", estado);
 
 	free(unaLectura);
 	return estado;

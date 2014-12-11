@@ -95,15 +95,16 @@ int GETM_ESO(t_CPU *self){
 
 		if((regA != -1) && (regB != -1)){
 
-			imprimirDosRegistros(regA, regB, "GETM");
+			imprimirDosRegistros(registroA, registroB, "GETM");
 
-			int tamanioMSP = sizeof(int32_t);
-			char *lecturaMSP = malloc(sizeof(char)*tamanioMSP);
+			int tamanioMSP = sizeof(char);
+			char *lecturaMSP = malloc(sizeof(char));
+			char leido;
 
 
-			if(regB <= 5)
+			if(regB <= 5){
 				estado_bloque = cpuLeerMemoria(self, (uint32_t)self->tcb->registro_de_programacion[regB], lecturaMSP, tamanioMSP);
-
+			}
 			else{
 				switch(regB){
 				case 6:estado_bloque = cpuLeerMemoria(self, self->tcb->base_segmento_codigo, lecturaMSP, tamanioMSP);break;
@@ -116,14 +117,14 @@ int GETM_ESO(t_CPU *self){
 			if(estado_bloque == SIN_ERRORES){
 				//David: en que momento se asigna el valor obtenido en el primer registro (regA)??? para mi falta:
 				if(regA <= 5)
-					self->tcb->registro_de_programacion[regA]=(int32_t)lecturaMSP;
+					self->tcb->registro_de_programacion[regA] = (int32_t)lecturaMSP[0];
 
 				else{
 					switch(regA){
-					case 6:self->tcb->base_segmento_codigo=(int32_t)lecturaMSP;break;
-					case 7:self->tcb->puntero_instruccion=(int32_t)lecturaMSP;break;
-					case 8:self->tcb->base_stack=(int32_t)lecturaMSP;break;
-					case 9:self->tcb->cursor_stack=(int32_t)lecturaMSP;break;
+					case 6:self->tcb->base_segmento_codigo = (uint32_t)lecturaMSP;break;
+					case 7:self->tcb->puntero_instruccion = (uint32_t)lecturaMSP;break;
+					case 8:self->tcb->base_stack = (uint32_t)lecturaMSP;break;
+					case 9:self->tcb->cursor_stack = (uint32_t)lecturaMSP;break;
 					}
 				}
 
@@ -1892,7 +1893,8 @@ int PUSH_ESO(t_CPU *self){
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion PUSH");
 
 		memcpy(&(numero), lecturaDeMSP, sizeof(int32_t));
-		memcpy(&(registro), lecturaDeMSP + sizeof(char), sizeof(char));
+		memcpy(&(registro), lecturaDeMSP + sizeof(int32_t), sizeof(char));
+
 		reg = determinar_registro(registro);
 
 		if((reg != -1)){
@@ -1925,7 +1927,7 @@ int PUSH_ESO(t_CPU *self){
 
 				free(byte_a_escribir);
 
-				//TODO No llega aca
+
 				if (estado_bloque == SIN_ERRORES){
 					self->tcb->cursor_stack += numero;
 					log_info(self->loggerCPU, "CPU: PUSH ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);

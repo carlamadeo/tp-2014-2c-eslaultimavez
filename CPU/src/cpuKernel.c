@@ -58,7 +58,6 @@ int cpuRecibirTCB(t_CPU *self){
 
 			unTCBNuevo = (t_TCB_CPU*) paquetePlanificadorTCB->data;
 			self->tcb = unTCBNuevo;
-			printTCBCPU(self->tcb);
 			//log_debug(self->loggerCPU, "CPU: recibio un TCB_NUEVO con PID: %d TID:%d KM:%d", self->tcb->pid, self->tcb->tid, self->tcb->km);
 		}
 
@@ -210,7 +209,6 @@ int reciboEntradaEstandarINT(t_CPU *self, int *recibido){
 		}
 
 		else {
-			printf("SE RECIBIO INT: %d\n", paquete->header.type);
 			log_error(self->loggerCPU, "CPU: Se recibio un codigo inesperado al recibir una entrada estandar INT del Kernel para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			return ERROR_POR_CODIGO_INESPERADO;
 		}
