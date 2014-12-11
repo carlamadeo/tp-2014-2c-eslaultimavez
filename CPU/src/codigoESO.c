@@ -121,10 +121,10 @@ int GETM_ESO(t_CPU *self){
 
 				else{
 					switch(regA){
-					case 6:self->tcb->base_segmento_codigo = (uint32_t)lecturaMSP;break;
-					case 7:self->tcb->puntero_instruccion = (uint32_t)lecturaMSP;break;
-					case 8:self->tcb->base_stack = (uint32_t)lecturaMSP;break;
-					case 9:self->tcb->cursor_stack = (uint32_t)lecturaMSP;break;
+					case 6:self->tcb->base_segmento_codigo = (uint32_t)lecturaMSP[0];break;
+					case 7:self->tcb->puntero_instruccion = (uint32_t)lecturaMSP[0];break;
+					case 8:self->tcb->base_stack = (uint32_t)lecturaMSP[0];break;
+					case 9:self->tcb->cursor_stack = (uint32_t)lecturaMSP[0];break;
 					}
 				}
 
