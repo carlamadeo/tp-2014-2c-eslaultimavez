@@ -41,15 +41,8 @@ int main(int argc, char** argv) {
 	cpuConectarConMPS(self);
 	cpuConectarConKernel(self);
 
-	while(!error){
-
-		if (!cpuRecibirQuantum(self) || !cpuRecibirTCB(self)){
-			log_info(self->loggerCPU, "Finalizando CPU...");
-			error = 1;
-		}
-
-		else
-			error = cpuProcesarTCB(self);
+	while(cpuRecibirQuantum(self) && cpuRecibirTCB(self)){
+		cpuProcesarTCB(self);
 	}
 
 	log_info(self->loggerCPU, "Se desconecto la CPU. Elimino todo");
