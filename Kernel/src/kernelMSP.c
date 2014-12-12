@@ -25,7 +25,6 @@ void realizarHandshakeConMSP(t_kernel *self) {
 	if (socket_sendPaquete(self->socketMSP->socket, HANDSHAKE_KERNEL, 0, NULL) > 0)
 		log_info(self->loggerKernel, "Kernel: Envia HANDSHAKE_KERNEL ");
 
-
 	if (socket_recvPaquete(self->socketMSP->socket, paquete) >= 0) {
 		if(paquete->header.type == HANDSHAKE_MSP)
 			log_info(self->loggerKernel, "Kernel: Se realizaron los Handshake con la MSP correctamente");

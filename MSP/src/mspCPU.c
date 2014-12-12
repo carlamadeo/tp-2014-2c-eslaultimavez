@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 extern t_MSP *self;
-t_sockets *sockets;
+t_sockets *socketsKernel;
 
 void *mspLanzarHiloCPU(t_socket* socketClienteCPU){
 

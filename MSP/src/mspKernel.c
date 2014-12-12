@@ -9,16 +9,16 @@
 #include <unistd.h>
 
 extern t_MSP *self;
-t_sockets *sockets;
+//t_sockets *socketsKernel;
 
-void *mspLanzarHiloKernel(){
+void *mspLanzarHiloKernel(t_socket* socketsKernel){
 
 	t_socket_paquete *paquete;
 	int i = 1;
 
 	log_info(self->logMSP,"Hilo Kernel creado correctamente.");
 
-	if (socket_sendPaquete(sockets->socketClienteKernel, HANDSHAKE_MSP, 0, NULL) > 0)
+	if (socket_sendPaquete(socketsKernel, HANDSHAKE_MSP, 0, NULL) > 0)
 		log_info(self->logMSP, "MSP: Handshake con Kernel!");
 
 	else
@@ -28,21 +28,21 @@ void *mspLanzarHiloKernel(){
 
 		paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
-		if (socket_recvPaquete(sockets->socketClienteKernel, paquete) >= 0){
+		if (socket_recvPaquete(socketsKernel, paquete) >= 0){
 
 			switch(paquete->header.type){
 
 			case CREAR_SEGMENTO:
-				crearSegmentoKernel(paquete);
+				crearSegmentoKernel(socketsKernel, paquete);
 				break;
 			case DESTRUIR_SEGMENTO:
-				destruirSegmentoKernel(paquete);
+				destruirSegmentoKernel(socketsKernel, paquete);
 				break;
 			case ESCRIBIR_MEMORIA:
-				escribirMemoriaKernel(paquete);
+				escribirMemoriaKernel(socketsKernel,paquete);
 				break;
 			case LEER_MEMORIA:
-				leerMemoriaKernel(paquete);
+				leerMemoriaKernel(socketsKernel,paquete);
 				break;
 			default:
 				break;
@@ -51,7 +51,7 @@ void *mspLanzarHiloKernel(){
 
 		else{
 			log_debug(self->logMSP, "MSP: El Kernel ha cerrado la conexion.");
-			close(sockets->socketClienteKernel->descriptor);
+			close(socketsKernel->descriptor);
 			i = 0;
 		}
 
@@ -62,7 +62,7 @@ void *mspLanzarHiloKernel(){
 }
 
 
-void crearSegmentoKernel(t_socket_paquete *paquete){
+void crearSegmentoKernel(t_socket* socketsKernel,t_socket_paquete *paquete){
 
 	t_datos_aKernelSegmento* datosAKernel = malloc(sizeof(t_datos_aKernelSegmento));
 	t_datos_deKernelCrearSegmento* datosDeKernel = (t_datos_deKernelCrearSegmento*) (paquete->data);
@@ -77,7 +77,7 @@ void crearSegmentoKernel(t_socket_paquete *paquete){
 	//o ERROR_POR_SEGMENTATION_FAULT o la base del segmento si no hubo ningún problema
 	datosAKernel->recibido = mspCrearSegmento(datosDeKernel->pid, datosDeKernel->tamanio);
 
-	if (socket_sendPaquete(sockets->socketClienteKernel, CREAR_SEGMENTO, sizeof(t_datos_aKernelSegmento), datosAKernel) > 0)
+	if (socket_sendPaquete(socketsKernel, CREAR_SEGMENTO, sizeof(t_datos_aKernelSegmento), datosAKernel) > 0)
 		log_info(self->logMSP, "MSP: Los datos de creacion de Segmento se han enviado al Kernel correctamente");
 
 	free(datosAKernel);
@@ -85,7 +85,7 @@ void crearSegmentoKernel(t_socket_paquete *paquete){
 }
 
 
-void destruirSegmentoKernel(t_socket_paquete *paquete){
+void destruirSegmentoKernel(t_socket* socketsKernel,t_socket_paquete *paquete){
 
 	t_datos_aKernelSegmento* datosAKernel = malloc(sizeof(t_datos_aKernelSegmento));
 	t_datos_deKernelDestruirSegmento* datosDeKernel = (t_datos_deKernelDestruirSegmento*) (paquete->data);
@@ -98,7 +98,7 @@ void destruirSegmentoKernel(t_socket_paquete *paquete){
 	//o ERROR_POR_SEGMENTO_DESCONOCIDO si el segmento indicado es incorrecto
 	datosAKernel->recibido = mspDestruirSegmento(datosDeKernel->pid, datosDeKernel->direccionBase);
 
-	if (socket_sendPaquete(sockets->socketClienteKernel, CREAR_SEGMENTO, sizeof(t_datos_aKernelSegmento), datosAKernel) > 0)
+	if (socket_sendPaquete(socketsKernel, CREAR_SEGMENTO, sizeof(t_datos_aKernelSegmento), datosAKernel) > 0)
 		log_info(self->logMSP, "MSP: Los datos de destruccion de Segmento se han enviado al Kernel correctamente");
 
 	free(datosAKernel);
@@ -106,7 +106,7 @@ void destruirSegmentoKernel(t_socket_paquete *paquete){
 }
 
 
-void escribirMemoriaKernel(t_socket_paquete *paquete){
+void escribirMemoriaKernel(t_socket* socketsKernel, t_socket_paquete *paquete){
 
 	t_datos_aKernelEscritura* datosAKernel = malloc(sizeof(t_datos_aKernelEscritura));
 	t_datos_deKernelEscritura* datosDeKernel = (t_datos_deKernelEscritura*) (paquete->data);
@@ -119,7 +119,7 @@ void escribirMemoriaKernel(t_socket_paquete *paquete){
 	//o ERROR_POR_SEGMENTATION_FAULT si se intentó escribir memoria inválida
 	datosAKernel->estado = mspEscribirMemoria(datosDeKernel->pid, datosDeKernel->direccionVirtual, datosDeKernel->buffer, datosDeKernel->tamanio);
 
-	if (socket_sendPaquete(sockets->socketClienteKernel, ESCRIBIR_MEMORIA, sizeof(t_datos_aKernelEscritura), datosAKernel) > 0)
+	if (socket_sendPaquete(socketsKernel, ESCRIBIR_MEMORIA, sizeof(t_datos_aKernelEscritura), datosAKernel) > 0)
 		log_info(self->logMSP, "MSP: Los datos de escritura de memoria se han enviado al Kernel correctamente");
 
 	free(datosAKernel);
@@ -127,7 +127,7 @@ void escribirMemoriaKernel(t_socket_paquete *paquete){
 }
 
 
-void leerMemoriaKernel(t_socket_paquete *paquete){
+void leerMemoriaKernel(t_socket* socketsKernel, t_socket_paquete *paquete){
 
 	//TODO ver si es necesario hacer un malloc a datosAKernel->lectura!!!
 	t_datos_aKernelLectura* datosAKernel = malloc(sizeof(t_datos_aKernelLectura));
@@ -141,7 +141,7 @@ void leerMemoriaKernel(t_socket_paquete *paquete){
 	//o ERROR_POR_SEGMENTATION_FAULT si se intentó leer memoria inválida
 	datosAKernel->estado = mspLeerMemoria(datosDeKernel->pid, datosDeKernel->direccionVirtual, datosDeKernel->tamanio, datosAKernel->lectura);
 
-	if (socket_sendPaquete(sockets->socketClienteKernel, LEER_MEMORIA, sizeof(t_datos_aKernelLectura), datosAKernel) > 0)
+	if (socket_sendPaquete(socketsKernel, LEER_MEMORIA, sizeof(t_datos_aKernelLectura), datosAKernel) > 0)
 		log_info(self->logMSP, "MSP: Los datos de lectura de memoria se han enviado al Kernel correctamente");
 
 	free(datosDeKernel);
