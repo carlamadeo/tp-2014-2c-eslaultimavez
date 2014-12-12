@@ -152,8 +152,7 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 	convertirLaInterrupcionEnTCB(interrupcion, TCBInterrupcion);
 
 	t_socket *socketConsola = pasarProgramaDeExecABlock(TCBInterrupcion);
-	printf("PASO PROGRAMA DE EXEC A BLOCK\n");
-	printTCBKernel(TCBInterrupcion);
+
 	agregarTCBAColaSystemCalls(TCBInterrupcion, interrupcion->direccionKM);
 
 	//TODO No se si el programa lo tengo que tomar de esta cola o de la de BLOCK
@@ -162,9 +161,6 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 	modificarTCBKM(self->tcbKernel, TCBSystemCall);
 
 	pasarProgramaDeBlockAReady(self->tcbKernel, socketConsola);
-
-	printf("PASO PROGRAMA DE BLOCK A READY\n");
-	printTCBKernel(self->tcbKernel);
 
 	free(interrupcion);
 
@@ -178,8 +174,6 @@ void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 	self->tcbKernel = tcbFinInterrupcion;
 
 	pasarProgramaDeExecABlock(self->tcbKernel);
-	printf("PASO PROGRAMA DE EXEC A BLOCK\n");
-	printTCBKernel(self->tcbKernel);
 
 	bool matchTCB(t_TCBSystemCalls *TCB){
 		return (TCB->programa->programaTCB->pid == tcbFinInterrupcion->pid) && (TCB->programa->programaTCB->tid == tcbFinInterrupcion->tid);
@@ -229,12 +223,9 @@ void agregarTCBAColaSystemCalls(t_TCB_Kernel* TCBInterrupcion, uint32_t direccio
 	t_programaEnKernel *programaBuscado = list_remove_by_condition(listaDeProgramasDisponibles, matchPrograma);
 
 	//El programa que se encuentra en la lista de programas disponible no tiene las mismas direcciones que el que busco ahora, por eso actualizo
-	printf("ELIMINO DE LISTA DE PROGRAMAS DISPONIBLES:\n");
-	printTCBKernel(programaBuscado->programaTCB);
+
 	programaBuscado->programaTCB = TCBInterrupcion;
 	list_add(listaDeProgramasDisponibles, programaBuscado);
-	printf("AGREGO LISTA DE PROGRAMAS DISPONIBLES:\n");
-	printTCBKernel(programaBuscado->programaTCB);
 
 	t_TCBSystemCalls *TCBSystemCall = malloc(sizeof(t_TCBSystemCalls));
 
@@ -242,8 +233,6 @@ void agregarTCBAColaSystemCalls(t_TCB_Kernel* TCBInterrupcion, uint32_t direccio
 	TCBSystemCall->direccionKM = direccionKM;
 	//TODO Ver si aca necesito bloquear la lista
 	list_add(listaSystemCall, TCBSystemCall);
-	printf("AGREGO TCB A LISTA SYSTEM CALLS:\n");
-	printTCBKernel(TCBSystemCall->programa->programaTCB);
 
 }
 
