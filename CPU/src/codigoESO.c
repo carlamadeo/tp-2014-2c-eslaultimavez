@@ -2269,11 +2269,19 @@ int CREA_ESO(t_CPU *self){ 	// CREA un hilo hijo de TCB
 
 		log_info(self->loggerCPU, "CPU: Ejecutando instruccion CREA");
 		t_crea_hilo* crear_hilo = malloc(sizeof(t_crea_hilo));
-		crear_hilo->tcb = self->tcb;
-		crear_hilo->tcb->puntero_instruccion = self->tcb->registro_de_programacion[1];	//Agregado Carla
-		crear_hilo->tcb->tid = self->tcb->tid + 1;											//Agregado Carla
-		crear_hilo->tcb->km = 0;														//Agregado Carla
-		//TODO Falta ver el tema del segmento de stack que no lo entiendo!!
+		crear_hilo->pid = self->tcb->pid;
+		crear_hilo->puntero_instruccion = self->tcb->registro_de_programacion[1];
+		crear_hilo->tid = self->tcb->tid + 1;
+		crear_hilo->km = 0;
+		crear_hilo->base_segmento_codigo = self->tcb->base_segmento_codigo;
+		crear_hilo->tamanio_segmento_codigo = self->tcb->tamanio_segmento_codigo;
+		crear_hilo->base_stack = self->tcb->base_stack;
+		crear_hilo->cursor_stack = self->tcb->cursor_stack;
+		crear_hilo->registro_de_programacion[0] = self->tcb->registro_de_programacion[0];
+		crear_hilo->registro_de_programacion[1] = self->tcb->registro_de_programacion[1];
+		crear_hilo->registro_de_programacion[2] = self->tcb->registro_de_programacion[2];
+		crear_hilo->registro_de_programacion[3] = self->tcb->registro_de_programacion[3];
+		crear_hilo->registro_de_programacion[4] = self->tcb->registro_de_programacion[4];
 
 		if (socket_sendPaquete(self->socketPlanificador->socket, CREAR_HILO, sizeof(t_crea_hilo), crear_hilo) <= 0){
 			log_info(self->loggerCPU, "CPU: CREA ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);

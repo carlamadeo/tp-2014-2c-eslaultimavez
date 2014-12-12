@@ -4,18 +4,6 @@
 #include "CPU_Proceso.h"
 #include "cpuKernel.h"
 
-typedef struct {
-	int pid;
-	int tid;
-	short km;
-	uint32_t base_segmento_codigo;
-	int tamanio_segmento_codigo;
-	uint32_t puntero_instruccion;
-	uint32_t base_stack;
-	uint32_t cursor_stack;
-	int32_t registro_de_programacion[5];
-} t_TCBHiloCPU;
-
 
 void imprimirUnNumero(uint32_t numero, char* funcion);
 void imprimirNumeroYRegistro(char registro, int numero, char* funcion);
