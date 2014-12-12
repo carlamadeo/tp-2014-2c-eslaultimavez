@@ -151,7 +151,7 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
 	t_TCB_Kernel *TCBInterrupcion = malloc(sizeof(t_TCB_Kernel));
 
-	convertirLaInterrupcionEnTCB(interrupcion, TCBInterrupcion); //QUE FEO!!
+	convertirLaInterrupcionEnTCB(interrupcion, TCBInterrupcion);
 
 	t_socket *socketConsola = pasarProgramaDeExecABlock(TCBInterrupcion);
 
@@ -173,10 +173,12 @@ void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
 	t_TCB_Kernel* tcbFinInterrupcion = (t_TCB_Kernel*) (paquete->data);
 
+	self->tcbKernel = tcbFinInterrupcion;
+
 	pasarProgramaDeExecABlock(self->tcbKernel);
 
 	bool matchTCB(t_TCBSystemCalls *TCB){
-		return (TCB->programa->programaTCB->pid == tcbFinInterrupcion->pid);
+		return (TCB->programa->programaTCB->pid == tcbFinInterrupcion->pid) && (TCB->programa->programaTCB->tid == tcbFinInterrupcion->tid);
 	}
 
 	t_TCBSystemCalls *TCBFinInterrupcion = list_remove_by_condition(listaSystemCall, matchTCB);
@@ -223,6 +225,7 @@ void agregarTCBAColaSystemCalls(t_TCB_Kernel* TCBInterrupcion, uint32_t direccio
 	t_programaEnKernel *programaBuscado = list_remove_by_condition(listaDeProgramasDisponibles, matchPrograma);
 
 	//El programa que se encuentra en la lista de programas disponible no tiene las mismas direcciones que el que busco ahora, por eso actualizo
+
 	programaBuscado->programaTCB = TCBInterrupcion;
 	list_add(listaDeProgramasDisponibles, programaBuscado);
 
@@ -230,8 +233,6 @@ void agregarTCBAColaSystemCalls(t_TCB_Kernel* TCBInterrupcion, uint32_t direccio
 
 	TCBSystemCall->programa = programaBuscado;
 	TCBSystemCall->direccionKM = direccionKM;
-	printf("PASO A listaSystemCall EN agregarTCBAColaSystemCalls\n");
-	printTCBKernel(TCBSystemCall->programa->programaTCB);
 	//TODO Ver si aca necesito bloquear la lista
 	list_add(listaSystemCall, TCBSystemCall);
 
@@ -554,7 +555,6 @@ void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self, t_socket_paquete* paquete){
 	bool matchProgramaConsola(t_programaEnKernel* programa){
 		return (programa->programaTCB->pid == errorParaConsola->pid);
 	}
-	printf("LIST SIZE %d\n", list_size(listaDeProgramasDisponibles));
 
 	t_programaEnKernel *programaAEnviar = list_find(listaDeProgramasDisponibles, matchProgramaConsola);
 

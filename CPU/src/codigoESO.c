@@ -1762,7 +1762,6 @@ int INTE_ESO(t_CPU *self){
 	int tamanio = 4;
 	char *lecturaDeMSP = malloc(sizeof(char)*tamanio + 1);
 	uint32_t direccion;
-	t_ServiciosAlPlanificador* serviciosAlPlanificador = malloc(sizeof(t_ServiciosAlPlanificador));
 
 
 	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);

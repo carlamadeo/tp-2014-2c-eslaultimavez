@@ -96,6 +96,10 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 			case ENTRADA_ESTANDAR_INT:
 
 				numeroEnChar = malloc(sizeof(int));
+				memset(numeroEnChar, 0, sizeof(int));
+				memset(numeroEnChar, 0, 10);
+				printf("Ingrese ENTER para entrar al modo Entrada Estandar");
+				while(getchar() != '\n');
 				printf("Ingrese el numero que desea enviar al Kernel: ");
 				fgets(numeroEnChar, sizeof(int), stdin);
 				unNumero->numero = atoi(numeroEnChar);
@@ -120,9 +124,11 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 				texto = malloc(sizeof(char)*recibidoDelKernel->tamanio + 1);
 				memset(texto, 0, recibidoDelKernel->tamanio + 1);
 				memset(unTexto->texto, 0, 10);
-
+				printf("Ingrese ENTER para entrar al modo Entrada Estandar");
+				while(getchar() != '\n');
 				printf("Ingrese el texto que desea enviar al Kernel: ");
 				fgets(texto, recibidoDelKernel->tamanio + 1, stdin);
+
 				memcpy(unTexto->texto, texto, recibidoDelKernel->tamanio);
 
 				if(socket_sendPaquete(self->socketKernel->socket, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_texto), unTexto) > 0)
