@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
 		cpuProcesarTCB(self);
 	}
 
-	log_info(self->loggerCPU, "Se desconecto la CPU. Elimino todo");
+	log_debug(self->loggerCPU, "Finalizando CPU...");
 
 	close(self->socketPlanificador->socket->descriptor);
 	close(self->socketMSP->socket->descriptor);

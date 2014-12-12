@@ -2120,12 +2120,12 @@ int INNN_ESO(t_CPU *self){
 		log_info(self->loggerCPU, "CPU: Ejecutando instruccion INNN");
 
 		t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
-		int *intRecibido = malloc(sizeof(int));
+		int intRecibido;
 
 		estado_innn = cpuSolicitarEntradaEstandar(self, sizeof(int), ENTRADA_ESTANDAR_INT);
 
 		if(estado_innn == SIN_ERRORES){
-			estado_innn = reciboEntradaEstandarINT(self, intRecibido);
+			estado_innn = reciboEntradaEstandarINT(self, &intRecibido);
 
 			self->tcb->registro_de_programacion[0] = (int32_t)intRecibido;
 
@@ -2141,7 +2141,6 @@ int INNN_ESO(t_CPU *self){
 				log_error(self->loggerCPU, "CPU: Ha ocurrido un error al ejecutar la instruccion INNN para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 		}
 
-		free(intRecibido);
 		free(registros_cpu);
 	}
 

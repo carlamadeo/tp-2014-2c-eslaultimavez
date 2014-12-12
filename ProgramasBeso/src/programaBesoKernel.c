@@ -44,6 +44,7 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 
 	int numero;
 	char *texto;
+	char *numeroEnChar;
 
 	FILE *archivoBeso = fopen(parametro, "r");
 
@@ -94,9 +95,10 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 
 			case ENTRADA_ESTANDAR_INT:
 
-
+				numeroEnChar = malloc(sizeof(int));
 				printf("Ingrese el numero que desea enviar al Kernel: ");
-				scanf("%d", &unNumero->numero);
+				fgets(numeroEnChar, sizeof(int), stdin);
+				unNumero->numero = atoi(numeroEnChar);
 
 				if(socket_sendPaquete(self->socketKernel->socket, ENTRADA_ESTANDAR_INT, sizeof(t_entrada_numero), unNumero) > 0)
 					log_info(self->loggerProgramaBESO, "Consola: Envia un numero: %d", unNumero->numero);
@@ -105,6 +107,7 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 					log_info(self->loggerProgramaBESO, "Consola: Error al enviar un numero.");
 
 				free(unNumero);
+				free(numeroEnChar);
 				//while(getchar() != '\n');
 				break;
 
@@ -116,7 +119,8 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 
 				texto = malloc(sizeof(char)*recibidoDelKernel->tamanio + 1);
 				memset(texto, 0, recibidoDelKernel->tamanio + 1);
-				memset(unTexto->texto, 0, TAMANIO_MAXIMO);
+				memset(unTexto->texto, 0, 10);
+
 				printf("Ingrese el texto que desea enviar al Kernel: ");
 				fgets(texto, recibidoDelKernel->tamanio + 1, stdin);
 				memcpy(unTexto->texto, texto, recibidoDelKernel->tamanio);

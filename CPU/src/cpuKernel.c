@@ -40,7 +40,7 @@ void cpuRealizarHandshakeConKernel(t_CPU *self){
 	}
 
 	else
-		log_error(self->loggerCPU, "CPU: Error al recibir paquete del Planificador.");
+		log_error(self->loggerCPU, "CPU: El Kernel ha cerrado la conexion.");
 
 	free(paquete);
 }
@@ -68,7 +68,7 @@ int cpuRecibirTCB(t_CPU *self){
 	}
 
 	else{
-		log_error(self->loggerCPU, "CPU: Error al recibir un paquete del planificador");
+		log_error(self->loggerCPU, "CPU: El Kernel ha cerrado la conexion.");
 		return 0;
 	}
 
@@ -98,7 +98,7 @@ int cpuRecibirQuantum(t_CPU *self){
 	}
 
 	else{
-		log_error(self->loggerCPU, "CPU: Error al recibir un paquete del planificador");
+		log_error(self->loggerCPU, "CPU: El Kernel ha cerrado la conexion.");
 		return 0;
 	}
 
@@ -205,7 +205,8 @@ int reciboEntradaEstandarINT(t_CPU *self, int *recibido){
 
 		if(paquete->header.type == ENTRADA_ESTANDAR_INT){
 			datosRecibidos = (t_entrada_numeroCPU *) (paquete->data);
-			recibido = datosRecibidos->numero;
+			*recibido = datosRecibidos->numero;
+			log_info(self->loggerCPU, "CPU: Se recibio del Kernel: %d", datosRecibidos->numero);
 		}
 
 		else {
@@ -214,8 +215,10 @@ int reciboEntradaEstandarINT(t_CPU *self, int *recibido){
 		}
 	}
 
-	else
+	else{
 		log_error(self->loggerCPU, "CPU: Ha ocurrido un error al recibir una entrada estandar INT del Kernel para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		return ERROR_POR_CODIGO_INESPERADO;
+	}
 
 	socket_freePaquete(paquete);
 	free(datosRecibidos);
@@ -234,6 +237,7 @@ int reciboEntradaEstandarCHAR(t_CPU *self, char *recibido, int tamanio){
 			datosRecibidos = (t_entrada_charCPU *) (paquete->data);
 			memset(recibido, 0, 10); //TODO ver bien esto!!!
 			memcpy(recibido, datosRecibidos->entradaEstandar, tamanio + 1);
+			log_info(self->loggerCPU, "CPU: Se recibio del Kernel: %s", recibido);
 		}
 
 		else {
@@ -242,8 +246,10 @@ int reciboEntradaEstandarCHAR(t_CPU *self, char *recibido, int tamanio){
 		}
 	}
 
-	else
+	else{
 		log_info(self->loggerCPU, "CPU: Ha ocurrido un error al recibir una entrada estandar TEXT del Kernel para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+		return ERROR_POR_CODIGO_INESPERADO;
+	}
 
 	socket_freePaquete(paquete);
 	free(datosRecibidos);
