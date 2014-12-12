@@ -34,7 +34,7 @@ typedef struct{
 
 typedef struct{
 	int pid;
-	char cadena[1000];
+	char cadena[TAMANIO_MAXIMO];
 } t_salida_estandar;
 
 /*

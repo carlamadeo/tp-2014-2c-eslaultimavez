@@ -174,12 +174,14 @@ void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 	pasarProgramaDeExecABlock(self->tcbKernel);
 
 	bool matchTCB(t_TCBSystemCalls *TCB){
-		return (TCB->programa->programaTCB->pid == tcbFinInterrupcion->pid) && (TCB->programa->programaTCB->tid == tcbFinInterrupcion->tid);
+		return (TCB->programa->programaTCB->pid == tcbFinInterrupcion->pid);
 	}
 
 	t_TCBSystemCalls *TCBFinInterrupcion = list_remove_by_condition(listaSystemCall, matchTCB);
 
 	TCBFinInterrupcion->programa->programaTCB->km = 0;
+
+	TCBFinInterrupcion->programa->programaTCB->tid = tcbFinInterrupcion->tid;
 
 	volverTCBAModoNoKernel(self->tcbKernel, TCBFinInterrupcion->programa->programaTCB);
 
@@ -226,7 +228,8 @@ void agregarTCBAColaSystemCalls(t_TCB_Kernel* TCBInterrupcion, uint32_t direccio
 
 	TCBSystemCall->programa = programaBuscado;
 	TCBSystemCall->direccionKM = direccionKM;
-
+	printf("PASO A listaSystemCall EN agregarTCBAColaSystemCalls\n");
+	printTCBKernel(TCBSystemCall->programa->programaTCB);
 	//TODO Ver si aca necesito bloquear la lista
 	list_add(listaSystemCall, TCBSystemCall);
 
@@ -319,7 +322,7 @@ void ejecutar_UNA_ENTRADA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete*
 
 		socket_sendPaquete(unPrograma->socketProgramaConsola, ENTRADA_ESTANDAR_INT, sizeof(t_entrada_estandarKenel), entradaEstandar);
 
-		log_info(self->loggerPlanificador, "Planificador: Envia ENTRADA_ESTANDAR_INT");
+		log_info(self->loggerPlanificador, "Planificador: Envia ENTRADA_ESTANDAR_INT a Consola");
 
 		t_socket_paquete *paqueteEntradaINT = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
@@ -330,7 +333,7 @@ void ejecutar_UNA_ENTRADA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete*
 
 			log_info(self->loggerPlanificador, "Planificador: Recibe un ENTRADA_ESTANDAR_INT: %d", unaEntradaDevueltaINT->numero);
 
-			if(socket_sendPaquete(cpu->socketCPU, ENTRADA_ESTANDAR_INT, sizeof(t_entrada_numeroKernel), unaEntradaDevueltaINT) <= 0)
+			if(socket_sendPaquete(cpu->socketCPU, ENTRADA_ESTANDAR_INT, sizeof(t_entrada_numeroKernel), unaEntradaDevueltaINT) >= 0)
 				log_debug(self->loggerPlanificador, "Planificador: Envia %d a CPU", unaEntradaDevueltaINT->numero);
 
 			socket_freePaquete(paqueteEntradaINT);
@@ -357,7 +360,7 @@ void ejecutar_UNA_ENTRADA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete*
 
 			log_info(self->loggerPlanificador, "Planificador: Recibe un ENTRADA_ESTANDAR_TEXT: %s", unaEntradaDevueltaTexto->texto);
 
-			if(socket_sendPaquete(cpu->socketCPU, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_textoKernel), unaEntradaDevueltaTexto) <= 0)
+			if(socket_sendPaquete(cpu->socketCPU, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_textoKernel), unaEntradaDevueltaTexto) >= 0)
 				log_debug(self->loggerPlanificador, "Planificador: Envia %s a CPU", unaEntradaDevueltaTexto->texto);
 
 			socket_freePaquete(paqueteEntradaTexto);
@@ -419,12 +422,13 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
 	kernelEscribirMemoria(self, hiloCreado->pid, hiloCreado->base_stack, lecturaEscrituraMSP, self->tamanioStack);
 
 	bool matchPrograma(t_programaEnKernel *unPrograma){
-		return ((unPrograma->programaTCB->pid == hiloCreado->pid) && (unPrograma->programaTCB->tid == hiloCreado->tid));
+		return ((unPrograma->programaTCB->pid == hiloCreado->pid));
 	}
 
 	t_programaEnKernel* programaHiloCreado = list_find(listaDeProgramasDisponibles, matchPrograma);
 
-	if(programaHiloCreado != NULL) printf("ACA ESTA EL ERROR\n");
+	programaHiloCreado->programaTCB->tid = hiloCreado->tid;
+
 	pthread_mutex_lock(&readyMutex);
 	list_add(cola_ready, programaHiloCreado);
 	pthread_mutex_unlock(&readyMutex);
@@ -451,7 +455,6 @@ void ejecutar_UN_JOIN_HILO(t_kernel* self, t_socket_paquete* paquete){
 	list_add(cola_block, programaTIDLlamador);
 	pthread_mutex_unlock(&blockMutex);
 
-
 	bool matchHilo(t_BloqueadoPorOtro *hiloBloqueador){
 		return ((hiloBloqueador->pid == joinHilos->pid) && (hiloBloqueador->TIDbloqueador == joinHilos->tid_esperar));
 	}
@@ -459,13 +462,16 @@ void ejecutar_UN_JOIN_HILO(t_kernel* self, t_socket_paquete* paquete){
 	t_BloqueadoPorOtro *bloqueador = list_find(listaBloqueadosPorOtroHilo, matchHilo);
 
 	if(bloqueador == NULL){
-		bloqueador->pid = joinHilos->pid;
-		bloqueador->TIDbloqueador = joinHilos->tid_esperar;
-		bloqueador->hilosBloqueados = list_create();
-		list_add(listaBloqueadosPorOtroHilo, bloqueador);
+		t_BloqueadoPorOtro *bloqueadorNuevo = malloc(sizeof(t_BloqueadoPorOtro));
+		bloqueadorNuevo->pid = joinHilos->pid;
+		bloqueadorNuevo->TIDbloqueador = joinHilos->tid_esperar;
+		bloqueadorNuevo->hilosBloqueados = list_create();
+		list_add(listaBloqueadosPorOtroHilo, bloqueadorNuevo);
+		list_add(bloqueadorNuevo->hilosBloqueados, joinHilos->tid_llamador);
 	}
 
-	list_add(bloqueador->hilosBloqueados, joinHilos->tid_llamador);
+	else
+		list_add(bloqueador->hilosBloqueados, joinHilos->tid_llamador);
 
 }
 

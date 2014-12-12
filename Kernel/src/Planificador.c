@@ -38,11 +38,13 @@ void pasarTCB_Ready_A_Exec(t_kernel* self){
 		sem_wait(&sem_C);
 
 		log_info(self->loggerPlanificador,"Ready_A_Exec: Se encuentra %d procesos en ready", list_size(cola_ready));
-		log_info(self->loggerPlanificador,"Ready_A_Exec: Se encuentra %d CPU libres %d", list_size(listaDeCPULibres));
+		log_info(self->loggerPlanificador,"Ready_A_Exec: Se encuentra %d CPU libres", list_size(listaDeCPULibres));
 
 		pthread_mutex_lock(&readyMutex);
 		t_programaEnKernel* programaParaExec = list_remove(cola_ready, 0); //se remueve el primer elemento de la cola READY
 		pthread_mutex_unlock(&readyMutex);
+
+		log_info(self->loggerPlanificador,"Ready_A_Exec: PROGRAMA PARA EXEC %d", programaParaExec->programaTCB->pid);
 
 		if(programaParaExec != NULL){
 			log_info(self->loggerPlanificador,"Ready_A_Exec: Mando a ejecutar el proceso Beso con PID: %d TID: %d KM: %d", programaParaExec->programaTCB->pid, programaParaExec->programaTCB->tid, programaParaExec->programaTCB->km);

@@ -94,18 +94,18 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 
 			case ENTRADA_ESTANDAR_INT:
 
-				while(getchar() != '\n');
+
 				printf("Ingrese el numero que desea enviar al Kernel: ");
 				scanf("%d", &unNumero->numero);
 
-				if(socket_sendPaquete(self->socketKernel->socket, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_numero), unNumero) > 0)
+				if(socket_sendPaquete(self->socketKernel->socket, ENTRADA_ESTANDAR_INT, sizeof(t_entrada_numero), unNumero) > 0)
 					log_info(self->loggerProgramaBESO, "Consola: Envia un numero: %d", unNumero->numero);
 
 				else
 					log_info(self->loggerProgramaBESO, "Consola: Error al enviar un numero.");
 
 				free(unNumero);
-
+				//while(getchar() != '\n');
 				break;
 
 			case ENTRADA_ESTANDAR_TEXT:
@@ -130,7 +130,7 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 				free(unTexto);
 				free(texto);
 				free(recibidoDelKernel);
-
+				//while(getchar() != '\n');
 				break;
 
 			case SALIDA_ESTANDAR:
