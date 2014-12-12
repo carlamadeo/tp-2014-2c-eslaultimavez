@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
 
 void verificar_argumentosKernel(int argc, char* argv[]){
 	if( argc != 2 ){
-		printf("Modo de empleo: ./Kernel mspKernel.cfg\n");
+		printf("Modo de empleo: ./Kernel kernelConfig.cfg\n");
 		exit (EXIT_FAILURE);
 	}
 }

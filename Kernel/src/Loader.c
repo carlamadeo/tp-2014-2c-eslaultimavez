@@ -142,7 +142,7 @@ void pasarProgramaNewAReady(t_kernel* self){
 
 //Busca una conexion ya existente
 t_programaEnKernel* obtenerProgramaConsolaSegunDescriptor(t_kernel* self,int descriptor){
-
+	log_info(self->loggerLoader,"Loader: comienza busqueda descriptor");
 	log_info(self->loggerLoader,"Loader: Buscando el descriptor %d de una Consola",descriptor);
 
 	bool _esCPUDescriptor(t_programaEnKernel* programaBeso) {
@@ -151,15 +151,15 @@ t_programaEnKernel* obtenerProgramaConsolaSegunDescriptor(t_kernel* self,int des
 
 	t_programaEnKernel* descriptorBuscado = list_find(listaDeProgramasDisponibles, (void*)_esCPUDescriptor); //MMM ver esto
 
-	if(descriptorBuscado == NULL){
-		sem_wait(&mutex_cpuLibre);
-		descriptorBuscado = list_find(listaDeProgramasDisponibles, (void*)_esCPUDescriptor);
-		sem_post(&mutex_cpuLibre);
-	}
+//	if(descriptorBuscado == NULL){
+//		sem_wait(&mutex_cpuLibre);
+//		descriptorBuscado = list_find(listaDeProgramasDisponibles, (void*)_esCPUDescriptor);
+//		sem_post(&mutex_cpuLibre);
+//	}
 
 	log_info(self->loggerLoader,"Loader: Se encontro un Programa con PID: %d TID: %d KM: %d", descriptorBuscado->programaTCB->pid, descriptorBuscado->programaTCB->tid,descriptorBuscado->programaTCB->km);
-
 	//cpuBuscado->socket->descriptor = descriptor;
+	log_info(self->loggerLoader,"Loader: termina busqueda descriptor");
 	return descriptorBuscado;
 }
 

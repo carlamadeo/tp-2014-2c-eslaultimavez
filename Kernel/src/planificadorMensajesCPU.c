@@ -554,7 +554,7 @@ void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self, t_socket_paquete* paquete){
 	}
 	printf("LIST SIZE %d\n", list_size(listaDeProgramasDisponibles));
 
-	t_programaEnKernel *programaAEnviar = list_remove_by_condition(listaDeProgramasDisponibles, matchProgramaConsola);
+	t_programaEnKernel *programaAEnviar = list_find(listaDeProgramasDisponibles, matchProgramaConsola);
 
 	t_entrada_textoKernel *enviarMensaje = malloc(sizeof(t_entrada_textoKernel)); //Uso la misma estructura que para la ENTRADA_ESTANDAR
 
