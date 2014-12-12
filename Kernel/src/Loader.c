@@ -179,10 +179,20 @@ void atenderProgramaConsola(t_kernel* self,t_programaEnKernel* programa, fd_set*
 			return ((programaEnLista->programaTCB->pid == programa->programaTCB->pid) && (programaEnLista->programaTCB->tid == programa->programaTCB->tid));
 		}
 
-		list_remove_by_condition(listaDeProgramasDisponibles, (void*)esProgramaDesconectado);
-		t_programaEnKernel* unProgramaExit = list_remove_by_condition(cola_ready, (void*)esProgramaDesconectado);//TODO ver si se lo manda a la cola EXIT
 
-		//list_add(cola_exit, unProgramaExit->programaTCB);
+		//pthread_mutex_lock(&programasBesoDisponibleMutex);
+		list_remove_by_condition(listaDeProgramasDisponibles, (void*)esProgramaDesconectado);
+		//pthread_mutex_unlock(&programasBesoDisponibleMutex);
+
+
+		//pthread_mutex_lock(&execMutex);
+		t_programaEnKernel* unProgramaExit = list_remove_by_condition(cola_exec, (void*)esProgramaDesconectado);//TODO ver si se lo manda a la cola EXIT
+		//pthread_mutex_unlock(&execMutex);
+
+
+		//pthread_mutex_lock(&exitMutex);
+		list_add(cola_exit, unProgramaExit->programaTCB);
+		//pthread_mutex_unlock(&exitMutex);
 
 		log_info(self->loggerLoader,"Loader: cantidad de TCBs enviados al Kernel :%d", list_size(listaDeProgramasDisponibles));
 		log_info(self->loggerLoader,"Loader: cantidad de TCBs en la cola NEW  :%d", list_size(cola_new));

@@ -17,14 +17,16 @@ void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket_paquete *paquete
 		return ((tcb->programaTCB->tid == tcbFinalizado->tid) && (tcb->programaTCB->pid == tcbFinalizado->pid));
 	}
 
-	t_programaEnKernel* unTcbProcesado = list_remove_by_condition(cola_exec, (void*)_tcbParaExit);
+	pthread_mutex_lock(&execMutex);
+	t_programaEnKernel* unTcbProcesado = list_find(cola_exec, (void*)_tcbParaExit);
+	pthread_mutex_unlock(&execMutex);
 
 	if(unTcbProcesado != NULL){
 		socket_sendPaquete(unTcbProcesado->socketProgramaConsola, FINALIZAR_PROGRAMA_EXITO, 0, NULL);
 
-		pthread_mutex_lock(&exitMutex);
-		list_add(cola_exit, unTcbProcesado);
-		pthread_mutex_unlock(&exitMutex);
+//		pthread_mutex_lock(&exitMutex);
+//		list_add(cola_exit, unTcbProcesado);
+//		pthread_mutex_unlock(&exitMutex);
 
 		desbloquearHilosBloqueadosPorElQueFinalizo(unTcbProcesado);
 	}
