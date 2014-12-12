@@ -149,10 +149,11 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
 	t_TCB_Kernel *TCBInterrupcion = malloc(sizeof(t_TCB_Kernel));
 
-	convertirLaInterrupcionEnTCB(interrupcion, TCBInterrupcion); //QUE FEO!!
+	convertirLaInterrupcionEnTCB(interrupcion, TCBInterrupcion);
 
 	t_socket *socketConsola = pasarProgramaDeExecABlock(TCBInterrupcion);
-
+	printf("PASO PROGRAMA DE EXEC A BLOCK\n");
+	printTCBKernel(TCBInterrupcion);
 	agregarTCBAColaSystemCalls(TCBInterrupcion, interrupcion->direccionKM);
 
 	//TODO No se si el programa lo tengo que tomar de esta cola o de la de BLOCK
@@ -161,6 +162,9 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 	modificarTCBKM(self->tcbKernel, TCBSystemCall);
 
 	pasarProgramaDeBlockAReady(self->tcbKernel, socketConsola);
+
+	printf("PASO PROGRAMA DE BLOCK A READY\n");
+	printTCBKernel(self->tcbKernel);
 
 	free(interrupcion);
 
@@ -171,10 +175,14 @@ void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
 	t_TCB_Kernel* tcbFinInterrupcion = (t_TCB_Kernel*) (paquete->data);
 
+	self->tcbKernel = tcbFinInterrupcion;
+
 	pasarProgramaDeExecABlock(self->tcbKernel);
+	printf("PASO PROGRAMA DE EXEC A BLOCK\n");
+	printTCBKernel(self->tcbKernel);
 
 	bool matchTCB(t_TCBSystemCalls *TCB){
-		return (TCB->programa->programaTCB->pid == tcbFinInterrupcion->pid);
+		return (TCB->programa->programaTCB->pid == tcbFinInterrupcion->pid) && (TCB->programa->programaTCB->tid == tcbFinInterrupcion->tid);
 	}
 
 	t_TCBSystemCalls *TCBFinInterrupcion = list_remove_by_condition(listaSystemCall, matchTCB);
@@ -221,17 +229,21 @@ void agregarTCBAColaSystemCalls(t_TCB_Kernel* TCBInterrupcion, uint32_t direccio
 	t_programaEnKernel *programaBuscado = list_remove_by_condition(listaDeProgramasDisponibles, matchPrograma);
 
 	//El programa que se encuentra en la lista de programas disponible no tiene las mismas direcciones que el que busco ahora, por eso actualizo
+	printf("ELIMINO DE LISTA DE PROGRAMAS DISPONIBLES:\n");
+	printTCBKernel(programaBuscado->programaTCB);
 	programaBuscado->programaTCB = TCBInterrupcion;
 	list_add(listaDeProgramasDisponibles, programaBuscado);
+	printf("AGREGO LISTA DE PROGRAMAS DISPONIBLES:\n");
+	printTCBKernel(programaBuscado->programaTCB);
 
 	t_TCBSystemCalls *TCBSystemCall = malloc(sizeof(t_TCBSystemCalls));
 
 	TCBSystemCall->programa = programaBuscado;
 	TCBSystemCall->direccionKM = direccionKM;
-	printf("PASO A listaSystemCall EN agregarTCBAColaSystemCalls\n");
-	printTCBKernel(TCBSystemCall->programa->programaTCB);
 	//TODO Ver si aca necesito bloquear la lista
 	list_add(listaSystemCall, TCBSystemCall);
+	printf("AGREGO TCB A LISTA SYSTEM CALLS:\n");
+	printTCBKernel(TCBSystemCall->programa->programaTCB);
 
 }
 
@@ -552,9 +564,8 @@ void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self, t_socket_paquete* paquete){
 	bool matchProgramaConsola(t_programaEnKernel* programa){
 		return (programa->programaTCB->pid == errorParaConsola->pid);
 	}
-	printf("LIST SIZE %d\n", list_size(listaDeProgramasDisponibles));
 
-	t_programaEnKernel *programaAEnviar = list_remove_by_condition(listaDeProgramasDisponibles, matchProgramaConsola);
+	t_programaEnKernel *programaAEnviar = list_find(listaDeProgramasDisponibles, matchProgramaConsola);
 
 	t_entrada_textoKernel *enviarMensaje = malloc(sizeof(t_entrada_textoKernel)); //Uso la misma estructura que para la ENTRADA_ESTANDAR
 
