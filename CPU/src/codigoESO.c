@@ -2271,7 +2271,7 @@ int CREA_ESO(t_CPU *self){ 	// CREA un hilo hijo de TCB
 		t_crea_hilo* crear_hilo = malloc(sizeof(t_crea_hilo));
 		crear_hilo->tcb = self->tcb;
 		crear_hilo->tcb->puntero_instruccion = self->tcb->registro_de_programacion[1];	//Agregado Carla
-		crear_hilo->tcb->tid = self->tcb + 1;											//Agregado Carla
+		crear_hilo->tcb->tid = self->tcb->tid + 1;											//Agregado Carla
 		crear_hilo->tcb->km = 0;														//Agregado Carla
 		//TODO Falta ver el tema del segmento de stack que no lo entiendo!!
 
