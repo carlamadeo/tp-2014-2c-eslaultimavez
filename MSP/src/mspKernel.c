@@ -144,7 +144,5 @@ void leerMemoriaKernel(t_socket_paquete *paquete){
 	if (socket_sendPaquete(sockets->socketClienteKernel, LEER_MEMORIA, sizeof(t_datos_aKernelLectura), datosAKernel) > 0)
 		log_info(self->logMSP, "MSP: Los datos de lectura de memoria se han enviado al Kernel correctamente");
 
-	free(datosAKernel->lectura);
-	free(datosAKernel);
 	free(datosDeKernel);
 }

@@ -416,7 +416,7 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
 
 	hiloCreado->cursor_stack = hiloCreado->base_stack + (cursorStackPadre - baseStackPadre);
 
-	kernelEscribirMemoria(self, hiloCreado->pid, hiloCreado->base_stack, lecturaEscrituraMSP, self->tamanioStack, 0);
+	kernelEscribirMemoria(self, hiloCreado->pid, hiloCreado->base_stack, lecturaEscrituraMSP, self->tamanioStack, self->socketMSP->socket);
 
 	bool matchPrograma(t_programaEnKernel *unPrograma){
 		return ((unPrograma->programaTCB->pid == hiloCreado->pid) && (unPrograma->programaTCB->tid == hiloCreado->tid));

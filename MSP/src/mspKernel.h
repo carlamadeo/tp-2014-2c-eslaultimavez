@@ -32,7 +32,7 @@ typedef struct{
 //Kernel recibe el estado (si se pudo leer o hubo error ERROR_POR_SEGMENTATION_FAULT o SIN_ERRORES) y lo leido
 typedef struct{
 	int estado;
-	char *lectura;
+	char lectura[1000];
 }t_datos_aKernelLectura;
 
 //Kernel envia datos para escribir la memoria
