@@ -126,7 +126,7 @@ int kernelLeerMemoria(t_kernel *self, int pid, uint32_t direccionVirtual, char *
 }
 
 
-int kernelEscribirMemoria(t_kernel* self, int pid, uint32_t direccionVirtual, char *programaBeso, int tamanioBeso, t_socket* socketNuevoCliente){
+int kernelEscribirMemoria(t_kernel* self, int pid, uint32_t direccionVirtual, char *programaBeso, int tamanioBeso){
 
 	t_escribirSegmentoBeso* escrituraDeCodigo = malloc(sizeof(t_escribirSegmentoBeso));
 	t_socket_paquete *paqueteConfirmacionEscritura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
@@ -141,7 +141,7 @@ int kernelEscribirMemoria(t_kernel* self, int pid, uint32_t direccionVirtual, ch
 
 	socket_sendPaquete(self->socketMSP->socket, ESCRIBIR_MEMORIA, sizeof(t_escribirSegmentoBeso), escrituraDeCodigo);
 
-	socket_recvPaquete(socketNuevoCliente, paqueteConfirmacionEscritura);
+	socket_recvPaquete(self->socketMSP->socket, paqueteConfirmacionEscritura);
 
 	unaConfirmacionEscritura = (t_confirmacionEscritura *) paqueteConfirmacionEscritura->data;
 

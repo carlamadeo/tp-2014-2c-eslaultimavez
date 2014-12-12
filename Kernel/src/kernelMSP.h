@@ -60,7 +60,7 @@ void hacer_conexion_con_msp(t_kernel* self);
 void realizarHandshakeConMSP(t_kernel* self);
 uint32_t kernelCrearSegmento(t_kernel *self, int pid, int tamanio);
 int kernelDestruirSegmento(t_kernel *self, t_TCB_Kernel *tcb, uint32_t direccionVirtual);
-int kernelEscribirMemoria(t_kernel* self, int pid, uint32_t direccionVirtual, char *programaBeso, int tamanioBeso, t_socket* socketNuevoCliente);
+int kernelEscribirMemoria(t_kernel* self, int pid, uint32_t direccionVirtual, char *programaBeso, int tamanioBeso);
 int kernelLeerMemoria(t_kernel *self, int pid, uint32_t direccionVirtual, char *programa, int tamanio);
 
 #endif /* KERNELMSP_H_ */

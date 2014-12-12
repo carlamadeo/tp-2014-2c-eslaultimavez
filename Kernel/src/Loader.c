@@ -311,7 +311,7 @@ t_TCB_Kernel* loaderCrearTCB(t_kernel* self, char *programaBeso, t_socket* socke
 	unTCB->base_segmento_codigo = kernelCrearSegmento(self, unTCB->pid, tamanioBeso);
 	unTCB->puntero_instruccion = unTCB->base_segmento_codigo;
 	//funciona de escribir en memoria
-	int unaRespuesta = kernelEscribirMemoria(self, unTCB->pid, unTCB->base_segmento_codigo, programaBeso, tamanioBeso, self->socketMSP->socket);
+	int unaRespuesta = kernelEscribirMemoria(self, unTCB->pid, unTCB->base_segmento_codigo, programaBeso, tamanioBeso);
 
 	//Validar check de ERROR y si hay un error mandar a ProgramaBeso
 	loaderValidarEscrituraEnMSP(self,socketNuevoCliente,unaRespuesta);

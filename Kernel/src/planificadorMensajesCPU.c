@@ -416,7 +416,7 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
 
 	hiloCreado->cursor_stack = hiloCreado->base_stack + (cursorStackPadre - baseStackPadre);
 
-	kernelEscribirMemoria(self, hiloCreado->pid, hiloCreado->base_stack, lecturaEscrituraMSP, self->tamanioStack, self->socketMSP->socket);
+	kernelEscribirMemoria(self, hiloCreado->pid, hiloCreado->base_stack, lecturaEscrituraMSP, self->tamanioStack);
 
 	bool matchPrograma(t_programaEnKernel *unPrograma){
 		return ((unPrograma->programaTCB->pid == hiloCreado->pid) && (unPrograma->programaTCB->tid == hiloCreado->tid));
@@ -424,6 +424,7 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
 
 	t_programaEnKernel* programaHiloCreado = list_find(listaDeProgramasDisponibles, matchPrograma);
 
+	if(programaHiloCreado != NULL) printf("ACA ESTA EL ERROR\n");
 	pthread_mutex_lock(&readyMutex);
 	list_add(cola_ready, programaHiloCreado);
 	pthread_mutex_unlock(&readyMutex);

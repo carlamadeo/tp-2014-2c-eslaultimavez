@@ -37,8 +37,8 @@ void pasarTCB_Ready_A_Exec(t_kernel* self){
 		sem_wait(&sem_B);
 		sem_wait(&sem_C);
 
-		log_info(self->loggerPlanificador,"Ready_A_Exec: Se encuentra un proceso en ready");
-		log_info(self->loggerPlanificador,"Ready_A_Exec: Se encuentra una CPU libre");
+		log_info(self->loggerPlanificador,"Ready_A_Exec: Se encuentra %d procesos en ready", list_size(cola_ready));
+		log_info(self->loggerPlanificador,"Ready_A_Exec: Se encuentra %d CPU libres %d", list_size(listaDeCPULibres));
 
 		pthread_mutex_lock(&readyMutex);
 		t_programaEnKernel* programaParaExec = list_remove(cola_ready, 0); //se remueve el primer elemento de la cola READY
