@@ -406,6 +406,11 @@ ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete* paque
 void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
 
 	t_TCBHiloKernel *hiloCreado = (t_TCBHiloKernel*) paquete->data;
+	char *lecturaMSP = malloc(sizeof(char)*self->tamanioStack + 1);
+
+	kernelCrearSegmento(self, hiloCreado->pid, self->tamanioStack);
+
+	kernelLeerMemoria(self, hiloCreado->pid, hiloCreado->base_stack, lecturaMSP, self->tamanioStack);
 
 	bool matchPrograma(t_programaEnKernel *unPrograma){
 		return ((unPrograma->programaTCB->pid == hiloCreado->pid) && (unPrograma->programaTCB->tid == hiloCreado->tid));

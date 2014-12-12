@@ -38,7 +38,7 @@ void realizarHandshakeConMSP(t_kernel *self) {
 }
 
 
-int kernelCrearSegmento(t_kernel *self, int pid, int tamanio){
+uint32_t kernelCrearSegmento(t_kernel *self, int pid, int tamanio){
 
 	t_datos_aMSP* datosAEnviar = malloc(sizeof(t_datos_aMSP));
 	t_datos_deMSP *datosRecibidos = malloc(sizeof(t_datos_deMSP));
@@ -94,6 +94,35 @@ int kernelDestruirSegmento(t_kernel *self, t_TCB_Kernel *tcb, uint32_t direccion
 	free(paqueteConfirmacionDestruccionSegmento);
 
 	return confirmacion->estado;
+}
+
+int kernelLeerMemoria(t_kernel *self, int pid, uint32_t direccionVirtual, char *programa, int tamanio){
+
+	t_datos_aMSPLectura *datosAMSP = malloc(sizeof(t_datos_aMSPLectura));
+	t_socket_paquete *paqueteLectura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+	t_datos_deMSPLectura *unaLectura = (t_datos_deMSPLectura *)malloc(sizeof(t_datos_deMSPLectura));
+
+	int estado;
+
+	datosAMSP->direccionVirtual = direccionVirtual;
+	datosAMSP->pid = pid;
+	datosAMSP->tamanio = tamanio;
+
+	log_info(self->loggerKernel, "Kernel: Solicitud de lectura de memoria para PID: %d, Direccion Virtual: %0.8p, Tamaño: %d.", datosAMSP->pid, datosAMSP->direccionVirtual, datosAMSP->tamanio);
+
+	socket_sendPaquete(self->socketMSP->socket, LEER_MEMORIA, sizeof(t_datos_aMSPLectura), datosAMSP);
+
+	socket_recvPaquete(self->socketMSP->socket, paqueteLectura);
+
+	unaLectura = (t_datos_deMSPLectura *) paqueteLectura->data;
+
+	memset(programa, 0, tamanio);
+	memcpy(programa, unaLectura->lectura, tamanio);  //en esta linea rompe Para que se usa un programa y como se carga
+
+	estado = unaLectura->estado;
+
+	free(unaLectura);
+	return estado;
 }
 
 

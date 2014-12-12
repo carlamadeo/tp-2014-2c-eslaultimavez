@@ -46,7 +46,7 @@ void cpuRealizarHandshakeConMSP(t_CPU *self) {
 }
 
 
-int cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
+uint32_t cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
 
 	t_datos_aMSP* datosAEnviar = malloc(sizeof(t_datos_aMSP));
 	t_datos_deMSP *datosRecibidos = malloc(sizeof(t_datos_deMSP));
