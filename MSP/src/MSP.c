@@ -21,7 +21,7 @@
 #include <errno.h>
 #include <netinet/in.h>
 
-t_sockets *sockets;
+t_sockets *socketsKernel;
 t_MSP *self;
 pthread_rwlock_t rw_memoria;
 
@@ -44,11 +44,11 @@ int main(int argc, char *argv[]){
 	}
 
 	//IMPORTANTE CONSOLAAAAAAAAA!!!!
-//	int mspConsolathreadNum = pthread_create(&mspConsolaHilo, NULL, &mspLanzarhiloConsola, NULL);
-//	if(mspConsolathreadNum) {
-//		log_error(self->logMSP, "Error - pthread_create() return code: %d\n", mspConsolathreadNum);
-//		exit(EXIT_FAILURE);
-//	}
+	//	int mspConsolathreadNum = pthread_create(&mspConsolaHilo, NULL, &mspLanzarhiloConsola, NULL);
+	//	if(mspConsolathreadNum) {
+	//		log_error(self->logMSP, "Error - pthread_create() return code: %d\n", mspConsolathreadNum);
+	//		exit(EXIT_FAILURE);
+	//	}
 
 	crearHilosConexiones();
 
@@ -66,61 +66,57 @@ int main(int argc, char *argv[]){
 }
 
 
-int crearHilosConexiones(){
+void crearHilosConexiones(){
 
 	log_info(self->logMSP, "Creando un hilo escucha...");
-	sockets = malloc(sizeof(t_sockets));
+	socketsKernel = malloc(sizeof(t_sockets));
 
-	sockets->socketMSP = socket_createServer(self->puerto);
+	socketsKernel->socketMSP = socket_createServer(self->puerto);
 
-	if (sockets->socketMSP == NULL){
+	if (socketsKernel->socketMSP == NULL){
 		log_error(self->logMSP, "MSP: Error al crear socket para el Kernel.");
-		return EXIT_SUCCESS;
+
 	}
 
-	if(!socket_listen(sockets->socketMSP)){
+	if(!socket_listen(socketsKernel->socketMSP)){
 		log_error(self->logMSP, "MSP: Error al poner a escuchar a la MSP: %s", strerror(errno));
-		return EXIT_SUCCESS;
+
 	}
 
 	else
 		log_info(self->logMSP, "MSP: Escuchando conexiones entrantes en el puerto: %d", self->puerto);
 
-	sockets->socketClienteKernel = socket_acceptClient(sockets->socketMSP);
-
-	t_socket_paquete *paqueteKernel = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-	socket_recvPaquete(sockets->socketClienteKernel, paqueteKernel);
-
-	if(paqueteKernel->header.type == HANDSHAKE_KERNEL){
-		int mspHiloKernelInt = pthread_create(&mspHiloKernel, NULL, (void *)mspLanzarHiloKernel, NULL);
-		if(mspHiloKernelInt){
-			log_error(self->logMSP, "Error - pthread_create() return code: %d\n", mspHiloKernelInt);
-			return EXIT_SUCCESS;
-		}
-	}
 
 	int contadorCpu = 0;
-
+	t_socket* unSocket;
 	while(1){
 
-		t_socket *socketClienteCPU = socket_acceptClient(sockets->socketMSP);
+		unSocket = socket_acceptClient(socketsKernel->socketMSP);
 
-		t_socket_paquete *paqueteCPU = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
-		socket_recvPaquete(socketClienteCPU, paqueteCPU);
+		t_socket_paquete *paqueteCliente = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+		socket_recvPaquete(unSocket, paqueteCliente);
 
-		if(paqueteCPU->header.type == HANDSHAKE_CPU){
-			int mspHiloCPUInt = pthread_create(&mspHiloCpus[contadorCpu], NULL, (void *)mspLanzarHiloCPU, socketClienteCPU);
+		if(paqueteCliente->header.type == HANDSHAKE_CPU){
+			int mspHiloCPUInt = pthread_create(&mspHiloCpus[contadorCpu], NULL, (void *)mspLanzarHiloCPU, unSocket);
 			if(mspHiloCPUInt){
 				log_error(self->logMSP, "Error - pthread_create() return code: %d\n", mspHiloCPUInt);
-				return EXIT_SUCCESS;
+
+			}
+			log_debug(self->logMSP, "MSP: cantidad de CPUs conectadas: %d", contadorCpu);
+
+		}else{
+			if(paqueteCliente->header.type == HANDSHAKE_KERNEL){
+				int mspHiloKernelInt = pthread_create(&mspHiloKernel, NULL, (void *)mspLanzarHiloKernel, unSocket);
+				if(mspHiloKernelInt){
+					log_error(self->logMSP, "Error - pthread_create() return code: %d\n", mspHiloKernelInt);
+
+				}
 			}
 
-			//TODO ELIMINAR PARA LA ENTREGA
-			log_debug(self->logMSP, "MSP: cantidad de CPUs conectadas: %d", contadorCpu);
 		}
 		contadorCpu++;
 	}
 
-	return EXIT_SUCCESS;
-	free(sockets);
+
+	free(socketsKernel);
 }
