@@ -183,16 +183,15 @@ void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 	}
 
 	t_TCBSystemCalls *TCBFinInterrupcion = list_remove_by_condition(listaSystemCall, matchTCB);
-	printf("6\n");
-	if(TCBFinInterrupcion == NULL) printf("SIIII\n");
+
 	TCBFinInterrupcion->programa->programaTCB->km = 0;
-	printf("7\n");
+
 	TCBFinInterrupcion->programa->programaTCB->tid = tcbFinInterrupcion->tid;
-	printf("8\n");
+
 	volverTCBAModoNoKernel(self->tcbKernel, TCBFinInterrupcion->programa->programaTCB);
-	printf("9\n");
+
 	pasarProgramaDeBlockAReady(TCBFinInterrupcion->programa->programaTCB, 0);
-	printf("10\n");
+
 	sem_post(&sem_interrupcion);
 
 }
