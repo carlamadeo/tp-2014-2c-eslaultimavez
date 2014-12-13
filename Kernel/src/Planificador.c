@@ -149,8 +149,6 @@ void cpuOcupadaALibre(t_cpu *CPU){
 
 void planificadorEscucharConexionesCPU(t_kernel* self){
 
-	listaSystemCall = list_create();
-
 	t_socket *socketNuevaConexionCPU;
 	//listaCpu =
 	fd_set master;   //conjunto maestro de descriptores de fichero

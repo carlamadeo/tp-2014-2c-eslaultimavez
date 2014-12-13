@@ -24,9 +24,9 @@ void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket_paquete *paquete
 	if(unTcbProcesado != NULL){
 		socket_sendPaquete(unTcbProcesado->socketProgramaConsola, FINALIZAR_PROGRAMA_EXITO, 0, NULL);
 
-//		pthread_mutex_lock(&exitMutex);
-//		list_add(cola_exit, unTcbProcesado);
-//		pthread_mutex_unlock(&exitMutex);
+		//		pthread_mutex_lock(&exitMutex);
+		//		list_add(cola_exit, unTcbProcesado);
+		//		pthread_mutex_unlock(&exitMutex);
 
 		desbloquearHilosBloqueadosPorElQueFinalizo(unTcbProcesado);
 	}
@@ -159,7 +159,7 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
 	//TODO No se si el programa lo tengo que tomar de esta cola o de la de BLOCK
 	t_TCBSystemCalls *TCBSystemCall = list_get(listaSystemCall, 0);
-
+	printTCBKernel(TCBSystemCall->programa->programaTCB);
 	modificarTCBKM(self->tcbKernel, TCBSystemCall);
 
 	pasarProgramaDeBlockAReady(self->tcbKernel, socketConsola);
@@ -170,7 +170,8 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
 
 void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
-
+	t_TCBSystemCalls *unTCB2 = list_get(listaSystemCall, 0);
+	printTCBKernel(unTCB2->programa->programaTCB);
 	t_TCB_Kernel* tcbFinInterrupcion = (t_TCB_Kernel*) (paquete->data);
 
 	self->tcbKernel = tcbFinInterrupcion;
@@ -182,15 +183,16 @@ void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 	}
 
 	t_TCBSystemCalls *TCBFinInterrupcion = list_remove_by_condition(listaSystemCall, matchTCB);
-
+	printf("6\n");
+	if(TCBFinInterrupcion == NULL) printf("SIIII\n");
 	TCBFinInterrupcion->programa->programaTCB->km = 0;
-
+	printf("7\n");
 	TCBFinInterrupcion->programa->programaTCB->tid = tcbFinInterrupcion->tid;
-
+	printf("8\n");
 	volverTCBAModoNoKernel(self->tcbKernel, TCBFinInterrupcion->programa->programaTCB);
-
+	printf("9\n");
 	pasarProgramaDeBlockAReady(TCBFinInterrupcion->programa->programaTCB, 0);
-
+	printf("10\n");
 	sem_post(&sem_interrupcion);
 
 }
@@ -397,7 +399,7 @@ ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete* paque
 
 	t_programaEnKernel* unProgramaSalida = list_find(listaDeProgramasDisponibles, (void*)esProgramaSalida);
 
-	if(socket_sendPaquete(unProgramaSalida->socketProgramaConsola, SALIDA_ESTANDAR, sizeof(t_salida_estandarKernel), salidaEstandar) <= 0)
+	if(socket_sendPaquete(unProgramaSalida->socketProgramaConsola, SALIDA_ESTANDAR, sizeof(t_salida_estandarKernel), salidaEstandar) >= 0)
 		log_debug(self->loggerPlanificador, "Planificador: envia UNA_SALIDA_ESTANDAR a la Consola");
 
 	free(salidaEstandar);
@@ -411,29 +413,46 @@ ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete* paque
 //TODO Ver si lo tengo que mandar a la cola NEW y que pase por el loader en vez de mandarlo directo a la cola READY
 void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
 
-	t_TCBHiloKernel *hiloCreado = (t_TCBHiloKernel*) paquete->data;
 	char *lecturaEscrituraMSP = malloc(sizeof(char)*self->tamanioStack + 1);
-	uint32_t baseStackPadre = hiloCreado->base_stack;
-	uint32_t cursorStackPadre = hiloCreado->cursor_stack;
+	t_TCB_Kernel* hiloNuevo = malloc(sizeof(t_TCB_Kernel));
+	t_crea_hiloKernel *datosRecibidos = (t_crea_hiloKernel*) paquete->data;
 
-	kernelLeerMemoria(self, hiloCreado->pid, baseStackPadre, lecturaEscrituraMSP, self->tamanioStack);
+	printf("\nLISTA SYSTEM CALL ANTES DE CREAR HILO:\n");
+	t_TCBSystemCalls *TCBSystemCall = list_get(listaSystemCall, 0);
+	printTCBKernel(TCBSystemCall->programa->programaTCB);
 
-	hiloCreado->base_stack = kernelCrearSegmento(self, hiloCreado->pid, self->tamanioStack);
 
-	hiloCreado->cursor_stack = hiloCreado->base_stack + (cursorStackPadre - baseStackPadre);
-
-	kernelEscribirMemoria(self, hiloCreado->pid, hiloCreado->base_stack, lecturaEscrituraMSP, self->tamanioStack);
-
-	bool matchPrograma(t_programaEnKernel *unPrograma){
-		return ((unPrograma->programaTCB->pid == hiloCreado->pid));
+	bool matchProgramaEnBlock(t_programaEnKernel *programa){
+		return ((programa->programaTCB->pid == datosRecibidos->pid) && ((programa->programaTCB->tid == datosRecibidos->tid)));
 	}
 
-	t_programaEnKernel* programaHiloCreado = list_find(listaDeProgramasDisponibles, matchPrograma);
+	t_TCBSystemCalls *TCBSystemCall2 = list_get(listaSystemCall, 0);
+	printTCBKernel(TCBSystemCall2->programa->programaTCB);
+	t_programaEnKernel* programaHiloRecibido = list_find(cola_block, matchProgramaEnBlock);
 
-	programaHiloCreado->programaTCB->tid = hiloCreado->tid;
+	hiloNuevo = programaHiloRecibido->programaTCB;
+
+	uint32_t baseStackPadre = programaHiloRecibido->programaTCB->base_stack;
+	uint32_t cursorStackPadre = programaHiloRecibido->programaTCB->cursor_stack;
+
+	kernelLeerMemoria(self, hiloNuevo->pid, baseStackPadre, lecturaEscrituraMSP, self->tamanioStack);
+
+	hiloNuevo->base_stack = kernelCrearSegmento(self, hiloNuevo->pid, self->tamanioStack);
+	hiloNuevo->cursor_stack = hiloNuevo->base_stack + (cursorStackPadre - baseStackPadre);
+	kernelEscribirMemoria(self, hiloNuevo->pid, hiloNuevo->base_stack, lecturaEscrituraMSP, self->tamanioStack);
+
+	hiloNuevo->tid = programaHiloRecibido->programaTCB->tid + 1;
+
+	printf("\nHILO CREADO:\n");
+	printTCBKernel(hiloNuevo);
+
+
+	printf("\nLISTA SYSTEM CALL DESPUES DE CREAR HILO:\n");
+	t_TCBSystemCalls *TCBSystemCall3 = list_get(listaSystemCall, 0);
+	printTCBKernel(TCBSystemCall3->programa->programaTCB);
 
 	pthread_mutex_lock(&readyMutex);
-	list_add(cola_ready, programaHiloCreado);
+	list_add(cola_ready, programaHiloRecibido);
 	pthread_mutex_unlock(&readyMutex);
 
 	sem_post(&sem_B);
