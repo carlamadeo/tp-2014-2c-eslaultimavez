@@ -255,7 +255,7 @@ int MOVR_ESO(t_CPU *self){
 
 		if((regA != -1) && (regB != -1)){
 
-			imprimirDosRegistros(registroA, registroB, "MOVR");
+			imprimirDosRegistros(registroB, registroA, "MOVR");
 
 			if(regA <= 5){
 				if(regB <= 5)

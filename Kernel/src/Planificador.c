@@ -40,28 +40,63 @@ void pasarTCB_Ready_A_Exec(t_kernel* self){
 		log_info(self->loggerPlanificador,"Ready_A_Exec: Se encuentra %d procesos en ready", list_size(cola_ready));
 		log_info(self->loggerPlanificador,"Ready_A_Exec: Se encuentra %d CPU libres", list_size(listaDeCPULibres));
 
-		pthread_mutex_lock(&readyMutex);
-		t_programaEnKernel* programaParaExec = list_remove(cola_ready, 0); //se remueve el primer elemento de la cola READY
-		pthread_mutex_unlock(&readyMutex);
+		//Busco si hay algun programa con Prioridad (KM 1)
 
-		log_info(self->loggerPlanificador,"Ready_A_Exec: PROGRAMA PARA EXEC %d", programaParaExec->programaTCB->pid);
+		bool matchProgramaKM(t_programaEnKernel *programa){
+			return (programa->programaTCB->km == 1);
+		}
 
-		if(programaParaExec != NULL){
-			log_info(self->loggerPlanificador,"Ready_A_Exec: Mando a ejecutar el proceso Beso con PID: %d TID: %d KM: %d", programaParaExec->programaTCB->pid, programaParaExec->programaTCB->tid, programaParaExec->programaTCB->km);
+		t_programaEnKernel* programaParaExecKM = list_remove_by_condition(cola_ready, matchProgramaKM);
+
+		if(programaParaExecKM != NULL){
+
+			log_info(self->loggerPlanificador,"Ready_A_Exec: PROGRAMA PARA EXEC CON KM = 1, PID %d, TID %d", programaParaExecKM->programaTCB->pid, programaParaExecKM->programaTCB->tid);
+
+			log_info(self->loggerPlanificador,"Ready_A_Exec: Mando a ejecutar el proceso Beso con PID: %d TID: %d KM: %d", programaParaExecKM->programaTCB->pid, programaParaExecKM->programaTCB->tid, programaParaExecKM->programaTCB->km);
 
 			pthread_mutex_lock(&execMutex);
-			list_add(cola_exec, programaParaExec); // se agrega el programa en cola EXEC
+			list_add(cola_exec, programaParaExecKM); // se agrega el programa en cola EXEC
 			pthread_mutex_unlock(&execMutex);
 
 			log_info(self->loggerPlanificador,"Ready_A_Exec: Cantidad CPU LIBRE = %d / CPU EXEC = %d", list_size(listaDeCPULibres), list_size(listaDeCPUExec));
 
 			t_cpu* cpuLibre = list_get(listaDeCPULibres, 0);
-			cargarTCBconOtroTCB_VOID(cpuLibre->TCB, programaParaExec->programaTCB);
+			cargarTCBconOtroTCB_VOID(cpuLibre->TCB, programaParaExecKM->programaTCB);
 			cpuLibreAOcupada(cpuLibre);
 
 			log_info(self->loggerPlanificador,"Ready_A_Exec: Cantidad CPU LIBRE = %d / CPU EXEC = %d",list_size(listaDeCPULibres), list_size(listaDeCPUExec));
 
 			mandarEjecutarPrograma(self, cpuLibre);
+		}
+
+
+		else if(programaParaExecKM == NULL){
+
+			pthread_mutex_lock(&readyMutex);
+			t_programaEnKernel* programaParaExec = list_remove(cola_ready, 0); //se remueve el primer elemento de la cola READY
+			pthread_mutex_unlock(&readyMutex);
+
+			if(programaParaExec != NULL){
+
+				log_info(self->loggerPlanificador,"Ready_A_Exec: PROGRAMA PARA EXEC CON KM = 0, PID %d, TID %d", programaParaExec->programaTCB->pid, programaParaExec->programaTCB->tid);
+
+				log_info(self->loggerPlanificador,"Ready_A_Exec: Mando a ejecutar el proceso Beso con PID: %d TID: %d KM: %d", programaParaExec->programaTCB->pid, programaParaExec->programaTCB->tid, programaParaExec->programaTCB->km);
+
+				pthread_mutex_lock(&execMutex);
+				list_add(cola_exec, programaParaExec); // se agrega el programa en cola EXEC
+				pthread_mutex_unlock(&execMutex);
+
+				log_info(self->loggerPlanificador,"Ready_A_Exec: Cantidad CPU LIBRE = %d / CPU EXEC = %d", list_size(listaDeCPULibres), list_size(listaDeCPUExec));
+
+				t_cpu* cpuLibre = list_get(listaDeCPULibres, 0);
+				cargarTCBconOtroTCB_VOID(cpuLibre->TCB, programaParaExec->programaTCB);
+				cpuLibreAOcupada(cpuLibre);
+
+				log_info(self->loggerPlanificador,"Ready_A_Exec: Cantidad CPU LIBRE = %d / CPU EXEC = %d",list_size(listaDeCPULibres), list_size(listaDeCPUExec));
+
+				mandarEjecutarPrograma(self, cpuLibre);
+			}
+
 		}else{
 			printf("HUBO UN PROBLEMA EN LA MULTIPROGRAMACION\n");
 		}

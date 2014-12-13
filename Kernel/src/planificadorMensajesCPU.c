@@ -130,7 +130,7 @@ void pasarProgramaDeExecAReady(t_TCB_Kernel *TCB){
 	t_programaEnKernel *programaBuscado = list_remove_by_condition(cola_exec,(void*)matchPrograma);
 	pthread_mutex_unlock(&execMutex);
 
-	programaBuscado->programaTCB = TCB;
+	copiarValoresDosTCBs(programaBuscado->programaTCB, TCB);
 
 	pthread_mutex_lock(&readyMutex);
 	list_add(cola_ready, programaBuscado);
@@ -159,6 +159,7 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
 	//TODO No se si el programa lo tengo que tomar de esta cola o de la de BLOCK
 	t_TCBSystemCalls *TCBSystemCall = list_get(listaSystemCall, 0);
+
 	printTCBKernel(TCBSystemCall->programa->programaTCB);
 	modificarTCBKM(self->tcbKernel, TCBSystemCall);
 
@@ -170,8 +171,7 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
 
 void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
-	t_TCBSystemCalls *unTCB2 = list_get(listaSystemCall, 0);
-	printTCBKernel(unTCB2->programa->programaTCB);
+
 	t_TCB_Kernel* tcbFinInterrupcion = (t_TCB_Kernel*) (paquete->data);
 
 	self->tcbKernel = tcbFinInterrupcion;
