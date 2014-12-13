@@ -156,12 +156,26 @@ int cpuEnviaInterrupcion(t_CPU *self){
 int cpuFinalizarProgramaExitoso(t_CPU *self){
 
 	if (socket_sendPaquete(self->socketPlanificador->socket, FINALIZAR_PROGRAMA_EXITO, sizeof(t_TCB_CPU), self->tcb) <= 0){
-		log_error(self->loggerCPU, "CPU: Error de finalizacion de proceso %d", self->tcb->pid);
+		log_error(self->loggerCPU, "CPU: Error de finalizacion de proceso con PID = %d, TID = %d", self->tcb->pid, self->tcb->tid);
 		return MENSAJE_DE_ERROR;
 	}
 
 	else
 		log_info(self->loggerCPU, "CPU: Finalizacion de proceso correctamente PID = %d", self->tcb->pid);
+
+	return SIN_ERRORES;
+}
+
+
+int cpuFinalizarHiloExitoso(t_CPU *self){
+
+	if (socket_sendPaquete(self->socketPlanificador->socket, FINALIZAR_HILO_EXITO, sizeof(t_TCB_CPU), self->tcb) <= 0){
+		log_error(self->loggerCPU, "CPU: Error de finalizacion de hilo con PID = %d, TID = %d", self->tcb->pid, self->tcb->tid);
+		return MENSAJE_DE_ERROR;
+	}
+
+	else
+		log_info(self->loggerCPU, "CPU: Finalizacion de hilo correctamente PID = %d, TID = %d", self->tcb->pid, self->tcb->tid);
 
 	return SIN_ERRORES;
 }

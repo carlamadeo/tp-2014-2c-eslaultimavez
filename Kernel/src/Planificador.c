@@ -344,27 +344,33 @@ void atenderCPU(t_kernel* self, t_socket *socketNuevaConexion, t_cpu *cpu, fd_se
 			break;
 
 		case SALIDA_ESTANDAR:
-			log_info(self->loggerPlanificador, "Planificador: SALIDA ESTANDAR");
+			log_info(self->loggerPlanificador, "Planificador: Recibe una SALIDA ESTANDAR");
 			ejecutar_UNA_SALIDA_ESTANDAR(self, cpu, paqueteCPUAtendido);
 			break;
 
+		case FINALIZAR_HILO_EXITO:
+			cpuOcupadaALibre(cpu);
+			log_info(self->loggerPlanificador, "Planificador: Recibe un FINALIZAR_HILO_EXITO");
+			ejecutar_FINALIZAR_HILO_EXITO(self, paqueteCPUAtendido);
+			break;
+
 		case CREAR_HILO:
-			log_info(self->loggerPlanificador, "Planificador: CREAR_HILO");
+			log_info(self->loggerPlanificador, "Planificador: Recibe un CREAR_HILO");
 			ejecutar_UN_CREAR_HILO(self, paqueteCPUAtendido);
 			break;
 
 		case JOIN_HILO:
-			log_info(self->loggerPlanificador, "Planificador: JOIN");
+			log_info(self->loggerPlanificador, "Planificador: Recibe un JOIN");
 			ejecutar_UN_JOIN_HILO(self, paqueteCPUAtendido);
 			break;
 
 		case BLOK_HILO:
-			log_info(self->loggerPlanificador, "Planificador: BLOCK_HILO");
+			log_info(self->loggerPlanificador, "Planificador: Recibe un BLOCK_HILO");
 			ejecutar_UN_BLOCK_HILO(self, paqueteCPUAtendido);
 			break;
 
 		case WAKE_HILO:
-			log_info(self->loggerPlanificador, "Planificador: WAKE_HILO");
+			log_info(self->loggerPlanificador, "Planificador: Recibe un WAKE_HILO");
 			ejecutar_UN_WAKE_HILO(self, paqueteCPUAtendido);
 			break;
 

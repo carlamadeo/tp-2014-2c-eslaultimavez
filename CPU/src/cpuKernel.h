@@ -146,6 +146,7 @@ void cpuTerminarQuantum(t_CPU *self);
 int cpuEnviaInterrupcion(t_CPU *self);
 void cpuRecibeInterrupcion(t_CPU *self);
 int cpuFinalizarProgramaExitoso(t_CPU *self);
+int cpuFinalizarHiloExitoso(t_CPU *self);
 int cpuSolicitarEntradaEstandar(t_CPU *self, int tamanio, int tipo);
 int reciboEntradaEstandarINT(t_CPU *self, int *recibido);
 int reciboEntradaEstandarCHAR(t_CPU *self, char *recibido, int tamanio);

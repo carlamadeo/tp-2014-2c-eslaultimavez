@@ -361,7 +361,7 @@ int ADDR_ESO(t_CPU *self){
 
 		if((regA != -1) && (regB != -1)){
 
-			imprimirDosRegistros(registroA, registroB, "ADDR");
+			imprimirDosRegistros(registroB, registroA, "ADDR");
 			int suma;
 			if(regA <= 5){
 				if(regB <= 5)
@@ -2421,9 +2421,9 @@ void imprimirDosRegistrosUnNumero(char registroA, char registroB, int numero, ch
 	char *numeroEnString = malloc(1);
 	sprintf(numeroEnString, "%d", numero);
 
+	list_add(parametros, numeroEnString);
 	list_add(parametros, registroAEnString);
 	list_add(parametros, registroBEnString);
-	list_add(parametros, numeroEnString);
 
 	ejecucion_instruccion(funcion, parametros);
 

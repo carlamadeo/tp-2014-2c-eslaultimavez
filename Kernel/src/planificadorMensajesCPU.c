@@ -58,16 +58,43 @@ void desbloquearHilosBloqueadosPorElQueFinalizo(t_programaEnKernel* unTcbProcesa
 				return ((tcb->programaTCB->tid == tidBloqueado) && (tcb->programaTCB->pid == pidTidBloqueador->pid));
 			}
 
-			t_programaEnKernel *programaADesbloquear = list_remove_by_condition(listaDeProgramasDisponibles, _tcbParaReady);
+			t_programaEnKernel *programaADesbloquear = list_find(listaDeProgramasDisponibles, _tcbParaReady);
 
 			if(programaADesbloquear != NULL){
-				pthread_mutex_lock(&blockMutex);
 				pasarProgramaDeBlockAReady(programaADesbloquear->programaTCB, 0);
-				pthread_mutex_unlock(&blockMutex);
 			}
-		}
 
+		}
 	}
+
+}
+
+
+
+void ejecutar_FINALIZAR_HILO_EXITO(t_kernel* self, t_socket_paquete *paqueteTCB){
+
+	t_TCB_Kernel* tcbFinalizado = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
+	tcbFinalizado = (t_TCB_Kernel*) paqueteTCB->data;
+
+	bool _tcbParaExit(t_programaEnKernel* tcb){
+		return ((tcb->programaTCB->tid == tcbFinalizado->tid) && (tcb->programaTCB->pid == tcbFinalizado->pid));
+	}
+
+	pthread_mutex_lock(&execMutex);
+	t_programaEnKernel* unTcbProcesado = list_find(cola_exec, (void*)_tcbParaExit);
+	pthread_mutex_unlock(&execMutex);
+
+	if(unTcbProcesado != NULL){
+
+		pthread_mutex_lock(&exitMutex);
+		list_add(cola_exit, unTcbProcesado);
+		pthread_mutex_unlock(&exitMutex);
+
+		desbloquearHilosBloqueadosPorElQueFinalizo(unTcbProcesado);
+	}
+
+	else
+		log_error(self->loggerPlanificador, "Planificador: No se encontro ningun Programa. Esto es en ejecutar_FINALIZAR_HILO_EXITO");
 
 }
 
@@ -77,8 +104,7 @@ void desbloquearHilosBloqueadosPorElQueFinalizo(t_programaEnKernel* unTcbProcesa
  *								--Comienzo Terminar Quantum--							            *
 \***************************************************************************************************/
 
-//TODO Falta ver si hay algun TCB en modo kernel, que tiene prioridad!!!
-//TODO Falta ver que pasa si no hay cpu disponible
+
 void ejecutar_TERMINAR_QUANTUM(t_kernel* self, t_socket_paquete *paqueteTCB){
 
 	t_TCB_Kernel* TCBRecibido = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
@@ -91,6 +117,7 @@ void ejecutar_TERMINAR_QUANTUM(t_kernel* self, t_socket_paquete *paqueteTCB){
 	}
 
 }
+
 
 int programaBesoExiste(t_kernel* self, t_TCB_Kernel* TCBRecibido){
 
@@ -147,22 +174,29 @@ void pasarProgramaDeExecAReady(t_TCB_Kernel *TCB){
 void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
 	sem_wait(&sem_interrupcion);
+
 	t_interrupcionKernel* interrupcion = (t_interrupcionKernel*) (paquete->data);
 
 	t_TCB_Kernel *TCBInterrupcion = malloc(sizeof(t_TCB_Kernel));
 
 	convertirLaInterrupcionEnTCB(interrupcion, TCBInterrupcion);
 
+	//Paso el TCB que llamo la interrupcion a la cola de Block
 	t_socket *socketConsola = pasarProgramaDeExecABlock(TCBInterrupcion);
 
+	//Paso el TCB que llamo la interrupcion a la cola de bloqueados por System Calls
 	agregarTCBAColaSystemCalls(TCBInterrupcion, interrupcion->direccionKM);
 
-	//TODO No se si el programa lo tengo que tomar de esta cola o de la de BLOCK
+	//Tomo al primer TCB que se encuentre en la lista de bloqueados por System Calls
 	t_TCBSystemCalls *TCBSystemCall = list_get(listaSystemCall, 0);
 
+	printf("\nAGREGO A COLA SYSTEM CALLS\n");
 	printTCBKernel(TCBSystemCall->programa->programaTCB);
+
+	//Modifico el TCB Kernel con los valores del TCB que llamo la interrupcion
 	modificarTCBKM(self->tcbKernel, TCBSystemCall);
 
+	//Paso el TCB Kernel a Ready
 	pasarProgramaDeBlockAReady(self->tcbKernel, socketConsola);
 
 	free(interrupcion);
@@ -172,24 +206,30 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
 void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
+	//Recibo el TCB que finalizo la interrupcion
 	t_TCB_Kernel* tcbFinInterrupcion = (t_TCB_Kernel*) (paquete->data);
 
 	self->tcbKernel = tcbFinInterrupcion;
 
+	//Vuelvo a bloquear al TCB Kernel
 	pasarProgramaDeExecABlock(self->tcbKernel);
 
+	//Busco al TCB que llego en la cola de bloqueados por System Calls y lo elimino
 	bool matchTCB(t_TCBSystemCalls *TCB){
 		return (TCB->programa->programaTCB->pid == tcbFinInterrupcion->pid) && (TCB->programa->programaTCB->tid == tcbFinInterrupcion->tid);
 	}
 
 	t_TCBSystemCalls *TCBFinInterrupcion = list_remove_by_condition(listaSystemCall, matchTCB);
 
-	TCBFinInterrupcion->programa->programaTCB->km = 0;
-
 	TCBFinInterrupcion->programa->programaTCB->tid = tcbFinInterrupcion->tid;
 
+	//Copio los valores de los registros del TCB que se ejecuto y pongo el km en 0
 	volverTCBAModoNoKernel(self->tcbKernel, TCBFinInterrupcion->programa->programaTCB);
 
+	printf("\nRETIRO DE LA COLA SYSTEM CALLS\n");
+	printTCBKernel(TCBFinInterrupcion->programa->programaTCB);
+
+	//Saco al TCB de la cola de bloqueados y lo paso a Ready
 	pasarProgramaDeBlockAReady(TCBFinInterrupcion->programa->programaTCB, 0);
 
 	sem_post(&sem_interrupcion);
@@ -220,20 +260,19 @@ t_socket *pasarProgramaDeExecABlock(t_TCB_Kernel *TCB){
 void agregarTCBAColaSystemCalls(t_TCB_Kernel* TCBInterrupcion, uint32_t direccionKM){
 
 	bool matchPrograma(t_programaEnKernel *unPrograma){
-		return (unPrograma->programaTCB->pid == TCBInterrupcion->pid) && (unPrograma->programaTCB->tid == TCBInterrupcion->tid) && (unPrograma->programaTCB->km == TCBInterrupcion->km);
+		return (unPrograma->programaTCB->pid == TCBInterrupcion->pid) && (unPrograma->programaTCB->tid == TCBInterrupcion->tid);
 	}
 
-	t_programaEnKernel *programaBuscado = list_remove_by_condition(listaDeProgramasDisponibles, matchPrograma);
+	t_programaEnKernel *programaBuscado = list_find(listaDeProgramasDisponibles, matchPrograma);
 
 	//El programa que se encuentra en la lista de programas disponible no tiene las mismas direcciones que el que busco ahora, por eso actualizo
-
 	programaBuscado->programaTCB = TCBInterrupcion;
-	list_add(listaDeProgramasDisponibles, programaBuscado);
 
 	t_TCBSystemCalls *TCBSystemCall = malloc(sizeof(t_TCBSystemCalls));
 
 	TCBSystemCall->programa = programaBuscado;
 	TCBSystemCall->direccionKM = direccionKM;
+
 	//TODO Ver si aca necesito bloquear la lista
 	list_add(listaSystemCall, TCBSystemCall);
 
@@ -300,6 +339,7 @@ void convertirLaInterrupcionEnTCB(t_interrupcionKernel *interrupcion, t_TCB_Kern
 
 void volverTCBAModoNoKernel(t_TCB_Kernel * TCBKernel, t_TCB_Kernel *unTCB){
 
+	unTCB->km = 0;
 	unTCB->registro_de_programacion[0] = TCBKernel->registro_de_programacion[0];
 	unTCB->registro_de_programacion[1] = TCBKernel->registro_de_programacion[1];
 	unTCB->registro_de_programacion[2] = TCBKernel->registro_de_programacion[2];
@@ -427,6 +467,7 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
 	uint32_t baseStackPadre = programaHiloRecibido->programaTCB->base_stack;
 	uint32_t cursorStackPadre = programaHiloRecibido->programaTCB->cursor_stack;
 
+	hiloNuevo->puntero_instruccion = (uint32_t)programaHiloRecibido->programaTCB->registro_de_programacion[1];
 	kernelLeerMemoria(self, hiloNuevo->pid, baseStackPadre, lecturaEscrituraMSP, self->tamanioStack);
 
 	hiloNuevo->base_stack = kernelCrearSegmento(self, hiloNuevo->pid, self->tamanioStack);
@@ -435,9 +476,18 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
 
 	hiloNuevo->tid++;
 
+	t_programaEnKernel* programaNuevoHilo = malloc(sizeof(t_programaEnKernel));
+
+	programaNuevoHilo->programaTCB = hiloNuevo;
+	programaNuevoHilo->socketProgramaConsola = programaHiloRecibido->socketProgramaConsola;
+
+	list_add(listaDeProgramasDisponibles, programaNuevoHilo);
+
 	pthread_mutex_lock(&readyMutex);
-	list_add(cola_ready, programaHiloRecibido);
+	list_add(cola_ready, programaNuevoHilo);
 	pthread_mutex_unlock(&readyMutex);
+
+	free(lecturaEscrituraMSP);
 
 	sem_post(&sem_B);
 }

@@ -67,14 +67,28 @@ int cpuProcesarTCB(t_CPU *self){
 		switch(estado_ejecucion_instruccion){
 
 		case FINALIZAR_PROGRAMA_EXITO:
-			salida = 1;
-			if(self->tcb->km == 0)
+
+			if(self->tcb->km == 0 && self->tcb->tid == 1){
+				printf("CPU: ENVIA FINALIZAR PROGRAMA EXITO\n");
 				num = cpuFinalizarProgramaExitoso(self);
-			else
+				salida = 1;
+			}
+
+			else if(self->tcb->km == 0 && self->tcb->tid != 1){
+				printf("CPU: ENVIA FINALIZAR HILO EXITO\n");
+				num = cpuFinalizarHiloExitoso(self);
+				salida = 1;
+			}
+
+			else{
+				printf("CPU: ENVIA FINALIZAR INTERRUPCION\n");
 				cpuFinalizarInterrupcion(self);
+				salida = 1;
+			}
 			break;
 
 		case TERMINAR_QUANTUM:
+			printf("CPU: ENVIA TERMINAR QUANTUM\n");
 			salida = 1;
 			cpuTerminarQuantum(self);
 			break;
