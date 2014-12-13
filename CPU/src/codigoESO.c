@@ -2269,6 +2269,7 @@ int CREA_ESO(t_CPU *self){ 	// CREA un hilo hijo de TCB
 		t_crea_hilo* crear_hilo = malloc(sizeof(t_crea_hilo));
 		crear_hilo->pid = self->tcb->pid;
 		crear_hilo->tid = self->tcb->tid;
+		self->tcb->registro_de_programacion[0] = crear_hilo->tid + 1;
 
 		if (socket_sendPaquete(self->socketPlanificador->socket, CREAR_HILO, sizeof(t_crea_hilo), crear_hilo) <= 0){
 			log_info(self->loggerCPU, "CPU: CREA ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
