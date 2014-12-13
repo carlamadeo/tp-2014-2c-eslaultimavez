@@ -417,20 +417,13 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
 	t_TCB_Kernel* hiloNuevo = malloc(sizeof(t_TCB_Kernel));
 	t_crea_hiloKernel *datosRecibidos = (t_crea_hiloKernel*) paquete->data;
 
-	printf("\nLISTA SYSTEM CALL ANTES DE CREAR HILO:\n");
-	t_TCBSystemCalls *TCBSystemCall = list_get(listaSystemCall, 0);
-	printTCBKernel(TCBSystemCall->programa->programaTCB);
-
-
 	bool matchProgramaEnBlock(t_programaEnKernel *programa){
 		return ((programa->programaTCB->pid == datosRecibidos->pid) && ((programa->programaTCB->tid == datosRecibidos->tid)));
 	}
 
-	t_TCBSystemCalls *TCBSystemCall2 = list_get(listaSystemCall, 0);
-	printTCBKernel(TCBSystemCall2->programa->programaTCB);
 	t_programaEnKernel* programaHiloRecibido = list_find(cola_block, matchProgramaEnBlock);
 
-	hiloNuevo = programaHiloRecibido->programaTCB;
+	copiarValoresDosTCBs(hiloNuevo, programaHiloRecibido->programaTCB);
 
 	uint32_t baseStackPadre = programaHiloRecibido->programaTCB->base_stack;
 	uint32_t cursorStackPadre = programaHiloRecibido->programaTCB->cursor_stack;
@@ -441,21 +434,30 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
 	hiloNuevo->cursor_stack = hiloNuevo->base_stack + (cursorStackPadre - baseStackPadre);
 	kernelEscribirMemoria(self, hiloNuevo->pid, hiloNuevo->base_stack, lecturaEscrituraMSP, self->tamanioStack);
 
-	hiloNuevo->tid = programaHiloRecibido->programaTCB->tid + 1;
-
-	printf("\nHILO CREADO:\n");
-	printTCBKernel(hiloNuevo);
-
-
-	printf("\nLISTA SYSTEM CALL DESPUES DE CREAR HILO:\n");
-	t_TCBSystemCalls *TCBSystemCall3 = list_get(listaSystemCall, 0);
-	printTCBKernel(TCBSystemCall3->programa->programaTCB);
+	hiloNuevo->tid++;
 
 	pthread_mutex_lock(&readyMutex);
 	list_add(cola_ready, programaHiloRecibido);
 	pthread_mutex_unlock(&readyMutex);
 
 	sem_post(&sem_B);
+}
+
+
+void copiarValoresDosTCBs(t_TCB_Kernel *tcbHasta, t_TCB_Kernel *tcbDesde){
+	tcbHasta->base_segmento_codigo = tcbDesde->base_segmento_codigo;
+	tcbHasta->base_stack = tcbDesde->base_stack;
+	tcbHasta->cursor_stack = tcbDesde->cursor_stack;
+	tcbHasta->km = tcbDesde->km;
+	tcbHasta->pid = tcbDesde->pid;
+	tcbHasta->puntero_instruccion = tcbDesde->puntero_instruccion;
+	tcbHasta->registro_de_programacion[0] = tcbDesde->registro_de_programacion[0];
+	tcbHasta->registro_de_programacion[1] = tcbDesde->registro_de_programacion[1];
+	tcbHasta->registro_de_programacion[2] = tcbDesde->registro_de_programacion[2];
+	tcbHasta->registro_de_programacion[3] = tcbDesde->registro_de_programacion[3];
+	tcbHasta->registro_de_programacion[4] = tcbDesde->registro_de_programacion[4];
+	tcbHasta->tamanio_segmento_codigo = tcbDesde->tamanio_segmento_codigo;
+	tcbHasta->tid = tcbDesde->tid;
 }
 
 
