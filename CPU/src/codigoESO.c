@@ -50,7 +50,7 @@ int LOAD_ESO(t_CPU *self){
 			}
 		}
 
-		imprimirNumeroYRegistro(registro, numero, "LOAD");
+		imprimirRegistroYNumero(registro, numero, "LOAD");
 		cpuInicializarRegistrosCPU(self, registros_cpu);
 		cambio_registros(registros_cpu);
 
@@ -184,15 +184,16 @@ int SETM_ESO(t_CPU *self){
 				imprimirDosRegistrosUnNumero(registroA, registroB, numero, "SETM");
 
 				char* byte_a_escribir = malloc(sizeof(int32_t));
+				memset(byte_a_escribir, 0, sizeof(int32_t));
 				if(regB <= 5)
-					memcpy(byte_a_escribir, &(self->tcb->registro_de_programacion[regB]), numero);
+					sprintf(byte_a_escribir, "%d", self->tcb->registro_de_programacion[regB]);
 
 				else{
 					switch(regB){
-					case 6:memcpy(byte_a_escribir, &(self->tcb->base_segmento_codigo), numero);break;
-					case 7:memcpy(byte_a_escribir, &(self->tcb->puntero_instruccion), numero);break;
-					case 8:memcpy(byte_a_escribir, &(self->tcb->base_stack), numero);break;
-					case 9:memcpy(byte_a_escribir, &(self->tcb->cursor_stack), numero);break;
+					case 6:sprintf(byte_a_escribir, "%d", self->tcb->base_segmento_codigo);break;
+					case 7:sprintf(byte_a_escribir, "%d", self->tcb->puntero_instruccion);break;
+					case 8:sprintf(byte_a_escribir, "%d", self->tcb->base_stack);break;
+					case 9:sprintf(byte_a_escribir, "%d", self->tcb->cursor_stack);break;
 					}
 				}
 
@@ -361,7 +362,7 @@ int ADDR_ESO(t_CPU *self){
 
 		if((regA != -1) && (regB != -1)){
 
-			imprimirDosRegistros(registroB, registroA, "ADDR");
+			imprimirDosRegistros(registroA, registroB, "ADDR");
 			int suma;
 			if(regA <= 5){
 				if(regB <= 5)
@@ -2068,7 +2069,7 @@ int TAKE_ESO(t_CPU *self){
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion TAKE");
 
 		memcpy(&(numero), lecturaDeMSP, sizeof(int32_t));
-		memcpy(&(registro), lecturaDeMSP + sizeof(char), sizeof(char));
+		memcpy(&(registro), lecturaDeMSP + sizeof(int32_t), sizeof(char));
 
 		reg = determinar_registro(registro);
 
@@ -2082,11 +2083,12 @@ int TAKE_ESO(t_CPU *self){
 
 				//se hace el control para saber a donde apuntar dependiendo de si se trata un tcb usuario o kernel...
 				int estado_lectura = cpuLeerMemoria(self, self->tcb->cursor_stack, lecturaDeMSP2, numero);
+
 				estado_bloque = estado_lectura;
 
 				if (estado_lectura == SIN_ERRORES){
 					if(reg <= 5){
-						self->tcb->registro_de_programacion[reg] = (int32_t)lecturaDeMSP2;
+						self->tcb->registro_de_programacion[reg] = 15;
 					}else{
 						switch(reg){
 						case 6: self->tcb->base_segmento_codigo = (int32_t)lecturaDeMSP2; break;
@@ -2274,7 +2276,7 @@ int INNC_ESO(t_CPU *self){
 			estado_innc = reciboEntradaEstandarCHAR(self, charRecibido, self->tcb->registro_de_programacion[1]);
 
 			if(estado_innc == SIN_ERRORES){
-				log_info(self->loggerCPU, "INNC_ESO: Recibe una cadena de la Consola: %s", charRecibido);
+				log_info(self->loggerCPU, "INNC_ESO: Recibe una cadena de la Consola: %s, PID: %d, TID %d", charRecibido, self->tcb->pid, self->tcb->tid);
 
 				int estadoEscritura = cpuEscribirMemoria(self, self->tcb->registro_de_programacion[0], charRecibido, self->tcb->registro_de_programacion[1]);
 
@@ -2291,7 +2293,7 @@ int INNC_ESO(t_CPU *self){
 		}
 
 		free(registros_cpu);
-		free(charRecibido);
+		//free(charRecibido);
 	}
 
 	else
@@ -2500,6 +2502,23 @@ void imprimirUnNumero(uint32_t numero, char* funcion){
 
 
 void imprimirNumeroYRegistro(char registro, int numero, char* funcion){
+
+	char *registroEnString = malloc(1);
+	sprintf(registroEnString, "%c", registro);
+	char *numeroEnString = malloc(1);
+	sprintf(numeroEnString, "%d", numero);
+
+	list_add(parametros, numeroEnString);
+	list_add(parametros, registroEnString);
+
+	ejecucion_instruccion(funcion, parametros);
+
+	free(registroEnString);
+	free(numeroEnString);
+}
+
+
+void imprimirRegistroYNumero(char registro, int numero, char* funcion){
 
 	char *registroEnString = malloc(1);
 	sprintf(registroEnString, "%c", registro);

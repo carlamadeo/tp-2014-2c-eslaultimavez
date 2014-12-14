@@ -7,6 +7,7 @@
 
 void imprimirUnNumero(uint32_t numero, char* funcion);
 void imprimirNumeroYRegistro(char registro, int numero, char* funcion);
+void imprimirRegistroYNumero(char registro, int numero, char* funcion);
 void imprimirDosRegistrosUnNumero(char registroA, char registroB, int numero, char* funcion);
 void imprimirDosRegistros(char registroA, char registroB, char* funcion);
 void imprimirUnRegistro(char registro, char* funcion);

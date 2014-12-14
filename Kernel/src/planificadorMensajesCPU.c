@@ -179,9 +179,6 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 	//Tomo al primer TCB que se encuentre en la lista de bloqueados por System Calls
 	t_TCBSystemCalls *TCBSystemCall = list_get(listaSystemCall, 0);
 
-	printf("\nAGREGO A COLA SYSTEM CALLS\n");
-	printTCBKernel(TCBSystemCall->programa->programaTCB);
-
 	//Modifico el TCB Kernel con los valores del TCB que llamo la interrupcion
 	modificarTCBKM(self->tcbKernel, TCBSystemCall);
 
@@ -281,26 +278,41 @@ void modificarTCBKM(t_TCB_Kernel *TCBKernel, t_TCBSystemCalls *TCBSystemCall){
 
 void pasarProgramaDeBlockAReady(t_TCB_Kernel *TCB, t_socket *socketConsola){
 
+	int encontrado = 0;
+
 	bool matchPrograma(t_programaEnKernel *unPrograma){
-		return unPrograma->programaTCB->pid == TCB->pid;
+		return (unPrograma->programaTCB->pid == TCB->pid) && (unPrograma->programaTCB->tid == TCB->tid);
 	}
 
-	pthread_mutex_lock(&execMutex);
-	t_programaEnKernel *programaBuscado = list_remove_by_condition(cola_block, matchPrograma);
-	pthread_mutex_unlock(&execMutex);
-
-	if(TCB->km == 1){
-		programaBuscado->socketProgramaConsola = socketConsola;
+	bool esProgramaBloqueadoPorRecurso(t_programaEnKernel *unProgramaBloqueado){
+		return (unProgramaBloqueado->programaTCB->pid == TCB->pid) && (unProgramaBloqueado->programaTCB->tid == TCB->tid);
 	}
 
-	programaBuscado->programaTCB = TCB;
+	void busquedaPorLista(t_recurso *recurso){
+		t_programaEnKernel *programaBloqueadoPorRecurso = list_find(recurso->listaBloqueados, esProgramaBloqueadoPorRecurso);
 
-	pthread_mutex_lock(&blockMutex);
-	list_add(cola_ready, programaBuscado);
-	pthread_mutex_unlock(&blockMutex);
+		if(programaBloqueadoPorRecurso != NULL) encontrado = 1;
+	}
 
-	sem_post(&sem_B);
+	list_iterate(listaDeRecursos, busquedaPorLista);
 
+	if(!encontrado){
+		pthread_mutex_lock(&execMutex);
+		t_programaEnKernel *programaBuscado = list_remove_by_condition(cola_block, matchPrograma);
+		pthread_mutex_unlock(&execMutex);
+
+		if(TCB->km == 1){
+			programaBuscado->socketProgramaConsola = socketConsola;
+		}
+
+		programaBuscado->programaTCB = TCB;
+
+		pthread_mutex_lock(&blockMutex);
+		list_add(cola_ready, programaBuscado);
+		pthread_mutex_unlock(&blockMutex);
+
+		sem_post(&sem_B);
+	}
 }
 
 
@@ -507,14 +519,10 @@ void ejecutar_UN_BLOCK_HILO(t_kernel* self, t_socket_paquete* paquete){
 	t_bloquearKernel *blockHilo = (t_bloquearKernel*) (paquete->data);
 
 	bool matchPrograma(t_programaEnKernel *unPrograma){
-		return ((unPrograma->programaTCB->pid == blockHilo->pid) && (unPrograma->programaTCB->tid == blockHilo->tid) && (unPrograma->programaTCB->km == blockHilo->km));
+		return ((unPrograma->programaTCB->pid == blockHilo->pid) && (unPrograma->programaTCB->tid == blockHilo->tid));
 	}
 
 	t_programaEnKernel* programaABloquear = list_find(listaDeProgramasDisponibles, matchPrograma);
-
-	pthread_mutex_lock(&blockMutex);
-	list_add(cola_block, programaABloquear);
-	pthread_mutex_unlock(&blockMutex);
 
 	bool matchRecurso(t_recurso *unRecurso){
 		return unRecurso->identificador == blockHilo->id_recurso;
@@ -524,10 +532,10 @@ void ejecutar_UN_BLOCK_HILO(t_kernel* self, t_socket_paquete* paquete){
 
 	if(recursoEncontrado == NULL){
 		t_recurso *recurso = malloc(sizeof(t_recurso));
-
 		recurso->identificador = blockHilo->id_recurso;
 		recurso->listaBloqueados = list_create();
 		list_add(listaDeRecursos, recurso);
+		list_add(recurso->listaBloqueados, programaABloquear);
 	}
 
 	else
@@ -553,8 +561,20 @@ void ejecutar_UN_WAKE_HILO(t_kernel* self, t_socket_paquete* paquete){
 	if(recursoEncontrado != NULL){
 		t_programaEnKernel *programaADesbloquear = list_remove(recursoEncontrado->listaBloqueados, 0);
 
-		if(programaADesbloquear != NULL)
-			pasarProgramaDeBlockAReady(programaADesbloquear->programaTCB, 0);
+		if(programaADesbloquear != NULL){
+
+			bool matchPrograma(t_programaEnKernel *unPrograma){
+				return (unPrograma->programaTCB->pid == programaADesbloquear->programaTCB->pid) && (unPrograma->programaTCB->tid == programaADesbloquear->programaTCB->tid);
+			}
+
+			pthread_mutex_lock(&execMutex);
+			t_programaEnKernel *programaBuscado = list_remove_by_condition(cola_block, matchPrograma);
+			pthread_mutex_unlock(&execMutex);
+
+			pthread_mutex_lock(&blockMutex);
+			list_add(cola_ready, programaBuscado);
+			pthread_mutex_unlock(&blockMutex);
+		}
 
 	}
 
