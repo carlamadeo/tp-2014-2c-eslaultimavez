@@ -2088,7 +2088,7 @@ int TAKE_ESO(t_CPU *self){
 
 				if (estado_lectura == SIN_ERRORES){
 					if(reg <= 5){
-						self->tcb->registro_de_programacion[reg] = 15;
+						self->tcb->registro_de_programacion[reg] = (int32_t)lecturaDeMSP2;
 					}else{
 						switch(reg){
 						case 6: self->tcb->base_segmento_codigo = (int32_t)lecturaDeMSP2; break;
