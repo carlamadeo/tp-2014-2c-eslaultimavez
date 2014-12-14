@@ -74,7 +74,6 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 	t_datosKernel *datosAKernel = malloc(sizeof(t_datosKernel));
 	t_entrada_estandarConsola *recibidoDelKernel = malloc(sizeof(t_entrada_estandarConsola));
 	t_datosMostrarConsola *salidaEstandar = malloc(sizeof(t_datosMostrarConsola));
-	t_entrada_numero *unNumero = malloc(sizeof(t_entrada_numero));
 	t_entrada_texto *entradaError = malloc(sizeof(t_entrada_texto));
 
 	datosAKernel->codigoBeso = self->codigo;
@@ -95,9 +94,14 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 
 			case ENTRADA_ESTANDAR_INT:
 
+				recibidoDelKernel = (t_entrada_estandarConsola*) (paquete->data);
+
+				t_entrada_numero *unNumero = malloc(sizeof(t_entrada_numero));
+
+				unNumero->idCPU = recibidoDelKernel->idCPU;
+
 				numeroEnChar = malloc(sizeof(int));
 				memset(numeroEnChar, 0, sizeof(int));
-				memset(numeroEnChar, 0, 10);
 				printf("Ingrese ENTER para entrar al modo Entrada Estandar");
 				while(getchar() != '\n');
 				printf("Ingrese el numero que desea enviar al Kernel: ");
@@ -121,6 +125,8 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 
 				t_entrada_texto* unTexto = malloc(sizeof(t_entrada_texto));
 
+				unTexto->idCPU = recibidoDelKernel->idCPU;
+
 				texto = malloc(sizeof(char)*recibidoDelKernel->tamanio + 1);
 				memset(texto, 0, recibidoDelKernel->tamanio + 1);
 				memset(unTexto->texto, 0, 10);
@@ -131,13 +137,12 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 
 				memcpy(unTexto->texto, texto, recibidoDelKernel->tamanio);
 
-				unTexto->idCPU = recibidoDelKernel->idCPU;
-
-				socket_sendPaquete(self->socketKernel->socket, ENTRADA_ESTANDAR_TEXT, 0, NULL);
 				if(socket_sendPaquete(self->socketKernel->socket, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_texto), unTexto) > 0){
 					log_info(self->loggerProgramaBESO, "Consola: envia un texto  :%s", unTexto->texto);
 					log_info(self->loggerProgramaBESO, "Consola: envia un CPU id :%d", unTexto->idCPU);
-				}else
+				}
+
+				else
 					log_info(self->loggerProgramaBESO, "Consola: Error al enviar un texto.");
 
 				free(unTexto);

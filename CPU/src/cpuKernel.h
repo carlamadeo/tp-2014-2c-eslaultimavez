@@ -24,7 +24,18 @@ typedef struct{
 	int pid;
 	int32_t tamanio;
 	int tipo;
+	int idCPU;
 } t_entrada_estandar;
+
+
+typedef struct{
+	int numero;
+} t_entrada_numeroCPU;
+
+
+typedef struct{
+	char entradaEstandar[TAMANIO_MAXIMO];
+} t_entrada_charCPU;
 
 /*
  * Nombre: t_salida_estandar
@@ -120,14 +131,6 @@ typedef struct {
 	t_crea_hilo* crearHijo;
 } t_ServiciosAlPlanificador;
 
-
-typedef struct{
-	int numero;
-} t_entrada_numeroCPU;
-
-typedef struct{
-	char entradaEstandar[TAMANIO_MAXIMO];
-} t_entrada_charCPU;
 
 typedef struct {
 	int pid;

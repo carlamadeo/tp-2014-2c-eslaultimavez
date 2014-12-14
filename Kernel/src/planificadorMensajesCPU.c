@@ -23,11 +23,6 @@ void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket_paquete *paquete
 
 	if(unTcbProcesado != NULL){
 		socket_sendPaquete(unTcbProcesado->socketProgramaConsola, FINALIZAR_PROGRAMA_EXITO, 0, NULL);
-
-		//		pthread_mutex_lock(&exitMutex);
-		//		list_add(cola_exit, unTcbProcesado);
-		//		pthread_mutex_unlock(&exitMutex);
-
 		desbloquearHilosBloqueadosPorElQueFinalizo(unTcbProcesado);
 	}
 
@@ -84,14 +79,8 @@ void ejecutar_FINALIZAR_HILO_EXITO(t_kernel* self, t_socket_paquete *paqueteTCB)
 	t_programaEnKernel* unTcbProcesado = list_find(cola_exec, (void*)_tcbParaExit);
 	pthread_mutex_unlock(&execMutex);
 
-	if(unTcbProcesado != NULL){
-
-		pthread_mutex_lock(&exitMutex);
-		list_add(cola_exit, unTcbProcesado);
-		pthread_mutex_unlock(&exitMutex);
-
+	if(unTcbProcesado != NULL)
 		desbloquearHilosBloqueadosPorElQueFinalizo(unTcbProcesado);
-	}
 
 	else
 		log_error(self->loggerPlanificador, "Planificador: No se encontro ningun Programa. Esto es en ejecutar_FINALIZAR_HILO_EXITO");
@@ -225,9 +214,6 @@ void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
 	//Copio los valores de los registros del TCB que se ejecuto y pongo el km en 0
 	volverTCBAModoNoKernel(self->tcbKernel, TCBFinInterrupcion->programa->programaTCB);
-
-	printf("\nRETIRO DE LA COLA SYSTEM CALLS\n");
-	printTCBKernel(TCBFinInterrupcion->programa->programaTCB);
 
 	//Saco al TCB de la cola de bloqueados y lo paso a Ready
 	pasarProgramaDeBlockAReady(TCBFinInterrupcion->programa->programaTCB, 0);
@@ -367,11 +353,15 @@ void ejecutar_UNA_ENTRADA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete*
 		socket_sendPaquete(unPrograma->socketProgramaConsola, ENTRADA_ESTANDAR_INT, sizeof(t_entrada_estandarKenel), entradaEstandar);
 		log_info(self->loggerPlanificador, "Planificador: Envia ENTRADA_ESTANDAR_INT a Consola");
 
-	}else if(entradaEstandar->tipo == ENTRADA_ESTANDAR_TEXT){
+	}
+
+	else if(entradaEstandar->tipo == ENTRADA_ESTANDAR_TEXT){
 		entradaEstandar->idCPU = cpu->id;
 		socket_sendPaquete(unPrograma->socketProgramaConsola, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_estandarKenel), entradaEstandar);
 		log_info(self->loggerPlanificador, "Planificador: Envia ENTRADA_ESTANDAR_TEXT a Consola");
-	}else
+	}
+
+	else
 		log_error(self->loggerPlanificador, "Planificador: Error al enviar UNA_ENTRADA_STANDAR de consola.");
 
 

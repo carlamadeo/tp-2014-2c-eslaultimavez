@@ -205,50 +205,42 @@ void atenderProgramaConsola(t_kernel* self,t_programaEnKernel* programa, fd_set*
 	}
 
 	else if (paqueteDesconectoPrograma->header.type == ENTRADA_ESTANDAR_TEXT){
+
 		log_info(self->loggerLoader,"Loader: recibe un ENTRADA_ESTANDAR_TEXT");
 
-		t_socket_paquete *paqueteEntradaTexto = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-		if(socket_recvPaquete(programa->socketProgramaConsola, paqueteEntradaTexto) >= 0){
+		t_entrada_textoKernel* unaEntradaDevueltaTexto = (t_entrada_textoKernel*) malloc(sizeof(t_entrada_textoKernel));
 
+		unaEntradaDevueltaTexto = (t_entrada_textoKernel*) (paqueteDesconectoPrograma->data);
 
-			t_entrada_textoKernel* unaEntradaDevueltaTexto = (t_entrada_textoKernel*) malloc(sizeof(t_entrada_textoKernel));
-			unaEntradaDevueltaTexto = (t_entrada_textoKernel*) (paqueteEntradaTexto->data);
+		log_info(self->loggerLoader,"Loader: recibe un texto de una consola :%s", unaEntradaDevueltaTexto->texto);
+		log_info(self->loggerLoader,"Loader: recube una CPU con ID: %d", unaEntradaDevueltaTexto->idCPU);
 
-			log_info(self->loggerLoader,"Loader: recibe un texto de una consola :%s", unaEntradaDevueltaTexto->texto);
-			log_info(self->loggerLoader,"Loader: recube una CPU con ID:%d", unaEntradaDevueltaTexto->idCPU);
+		t_cpu* cpuTexto = cpuPorIDEncontrado(self, unaEntradaDevueltaTexto->idCPU);
 
-			//t_cpu* cpuTexto = cpuPorIDEncontrado(self,unaEntradaDevueltaTexto->idCPU);
-			//			if(socket_sendPaquete(cpu->socketCPU, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_textoKernel), unaEntradaDevueltaTexto) >= 0)
-			//				log_debug(self->loggerPlanificador, "Planificador: Envia %s a CPU", unaEntradaDevueltaTexto->texto);
-			//
-			//			socket_freePaquete(paqueteEntradaTexto);
-			//free(unaEntradaDevueltaTexto);
-		}else
-			log_error(self->loggerLoader,"Loader: error al recibir un texto por Consola");
+		if(socket_sendPaquete(cpuTexto->socketCPU, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_textoKernel), unaEntradaDevueltaTexto) >= 0)
+			log_debug(self->loggerPlanificador, "Planificador: Envia %s a CPU", unaEntradaDevueltaTexto->texto);
 
+		free(unaEntradaDevueltaTexto);
+	}
 
-	}else if (paqueteDesconectoPrograma->header.type == ENTRADA_ESTANDAR_INT){
-		t_socket_paquete *paqueteEntradaINT = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+	else if (paqueteDesconectoPrograma->header.type == ENTRADA_ESTANDAR_INT){
 
-		if(socket_recvPaquete(programa->socketProgramaConsola, paqueteEntradaINT) >= 0){
+		t_entrada_numeroKernel* unaEntradaDevueltaINT = (t_entrada_numeroKernel*) malloc(sizeof(t_entrada_numeroKernel));
+		unaEntradaDevueltaINT = (t_entrada_numeroKernel*) paqueteDesconectoPrograma->data;
 
-			t_entrada_numeroKernel* unaEntradaDevueltaINT = (t_entrada_numeroKernel*) malloc(sizeof(t_entrada_numeroKernel));
-			unaEntradaDevueltaINT = (t_entrada_numeroKernel*) paqueteEntradaINT->data;
+		log_info(self->loggerLoader,"Loader: recibe un int por Consola: %d", unaEntradaDevueltaINT->numero);
+		log_info(self->loggerLoader,"Loader: va a enviar al CPU con ID: %d", unaEntradaDevueltaINT->idCPU);
 
-			log_info(self->loggerLoader,"Loader: recibe un ENTRADA_ESTANDAR_INT: %d", unaEntradaDevueltaINT->numero);
-			log_info(self->loggerLoader,"Loader: va a enviar al CPU con ID:%d", unaEntradaDevueltaINT->idCPU);
+		t_cpu* cpuINT = cpuPorIDEncontrado(self, unaEntradaDevueltaINT->idCPU);
 
-			//t_cpu* cpuINT = cpuPorIDEncontrado(self,unaEntradaDevueltaINT->idCPU);
-			//
-			//				if(socket_sendPaquete(cpu->socketCPU, ENTRADA_ESTANDAR_INT, sizeof(t_entrada_numeroKernel), unaEntradaDevueltaINT) >= 0)
-			//					log_debug(self->loggerPlanificador, "Planificador: Envia %d a CPU", unaEntradaDevueltaINT->numero);
-			//
-			//				socket_freePaquete(paqueteEntradaINT);
-			free(unaEntradaDevueltaINT);
-		}
+		if(socket_sendPaquete(cpuINT->socketCPU, ENTRADA_ESTANDAR_INT, sizeof(t_entrada_numeroKernel), unaEntradaDevueltaINT) >= 0)
+			log_debug(self->loggerPlanificador, "Planificador: Envia %d a CPU", unaEntradaDevueltaINT->numero);
+
+		free(unaEntradaDevueltaINT);
+
 	}//else
 
-	//free(paqueteDesconectoPrograma);
+	socket_freePaquete(paqueteDesconectoPrograma);
 
 }
 
