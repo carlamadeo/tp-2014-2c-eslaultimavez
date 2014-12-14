@@ -12,6 +12,26 @@
 #define PATH_CONFIG "archivoConfiguracion.cfg"
 #define PATH_LOG "logs/trace.log"
 
+
+typedef struct{
+	int pid;
+	int32_t tamanio;
+	int tipo;
+	int idCPU;
+} t_entrada_estandarKenel;
+
+
+typedef struct{
+	int numero;
+	int idCPU;
+} t_entrada_numeroKernel;
+
+
+typedef struct{
+	char texto[1000];
+	int idCPU;
+} t_entrada_textoKernel;
+
 typedef struct {
 	int pid;
 	int tid;

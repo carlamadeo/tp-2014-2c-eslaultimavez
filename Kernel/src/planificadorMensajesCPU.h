@@ -69,23 +69,6 @@ typedef struct {
 
 typedef struct{
 	int pid;
-	int32_t tamanio;
-	int tipo;
-} t_entrada_estandarKenel;
-
-
-typedef struct{
-	int numero;
-} t_entrada_numeroKernel;
-
-
-typedef struct{
-	char texto[1000];
-} t_entrada_textoKernel;
-
-
-typedef struct{
-	int pid;
 	char cadena[1000];
 } t_salida_estandarKernel;
 

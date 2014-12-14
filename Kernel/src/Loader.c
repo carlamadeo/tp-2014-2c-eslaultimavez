@@ -151,11 +151,11 @@ t_programaEnKernel* obtenerProgramaConsolaSegunDescriptor(t_kernel* self,int des
 
 	t_programaEnKernel* descriptorBuscado = list_find(listaDeProgramasDisponibles, (void*)_esCPUDescriptor); //MMM ver esto
 
-//	if(descriptorBuscado == NULL){
-//		sem_wait(&mutex_cpuLibre);
-//		descriptorBuscado = list_find(listaDeProgramasDisponibles, (void*)_esCPUDescriptor);
-//		sem_post(&mutex_cpuLibre);
-//	}
+	//	if(descriptorBuscado == NULL){
+	//		sem_wait(&mutex_cpuLibre);
+	//		descriptorBuscado = list_find(listaDeProgramasDisponibles, (void*)_esCPUDescriptor);
+	//		sem_post(&mutex_cpuLibre);
+	//	}
 
 	log_info(self->loggerLoader,"Loader: Se encontro un Programa con PID: %d TID: %d KM: %d", descriptorBuscado->programaTCB->pid, descriptorBuscado->programaTCB->tid,descriptorBuscado->programaTCB->km);
 	//cpuBuscado->socket->descriptor = descriptor;
@@ -204,16 +204,67 @@ void atenderProgramaConsola(t_kernel* self,t_programaEnKernel* programa, fd_set*
 
 	}
 
-	else{
-		if (paqueteDesconectoPrograma->header.type == ERROR_POR_DESCONEXION_DE_CONSOLA)
-			log_info(self->loggerLoader,"Loader: envia un ERROR_POR_DESCONEXION_DE_CONSOLA");
-		else
-			log_error(self->loggerLoader,"Loader: error al recibir el paquete de FINALIZAR_PROGRAMA_EXITO de programa PID:%d TID:%d",programa->programaTCB->pid,programa->programaTCB->tid);
-	}
+	else if (paqueteDesconectoPrograma->header.type == ENTRADA_ESTANDAR_TEXT){
+		log_info(self->loggerLoader,"Loader: recibe un ENTRADA_ESTANDAR_TEXT");
 
-	free(paqueteDesconectoPrograma);
+		t_socket_paquete *paqueteEntradaTexto = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+		if(socket_recvPaquete(programa->socketProgramaConsola, paqueteEntradaTexto) >= 0){
+
+
+			t_entrada_textoKernel* unaEntradaDevueltaTexto = (t_entrada_textoKernel*) malloc(sizeof(t_entrada_textoKernel));
+			unaEntradaDevueltaTexto = (t_entrada_textoKernel*) (paqueteEntradaTexto->data);
+
+			log_info(self->loggerLoader,"Loader: recibe un texto de una consola :%s", unaEntradaDevueltaTexto->texto);
+			log_info(self->loggerLoader,"Loader: recube una CPU con ID:%d", unaEntradaDevueltaTexto->idCPU);
+
+			//t_cpu* cpuTexto = cpuPorIDEncontrado(self,unaEntradaDevueltaTexto->idCPU);
+			//			if(socket_sendPaquete(cpu->socketCPU, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_textoKernel), unaEntradaDevueltaTexto) >= 0)
+			//				log_debug(self->loggerPlanificador, "Planificador: Envia %s a CPU", unaEntradaDevueltaTexto->texto);
+			//
+			//			socket_freePaquete(paqueteEntradaTexto);
+			//free(unaEntradaDevueltaTexto);
+		}else
+			log_error(self->loggerLoader,"Loader: error al recibir un texto por Consola");
+
+
+	}else if (paqueteDesconectoPrograma->header.type == ENTRADA_ESTANDAR_INT){
+		t_socket_paquete *paqueteEntradaINT = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+
+		if(socket_recvPaquete(programa->socketProgramaConsola, paqueteEntradaINT) >= 0){
+
+			t_entrada_numeroKernel* unaEntradaDevueltaINT = (t_entrada_numeroKernel*) malloc(sizeof(t_entrada_numeroKernel));
+			unaEntradaDevueltaINT = (t_entrada_numeroKernel*) paqueteEntradaINT->data;
+
+			log_info(self->loggerLoader,"Loader: recibe un ENTRADA_ESTANDAR_INT: %d", unaEntradaDevueltaINT->numero);
+			log_info(self->loggerLoader,"Loader: va a enviar al CPU con ID:%d", unaEntradaDevueltaINT->idCPU);
+
+			//t_cpu* cpuINT = cpuPorIDEncontrado(self,unaEntradaDevueltaINT->idCPU);
+			//
+			//				if(socket_sendPaquete(cpu->socketCPU, ENTRADA_ESTANDAR_INT, sizeof(t_entrada_numeroKernel), unaEntradaDevueltaINT) >= 0)
+			//					log_debug(self->loggerPlanificador, "Planificador: Envia %d a CPU", unaEntradaDevueltaINT->numero);
+			//
+			//				socket_freePaquete(paqueteEntradaINT);
+			free(unaEntradaDevueltaINT);
+		}
+	}//else
+
+	//free(paqueteDesconectoPrograma);
+
 }
 
+
+t_cpu* cpuPorIDEncontrado(t_kernel* self,int idCPU){
+
+	bool esCPU(t_cpu* cpuEntrada){
+		return (cpuEntrada->id == idCPU);
+	}
+
+	t_cpu* cpuEncontrada = list_find(listaDeCPUExec, (void*)esCPU);
+	log_info(self->loggerLoader,"Loader: encuentra CPU con ID: %d",cpuEncontrada->id );
+	log_info(self->loggerLoader,"Loader: encuentra CPU con descriptor: %d", cpuEncontrada->socketCPU->descriptor);
+
+	return cpuEncontrada;
+}
 
 //Esta funcion tiene que mandar crear los TCB con ayuda de la msp y luego ponerlo en la cola de nuevo
 

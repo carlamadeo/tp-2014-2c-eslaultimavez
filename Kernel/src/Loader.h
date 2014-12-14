@@ -15,7 +15,7 @@ typedef struct{
 	uint32_t direccionBase;
 }t_msp_DireccionBase;
 
-
+t_cpu* cpuPorIDEncontrado(t_kernel* self,int idCPU);
 void kernel_comenzar_Loader(t_kernel* self);
 void escuchar_conexiones_programa(t_kernel* self);
 void pasarProgramaNewAReady(t_kernel* self);

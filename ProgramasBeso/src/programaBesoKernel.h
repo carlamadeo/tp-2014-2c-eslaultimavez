@@ -19,15 +19,18 @@ typedef struct{
 	int pid;
 	int32_t tamanio;
 	int tipo;
+	int idCPU;
 } t_entrada_estandarConsola;
 
 
 typedef struct{
 	int numero;
+	int idCPU;
 } t_entrada_numero;
 
 typedef struct{
 	char texto[TAMANIO_MAXIMO];
+	int idCPU;
 } t_entrada_texto;
 
 void consolaHacerConexionconLoader(t_programaBESO* self);

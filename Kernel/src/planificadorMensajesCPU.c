@@ -363,58 +363,17 @@ void ejecutar_UNA_ENTRADA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete*
 	t_programaEnKernel* unPrograma = list_find(listaDeProgramasDisponibles, (void*)esProgramaEntrada);
 
 	if (entradaEstandar->tipo == ENTRADA_ESTANDAR_INT){
-
+		entradaEstandar->idCPU = cpu->id;
 		socket_sendPaquete(unPrograma->socketProgramaConsola, ENTRADA_ESTANDAR_INT, sizeof(t_entrada_estandarKenel), entradaEstandar);
-
 		log_info(self->loggerPlanificador, "Planificador: Envia ENTRADA_ESTANDAR_INT a Consola");
 
-		t_socket_paquete *paqueteEntradaINT = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-
-		if(socket_recvPaquete(unPrograma->socketProgramaConsola, paqueteEntradaINT) >= 0){
-
-			t_entrada_numeroKernel* unaEntradaDevueltaINT = (t_entrada_numeroKernel*) malloc(sizeof(t_entrada_numeroKernel));
-			unaEntradaDevueltaINT = (t_entrada_numeroKernel*) paqueteEntradaINT->data;
-
-			log_info(self->loggerPlanificador, "Planificador: Recibe un ENTRADA_ESTANDAR_INT: %d", unaEntradaDevueltaINT->numero);
-
-			if(socket_sendPaquete(cpu->socketCPU, ENTRADA_ESTANDAR_INT, sizeof(t_entrada_numeroKernel), unaEntradaDevueltaINT) >= 0)
-				log_debug(self->loggerPlanificador, "Planificador: Envia %d a CPU", unaEntradaDevueltaINT->numero);
-
-			socket_freePaquete(paqueteEntradaINT);
-			free(unaEntradaDevueltaINT);
-		}
-
-		else
-			log_error(self->loggerPlanificador, "Planificador: Error al recibir UNA_ENTRADA_STANDAR_TEXT de consola.");
-
-	}
-
-	else if(entradaEstandar->tipo == ENTRADA_ESTANDAR_TEXT){
-
+	}else if(entradaEstandar->tipo == ENTRADA_ESTANDAR_TEXT){
+		entradaEstandar->idCPU = cpu->id;
 		socket_sendPaquete(unPrograma->socketProgramaConsola, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_estandarKenel), entradaEstandar);
-
 		log_info(self->loggerPlanificador, "Planificador: Envia ENTRADA_ESTANDAR_TEXT a Consola");
+	}else
+		log_error(self->loggerPlanificador, "Planificador: Error al enviar UNA_ENTRADA_STANDAR de consola.");
 
-		t_socket_paquete *paqueteEntradaTexto = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-
-		if(socket_recvPaquete(unPrograma->socketProgramaConsola, paqueteEntradaTexto) >= 0){
-
-			t_entrada_textoKernel* unaEntradaDevueltaTexto = (t_entrada_textoKernel*) malloc(sizeof(t_entrada_textoKernel));
-			unaEntradaDevueltaTexto = (t_entrada_textoKernel*) (paqueteEntradaTexto->data);
-
-			log_info(self->loggerPlanificador, "Planificador: Recibe un ENTRADA_ESTANDAR_TEXT: %s", unaEntradaDevueltaTexto->texto);
-
-			if(socket_sendPaquete(cpu->socketCPU, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_textoKernel), unaEntradaDevueltaTexto) >= 0)
-				log_debug(self->loggerPlanificador, "Planificador: Envia %s a CPU", unaEntradaDevueltaTexto->texto);
-
-			socket_freePaquete(paqueteEntradaTexto);
-			free(unaEntradaDevueltaTexto);
-
-		}
-
-		else
-			log_error(self->loggerPlanificador, "Planificador: Error al Recibir UNA_ENTRADA_STANDAR_TEXT de consola.");
-	}
 
 
 	free(entradaEstandar);

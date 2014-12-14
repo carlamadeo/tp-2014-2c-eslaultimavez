@@ -131,10 +131,13 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 
 				memcpy(unTexto->texto, texto, recibidoDelKernel->tamanio);
 
-				if(socket_sendPaquete(self->socketKernel->socket, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_texto), unTexto) > 0)
-					log_info(self->loggerProgramaBESO, "Consola: Envia un texto: %s", unTexto->texto);
+				unTexto->idCPU = recibidoDelKernel->idCPU;
 
-				else
+				socket_sendPaquete(self->socketKernel->socket, ENTRADA_ESTANDAR_TEXT, 0, NULL);
+				if(socket_sendPaquete(self->socketKernel->socket, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_texto), unTexto) > 0){
+					log_info(self->loggerProgramaBESO, "Consola: envia un texto  :%s", unTexto->texto);
+					log_info(self->loggerProgramaBESO, "Consola: envia un CPU id :%d", unTexto->idCPU);
+				}else
 					log_info(self->loggerProgramaBESO, "Consola: Error al enviar un texto.");
 
 				free(unTexto);
