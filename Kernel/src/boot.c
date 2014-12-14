@@ -23,15 +23,9 @@ void crearTCBKERNEL(t_kernel* self){
 
 	bootEscribirMemoria(self, self->tcbKernel->pid, self->tcbKernel->base_segmento_codigo, codigoSC, self->tcbKernel->tamanio_segmento_codigo);
 
-	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-	if(socket_recvPaquete(self->socketMSP->socket, paquete) >= 0){
-		if(paquete->header.type == ESCRIBIR_MEMORIA){ //que bonito!
-			self->tcbKernel->base_stack = kernelCrearSegmento(self, self->tcbKernel->pid, self->tamanioStack);
-			self->tcbKernel->cursor_stack = self->tcbKernel->base_stack;
-			log_info(self->loggerKernel,"Boot: La direccion de base de stack es: %0.8p para el PID: %d y TID:%d", self->tcbKernel->base_stack, self->tcbKernel->pid, self->tcbKernel->tid);
-		}
-
-	}
+	self->tcbKernel->base_stack = kernelCrearSegmento(self, self->tcbKernel->pid, self->tamanioStack);
+	self->tcbKernel->cursor_stack = self->tcbKernel->base_stack;
+	log_info(self->loggerKernel,"Boot: La direccion de base de stack es: %0.8p para el PID: %d y TID:%d", self->tcbKernel->base_stack, self->tcbKernel->pid, self->tcbKernel->tid);
 
 
 	self->tcbKernel->registro_de_programacion[0] = 0;
@@ -50,7 +44,6 @@ void crearTCBKERNEL(t_kernel* self){
 
 	//return programaEnElKernel;
 	free(codigoSC);
-	socket_freePaquete(paquete);
 }
 
 int obtenerTamanioArchivo(t_kernel *self, FILE *archivoBesoSystemCall){
@@ -80,6 +73,8 @@ char *obtenerCodigoArchivo(t_kernel *self, FILE *archivoBesoSystemCall, int tama
 
 	fseek(archivoBesoSystemCall, 0, SEEK_SET);
 
+	fseek(archivoBesoSystemCall, 0, SEEK_SET);
+
 	char *codigoSystemCall = malloc(sizeof(char)*tamanio);
 
 	fread(codigoSystemCall, 1, tamanio, archivoBesoSystemCall);
@@ -97,10 +92,20 @@ void bootEscribirMemoria(t_kernel* self, int pid, uint32_t direccionVirtual, cha
 	escrituraDeCodigo->direccionVirtual = direccionVirtual;
 	escrituraDeCodigo->pid = pid;
 	escrituraDeCodigo->tamanio = tamanioBeso;
-	strcpy(escrituraDeCodigo->bufferCodigoBeso, programaBeso);
+	memset(escrituraDeCodigo->bufferCodigoBeso, 0, tamanioBeso + 1);
+	memcpy(escrituraDeCodigo->bufferCodigoBeso, programaBeso, tamanioBeso);
 
 	log_info(self->loggerKernel, "Boot: Solicitud de escritura de %s en memoria para PID: %d, Direccion Virtual: %0.8p, Tamaño: %d.", escrituraDeCodigo->bufferCodigoBeso, escrituraDeCodigo->pid, escrituraDeCodigo->direccionVirtual, escrituraDeCodigo->tamanio);
 
 	socket_sendPaquete(self->socketMSP->socket, ESCRIBIR_MEMORIA, sizeof(t_escribirSegmentoBeso), escrituraDeCodigo);
 
+	socket_recvPaquete(self->socketMSP->socket, paqueteConfirmacionEscritura);
+
+	unaConfirmacionEscritura = (t_confirmacionEscritura *) paqueteConfirmacionEscritura->data;
+
+	if(unaConfirmacionEscritura->estado == SIN_ERRORES)
+		log_info(self->loggerKernel, "Boot: Se ha escrito en memoria correctamente");
+
+	free(escrituraDeCodigo);
+	free(paqueteConfirmacionEscritura);
 }
