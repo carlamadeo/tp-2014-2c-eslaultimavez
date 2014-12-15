@@ -2009,20 +2009,20 @@ int PUSH_ESO(t_CPU *self){
 
 				char* byte_a_escribir = malloc(sizeof(int32_t));
 				if(reg <= 5){
-					memcpy(byte_a_escribir, &(self->tcb->registro_de_programacion[reg]), numero);
+					sprintf(byte_a_escribir, "%d", self->tcb->registro_de_programacion[reg]);
 				}else{
 					switch(reg){
 					case 6:
-						memcpy(byte_a_escribir, &(self->tcb->base_segmento_codigo), numero);
+						sprintf(byte_a_escribir, "%d", self->tcb->base_segmento_codigo);
 						break;
 					case 7:
-						memcpy(byte_a_escribir, &(self->tcb->puntero_instruccion), numero);
+						sprintf(byte_a_escribir, "%d", self->tcb->puntero_instruccion);
 						break;
 					case 8:
-						memcpy(byte_a_escribir, &(self->tcb->base_stack), numero);
+						sprintf(byte_a_escribir, "%d", self->tcb->base_stack);
 						break;
 					case 9:
-						memcpy(byte_a_escribir, &(self->tcb->cursor_stack), numero);
+						sprintf(byte_a_escribir, "%d", self->tcb->cursor_stack);
 						break;
 					}
 				}
@@ -2074,7 +2074,7 @@ int TAKE_ESO(t_CPU *self){
 		reg = determinar_registro(registro);
 
 		if((reg != -1)){
-
+			self->tcb->cursor_stack -= numero;
 			imprimirNumeroYRegistro(registro, numero, "TAKE");
 
 			if(numero <= sizeof(uint32_t)){
@@ -2088,16 +2088,16 @@ int TAKE_ESO(t_CPU *self){
 
 				if (estado_lectura == SIN_ERRORES){
 					if(reg <= 5){
-						self->tcb->registro_de_programacion[reg] = (int32_t)lecturaDeMSP2;
+						self->tcb->registro_de_programacion[reg] = atoi(lecturaDeMSP2);
 					}else{
 						switch(reg){
-						case 6: self->tcb->base_segmento_codigo = (int32_t)lecturaDeMSP2; break;
-						case 7: self->tcb->puntero_instruccion = (int32_t)lecturaDeMSP2; break;
-						case 8: self->tcb->base_stack = (int32_t)lecturaDeMSP2; break;
-						case 9: self->tcb->cursor_stack = (int32_t)lecturaDeMSP2; break;
+						case 6: self->tcb->base_segmento_codigo = atoi(lecturaDeMSP2); break;
+						case 7: self->tcb->puntero_instruccion = atoi(lecturaDeMSP2); break;
+						case 8: self->tcb->base_stack = atoi(lecturaDeMSP2); break;
+						case 9: self->tcb->cursor_stack = atoi(lecturaDeMSP2); break;
 						}
 					}
-					self->tcb->cursor_stack -= numero;
+
 					log_info(self->loggerCPU, "CPU: TAKE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 					cpuInicializarRegistrosCPU(self, registros_cpu);
 					//cambio_registros(registros_cpu);

@@ -456,7 +456,11 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
 		hiloNuevo->cursor_stack = hiloNuevo->base_stack + (cursorStackPadre - baseStackPadre);
 		kernelEscribirMemoria(self, hiloNuevo->pid, hiloNuevo->base_stack, lecturaEscrituraMSP, self->tamanioStack);
 
-		hiloNuevo->tid++;
+		bool contarTID(t_programaEnKernel *unPrograma){
+			return (unPrograma->programaTCB->pid == hiloNuevo->pid);
+		}
+
+		hiloNuevo->tid = list_count_satisfying(listaDeProgramasDisponibles, contarTID);
 
 		t_programaEnKernel* programaNuevoHilo = malloc(sizeof(t_programaEnKernel));
 
