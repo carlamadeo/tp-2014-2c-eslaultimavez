@@ -25,6 +25,7 @@ void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket_paquete *paquete
 
 		if(unTcbProcesado != NULL){
 			socket_sendPaquete(unTcbProcesado->socketProgramaConsola, FINALIZAR_PROGRAMA_EXITO, 0, NULL);
+			log_info(self->loggerPlanificador,"Planificador: envia un FINALIZAR_PROGRAMA_EXITO a una consola");
 			desbloquearHilosBloqueadosPorElQueFinalizo(unTcbProcesado);
 		}
 	}
@@ -84,8 +85,12 @@ void ejecutar_FINALIZAR_HILO_EXITO(t_kernel* self, t_socket_paquete *paqueteTCB)
 		t_programaEnKernel* unTcbProcesado = list_find(cola_exec, (void*)_tcbParaExit);
 		pthread_mutex_unlock(&execMutex);
 
-		if(unTcbProcesado != NULL)
+		if(unTcbProcesado != NULL){
+			socket_sendPaquete(unTcbProcesado->socketProgramaConsola, FINALIZAR_PROGRAMA_EXITO, 0, NULL);
+			log_info(self->loggerPlanificador,"Planificador: envia un FINALIZAR_PROGRAMA_EXITO a una consola");
 			desbloquearHilosBloqueadosPorElQueFinalizo(unTcbProcesado);
+		}
+
 
 	}
 

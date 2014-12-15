@@ -1,24 +1,32 @@
 #ifndef PANEL_H_
 #define PANEL_H_
 
+	#include <stdio.h>
+	#include <stdlib.h>
 	#include <stdint.h>
 	#include <stdbool.h>
+	#include <string.h>
 	#include "collections/list.h"
+	#include "string.h"
+	#include "log.h"
 
 	typedef enum { KERNEL, CPU } t_tipo_proceso;
 	typedef enum { NEW, READY, EXEC, BLOCK, EXIT } t_cola;
 
 	typedef struct {
-		int pid;
-		int tid;
-		short km;
-		uint32_t base_segmento_codigo;
-		int tamanio_segmento_codigo;
+		uint32_t pid;
+		uint32_t tid;
+		bool kernel_mode;
+		uint32_t segmento_codigo;
+		uint32_t segmento_codigo_size;
 		uint32_t puntero_instruccion;
 		uint32_t base_stack;
 		uint32_t cursor_stack;
-		int32_t registro_de_programacion[5];
-	} t_hilo_log;
+		int32_t registros[5];
+		t_cola cola;
+	} t_hilo;
+
+	t_log* logg;
 
 	/*
 	 * Las funciones declaradas en los headers panel.h, cpu.h,

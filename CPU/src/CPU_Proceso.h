@@ -77,7 +77,7 @@ typedef struct{
 }t_CPU_TERMINE_UNA_LINEA;
 
 
-t_hilo_log* hilo_log;
+t_hilo * hilo_log;
 
 
 //FUNCIONES

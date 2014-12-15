@@ -26,8 +26,8 @@ int cpuProcesarTCB(t_CPU *self){
 	int error = 0;
 
 	//COPIO LA ESTRUCTURA DEL TCB AL hilo_log
-	hilo_log = (t_hilo_log *) self->tcb;
-	ejecucion_hilo(hilo_log, self->quantum);
+	//hilo_log = (t_hilo_log *) self->tcb;
+	//ejecucion_hilo(hilo_log, self->quantum);
 
 	log_info(self->loggerCPU, "CPU: Comienzo a procesar el TCB de pid: %d y direccion: %0.8p", self->tcb->pid, self->tcb->puntero_instruccion);
 
@@ -140,7 +140,7 @@ int ejecutar_instruccion(t_CPU *self, int linea){
 
 	self->tcb->puntero_instruccion += 4; //avanzo el puntero de instruccion
 	cpuInicializarRegistrosCPU(self, registros_cpu);
-	cambio_registros(registros_cpu);
+	//cambio_registros(registros_cpu);
 	free(registros_cpu);
 
 	log_info(self->loggerCPU, "CPU: TCB KM %d", self->tcb->km);

@@ -13,7 +13,7 @@ char *instrucciones[] = {"LOAD", "GETM", "SETM", "MOVR", "ADDR", "SUBR", "MULR",
 
 int LOAD_ESO(t_CPU *self){
 
-	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
+	//t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 
 	char registro;
 	int reg;
@@ -51,8 +51,8 @@ int LOAD_ESO(t_CPU *self){
 		}
 
 		imprimirRegistroYNumero(registro, numero, "LOAD");
-		cpuInicializarRegistrosCPU(self, registros_cpu);
-		cambio_registros(registros_cpu);
+		//cpuInicializarRegistrosCPU(self, registros_cpu);
+		//cambio_registros(registros_cpu);
 
 		log_info(self->loggerCPU, "CPU: LOAD ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 	}
@@ -63,7 +63,7 @@ int LOAD_ESO(t_CPU *self){
 	}
 
 	free(lecturaDeMSP);
-	free(registros_cpu);
+	//free(registros_cpu);
 	return estado_bloque;
 }
 
@@ -99,7 +99,7 @@ int GETM_ESO(t_CPU *self){
 
 			int tamanioMSP = sizeof(char);
 			char *lecturaMSP = malloc(sizeof(char));
-			char leido;
+			//char leido;
 
 
 			if(regB <= 5){
@@ -129,7 +129,7 @@ int GETM_ESO(t_CPU *self){
 				}
 
 				cpuInicializarRegistrosCPU(self, registros_cpu);
-				cambio_registros(registros_cpu);
+				//cambio_registros(registros_cpu);
 
 				free(lecturaMSP);
 				log_info(self->loggerCPU, "CPU: GETM ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
@@ -167,7 +167,7 @@ int SETM_ESO(t_CPU *self){
 
 		self->tcb->puntero_instruccion += tamanio;
 		cpuInicializarRegistrosCPU(self, registros_cpu);
-		cambio_registros(registros_cpu);
+		//cambio_registros(registros_cpu);
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion SETM");
 
 		memcpy(&(numero), lecturaDeMSP, sizeof(int));
@@ -322,7 +322,7 @@ int MOVR_ESO(t_CPU *self){
 
 			log_info(self->loggerCPU, "CPU: MOVR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
-			cambio_registros(registros_cpu);
+			//cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -431,7 +431,7 @@ int ADDR_ESO(t_CPU *self){
 			self->tcb->registro_de_programacion[0] = (int32_t)suma;
 			log_info(self->loggerCPU, "CPU: ADDR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
-			cambio_registros(registros_cpu);
+			//cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -544,7 +544,7 @@ int SUBR_ESO(t_CPU *self){
 
 			log_info(self->loggerCPU, "CPU: SUBR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
-			cambio_registros(registros_cpu);
+			//cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -656,7 +656,7 @@ int MULR_ESO(t_CPU *self){
 			self->tcb->registro_de_programacion[0] = (int32_t)mult;
 			log_info(self->loggerCPU, "CPU: MULR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
-			cambio_registros(registros_cpu);
+			//cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -769,7 +769,7 @@ int MODR_ESO(t_CPU *self){
 
 			log_info(self->loggerCPU, "CPU: MODR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
-			cambio_registros(registros_cpu);
+			//cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -911,7 +911,7 @@ int DIVR_ESO(t_CPU *self){
 
 			log_info(self->loggerCPU, "CPU: DIVR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
-			cambio_registros(registros_cpu);
+			//cambio_registros(registros_cpu);
 
 		}else{
 			log_error(self->loggerCPU, "CPU: Error registro de programacion no encontrado %d", self->tcb->pid);
@@ -973,7 +973,7 @@ int INCR_ESO(t_CPU *self){
 			imprimirUnRegistro(registro, "INCR");
 			log_info(self->loggerCPU, "CPU: INCR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
-			cambio_registros(registros_cpu);
+			//cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -1026,7 +1026,7 @@ int DECR_ESO(t_CPU *self){
 			imprimirUnRegistro(registro, "DECR");
 			log_info(self->loggerCPU, "CPU: DECR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
-			cambio_registros(registros_cpu);
+			//cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -1223,7 +1223,7 @@ int COMP_ESO(t_CPU *self){
 
 			log_info(self->loggerCPU, "CPU: COMPR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
-			cambio_registros(registros_cpu);
+			//cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -1452,7 +1452,7 @@ int CGEQ_ESO(t_CPU *self){
 
 			log_info(self->loggerCPU, "CPU: CGEQ ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
-			cambio_registros(registros_cpu);
+			//cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -1682,7 +1682,7 @@ int CLEQ_ESO(t_CPU *self){
 
 			log_info(self->loggerCPU, "CPU: CLEQ ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
-			cambio_registros(registros_cpu);
+			//cambio_registros(registros_cpu);
 		}
 
 		else{
@@ -1760,7 +1760,7 @@ int GOTO_ESO(t_CPU *self){
 			}
 			log_info(self->loggerCPU, "CPU: GOTO ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
-			cambio_registros(registros_cpu);
+			//cambio_registros(registros_cpu);
 
 		}else{
 			log_error(self->loggerCPU, "CPU: Error registro de programacion no encontrado %d", self->tcb->pid);
@@ -1801,7 +1801,7 @@ int JMPZ_ESO(t_CPU *self){
 				self->tcb->puntero_instruccion = direccion;
 				log_info(self->loggerCPU, "CPU: JMPZ ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 				cpuInicializarRegistrosCPU(self, registros_cpu);
-				cambio_registros(registros_cpu);
+				//cambio_registros(registros_cpu);
 			}
 
 			else
@@ -1844,7 +1844,7 @@ int JPNZ_ESO(t_CPU *self){
 				self->tcb->puntero_instruccion = direccion;
 				log_info(self->loggerCPU, "CPU: JPNZ ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 				cpuInicializarRegistrosCPU(self, registros_cpu);
-				cambio_registros(registros_cpu);
+				//cambio_registros(registros_cpu);
 			}
 
 			else
@@ -1870,7 +1870,7 @@ int INTE_ESO(t_CPU *self){
 
 
 	int estado_lectura = cpuLeerMemoria(self, self->tcb->puntero_instruccion, lecturaDeMSP, tamanio);
-	int estado_bloque = estado_lectura;
+	//int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
 
@@ -1883,7 +1883,7 @@ int INTE_ESO(t_CPU *self){
 		imprimirUnNumero(direccion, "INTE");
 
 		cpuInicializarRegistrosCPU(self, registros_cpu);
-		cambio_registros(registros_cpu);
+		//cambio_registros(registros_cpu);
 
 		self->unaDireccion = direccion;
 
@@ -1960,7 +1960,7 @@ int SHIF_ESO(t_CPU *self){
 
 			log_info(self->loggerCPU, "CPU: SHIF ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
-			cambio_registros(registros_cpu);
+			//cambio_registros(registros_cpu);
 		}
 
 	}
@@ -2036,7 +2036,7 @@ int PUSH_ESO(t_CPU *self){
 					self->tcb->cursor_stack += numero;
 					log_info(self->loggerCPU, "CPU: PUSH ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 					cpuInicializarRegistrosCPU(self, registros_cpu);
-					cambio_registros(registros_cpu);
+					//cambio_registros(registros_cpu);
 				}
 			}
 		}
@@ -2100,7 +2100,7 @@ int TAKE_ESO(t_CPU *self){
 					self->tcb->cursor_stack -= numero;
 					log_info(self->loggerCPU, "CPU: TAKE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 					cpuInicializarRegistrosCPU(self, registros_cpu);
-					cambio_registros(registros_cpu);
+					//cambio_registros(registros_cpu);
 				}
 
 				free(lecturaDeMSP2);
@@ -2119,12 +2119,12 @@ int TAKE_ESO(t_CPU *self){
 
 int XXXX_ESO(t_CPU *self){
 
-	fin_ejecucion();
+	//fin_ejecucion();
 
 	//char *data = malloc(sizeof(t_TCB_CPU_Kernel));
 	//memcpy(data, self->tcb, sizeof(t_TCB_CPU_Kernel));
 	//int estado = cpuFinalizarProgramaExitoso(self, data);
-	ejecucion_instruccion("XXXX", parametros);
+	//ejecucion_instruccion("XXXX", parametros);
 
 	log_info(self->loggerCPU, "CPU: XXXX ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 	//free(data);
@@ -2165,11 +2165,11 @@ int MALC_ESO(t_CPU *self){
 			self->tcb->registro_de_programacion[0] = estado_malc;
 			log_info(self->loggerCPU, "CPU: MALC ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
-			cambio_registros(registros_cpu);
+			//cambio_registros(registros_cpu);
 			return SIN_ERRORES;
 		}
 
-		ejecucion_instruccion("MALC", parametros);
+		//ejecucion_instruccion("MALC", parametros);
 		free(registros_cpu);
 	}
 
@@ -2196,7 +2196,7 @@ int FREE_ESO(t_CPU *self){
 
 		else{
 			log_info(self->loggerCPU, "CPU: FREE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-			ejecucion_instruccion("FREE", parametros);
+			//ejecucion_instruccion("FREE", parametros);
 		}
 	}
 
@@ -2235,11 +2235,11 @@ int INNN_ESO(t_CPU *self){
 			self->tcb->registro_de_programacion[0] = (int32_t)intRecibido;
 
 			cpuInicializarRegistrosCPU(self, registros_cpu);
-			cambio_registros(registros_cpu);
+			//cambio_registros(registros_cpu);
 
 			if(estado_innn == SIN_ERRORES){
 				log_info(self->loggerCPU, "CPU: INNN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-				ejecucion_instruccion("INNN", parametros);
+				//ejecucion_instruccion("INNN", parametros);
 			}
 
 			else
@@ -2287,7 +2287,7 @@ int INNC_ESO(t_CPU *self){
 
 				else {
 					log_info(self->loggerCPU, "CPU: INNC ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-					ejecucion_instruccion("INNC", parametros);
+					//ejecucion_instruccion("INNC", parametros);
 				}
 			}
 		}
@@ -2307,7 +2307,7 @@ int INNC_ESO(t_CPU *self){
 int OUTN_ESO(t_CPU *self){
 
 	int estado_outn;
-	int tamanio;
+	//int tamanio;
 	char *enviarAKernelChar = malloc(sizeof(int32_t));
 
 	if(self->tcb->km == 1){
@@ -2316,8 +2316,8 @@ int OUTN_ESO(t_CPU *self){
 		sprintf(enviarAKernelChar, "%d", self->tcb->registro_de_programacion[0]);
 		estado_outn = cpuEnviarSalidaEstandar(self, enviarAKernelChar, sizeof(int32_t));
 
-		if(estado_outn == SIN_ERRORES)
-			ejecucion_instruccion("OUTN", parametros);
+		//if(estado_outn == SIN_ERRORES)
+			//ejecucion_instruccion("OUTN", parametros);
 	}
 
 	else
@@ -2350,7 +2350,7 @@ int OUTC_ESO(t_CPU* self){
 
 			if(estado_outc == SIN_ERRORES){
 				log_info(self->loggerCPU, "CPU: OUTC ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-				ejecucion_instruccion("OUTC", parametros);
+				//ejecucion_instruccion("OUTC", parametros);
 			}
 		}
 
@@ -2383,7 +2383,7 @@ int CREA_ESO(t_CPU *self){ 	// CREA un hilo hijo de TCB
 		}
 
 		log_info(self->loggerCPU, "CPU: CREA ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
-		ejecucion_instruccion("CREA", parametros);
+		//ejecucion_instruccion("CREA", parametros);
 
 		free(crear_hilo);
 	}
@@ -2415,7 +2415,7 @@ int JOIN_ESO(t_CPU *self){
 
 		log_info(self->loggerCPU, "CPU: JOIN ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
-		ejecucion_instruccion("JOIN", parametros);
+		//ejecucion_instruccion("JOIN", parametros);
 		free(joinear);
 	}
 
@@ -2450,7 +2450,7 @@ int BLOK_ESO(t_CPU *self){
 		else
 			log_info(self->loggerCPU, "CPU: BLOK ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
-		ejecucion_instruccion("BLOK", parametros);
+		//ejecucion_instruccion("BLOK", parametros);
 		free(blocker);
 	}
 
@@ -2479,7 +2479,7 @@ int WAKE_ESO(t_CPU *self){
 		else
 			log_info(self->loggerCPU, "CPU: WAKE ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
-		ejecucion_instruccion("WAKE", parametros);
+		//ejecucion_instruccion("WAKE", parametros);
 		free(despertar);
 	}
 
@@ -2496,7 +2496,7 @@ void imprimirUnNumero(uint32_t numero, char* funcion){
 	char *numeroEnString = malloc(1);
 	sprintf(numeroEnString, "%0.8p", numero);
 	list_add(parametros, numeroEnString);
-	ejecucion_instruccion(funcion, parametros);
+	//ejecucion_instruccion(funcion, parametros);
 	free(numeroEnString);
 }
 
@@ -2511,7 +2511,7 @@ void imprimirNumeroYRegistro(char registro, int numero, char* funcion){
 	list_add(parametros, numeroEnString);
 	list_add(parametros, registroEnString);
 
-	ejecucion_instruccion(funcion, parametros);
+	//ejecucion_instruccion(funcion, parametros);
 
 	free(registroEnString);
 	free(numeroEnString);
@@ -2528,7 +2528,7 @@ void imprimirRegistroYNumero(char registro, int numero, char* funcion){
 	list_add(parametros, registroEnString);
 	list_add(parametros, numeroEnString);
 
-	ejecucion_instruccion(funcion, parametros);
+	//ejecucion_instruccion(funcion, parametros);
 
 	free(registroEnString);
 	free(numeroEnString);
@@ -2548,7 +2548,7 @@ void imprimirDosRegistrosUnNumero(char registroA, char registroB, int numero, ch
 	list_add(parametros, registroAEnString);
 	list_add(parametros, registroBEnString);
 
-	ejecucion_instruccion(funcion, parametros);
+	//ejecucion_instruccion(funcion, parametros);
 
 	free(registroAEnString);
 	free(registroBEnString);
@@ -2566,7 +2566,7 @@ void imprimirDosRegistros(char registroA, char registroB, char* funcion){
 	list_add(parametros, registroAEnString);
 	list_add(parametros, registroBEnString);
 
-	ejecucion_instruccion(funcion, parametros);
+	//ejecucion_instruccion(funcion, parametros);
 
 	free(registroAEnString);
 	free(registroBEnString);
@@ -2580,7 +2580,7 @@ void imprimirUnRegistro(char registro, char* funcion){
 	sprintf(registroEnString, "%c", registro);
 	list_add(parametros, registroEnString);
 
-	ejecucion_instruccion(funcion, parametros);
+	//ejecucion_instruccion(funcion, parametros);
 
 	free(registroEnString);
 }

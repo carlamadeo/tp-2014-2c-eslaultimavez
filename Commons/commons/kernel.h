@@ -3,6 +3,9 @@
 
 	#include "panel.h"
 
+	t_list* kernel_cpus_conectadas;
+	t_list* kernel_consolas_conectadas;
+
 	/**
 	* Debe invocarse tras conectarse una CPU.
 	*
@@ -45,6 +48,6 @@
 	* @param  mnemonico  Nombre de la funcionalidad.
 	* @param  hilo Estructura TCB del hilo que invocó la funcionalidad.
 	*/
-	void instruccion_protegida(char* mnemonico, t_hilo_log* hilo);
+	void instruccion_protegida(char* mnemonico, t_hilo* hilo);
 
 #endif

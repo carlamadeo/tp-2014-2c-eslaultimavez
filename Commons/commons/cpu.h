@@ -3,7 +3,6 @@
 
 	#include "panel.h"
 
-
 	typedef struct {
 		int32_t registros_programacion[5]; //A, B, C, D y E
 		uint32_t M; //Base de segmento de código
@@ -20,7 +19,7 @@
 	 * @param  hilo  Estructura conteniendo todos los campos del TCB del hilo.
 	 * @param  quantum  Tamaño del Quantum.
 	 */
-	void comienzo_ejecucion(t_hilo_log* hilo, uint32_t quantum);
+	void comienzo_ejecucion(t_hilo* hilo, uint32_t quantum);
 
 	/**
 	 * Debe invocarse cada vez que un hilo salga de la CPU.
@@ -43,10 +42,10 @@
 	 *
 	 * @param  registros  Estructura conteniendo cada uno de los registros de la CPU.
 	 */
-	void cambio_registros(t_registros_cpu* registros);
+	void cambio_registros(t_registros_cpu registros);
 
 	//-------------------------------------------------
 	//Retrocompatibilidad con el ejemplo del enunciado:
-	void ejecucion_hilo(t_hilo_log* hilo, uint32_t quantum);
+	void ejecucion_hilo(t_hilo* hilo, uint32_t quantum);
 
 #endif
