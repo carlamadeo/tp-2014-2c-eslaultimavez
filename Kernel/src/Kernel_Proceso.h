@@ -6,6 +6,7 @@
 #include "commons/log.h"
 #include "commons/socketInBigBang.h"
 #include "commons/protocolStructInBigBang.h"
+#include "commons/kernel.h"
 #include <pthread.h>
 
 /*----------------------Estructuras del Kernel----------------------------------------*/
@@ -77,7 +78,7 @@ typedef struct {
 
 
 typedef struct {
-	int id;
+	uint32_t id;
 	t_TCB_Kernel* TCB;
 	t_socket* socketCPU;
 }t_cpu;

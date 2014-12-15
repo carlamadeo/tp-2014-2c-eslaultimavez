@@ -274,7 +274,7 @@ void atenderNuevaConexionCPU(t_kernel* self, t_socket* socketNuevoCliente, fd_se
 	//Se actualiza del select
 	FD_SET(socketNuevoCliente->descriptor, master); /*añadir al conjunto maestro*/
 	if (socketNuevoCliente->descriptor > *fdmax) {
-		log_info(self->loggerPlanificador, "Se actualiza y añade el conjunto maestro %d", socketNuevoCliente->descriptor);
+		//log_info(self->loggerPlanificador, "Se actualiza y añade el conjunto maestro %d", socketNuevoCliente->descriptor);
 		*fdmax = socketNuevoCliente->descriptor; /*actualizar el máximo*/
 	}
 
@@ -290,7 +290,9 @@ void agregarEnListaDeCPU(t_kernel* self, int id, t_socket* socketCPU){
 	unaCpu->socketCPU = socketCPU;
 	unaCpu->TCB = inicializarUnTCB();
 	list_add(listaDeCPULibres, unaCpu);
+
 	log_info(self->loggerPlanificador,"Planificador: Tiene una nueva CPU con ID: %d",unaCpu->id);
+	//conexion_cpu(unaCpu->id);
 	log_info(self->loggerPlanificador,"Planificador: Tiene una nueva CPU con descriptor: %d",unaCpu->socketCPU->descriptor);
 	sem_post(&sem_C);
 }

@@ -8,7 +8,7 @@
  ============================================================================
  */
 
-#include "Kernel.h"
+#include "Kernel_Proceso.h"
 #include "Planificador.h"
 #include "boot.h"
 #include "kernelMSP.h"
