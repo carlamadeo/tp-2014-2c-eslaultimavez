@@ -410,9 +410,8 @@ void ejecutar_DESCONECTAR_CPU(t_kernel* self, t_cpu* cpu, fd_set* master){
 			return ((programaEnLista->programaTCB->pid == cpuRemovido->TCB->pid) && (programaEnLista->programaTCB->tid == cpuRemovido->TCB->tid));
 		}
 
-		//sem_wait(&sem_cpuExec);
 		sem_wait(&mutex_exec);
-		t_programaEnKernel* programaRemovido = list_remove_by_condition(cola_exec, (void*)esPrograma);
+		t_programaEnKernel* programaRemovido = list_find(cola_exec, (void*)esPrograma);
 		sem_post(&mutex_exec);
 
 		if(programaRemovido->programaTCB->km == 1){
@@ -422,7 +421,7 @@ void ejecutar_DESCONECTAR_CPU(t_kernel* self, t_cpu* cpu, fd_set* master){
 			}
 
 			pthread_mutex_lock(&blockMutex);
-			t_programaEnKernel* programaInterrupcion = list_remove_by_condition(cola_block, (void*)esProgramaInterrupcion);
+			t_programaEnKernel* programaInterrupcion = list_find(cola_block, (void*)esProgramaInterrupcion);
 			pthread_mutex_unlock(&blockMutex);
 
 			sem_wait(&mutex_exit);
@@ -434,12 +433,6 @@ void ejecutar_DESCONECTAR_CPU(t_kernel* self, t_cpu* cpu, fd_set* master){
 			pthread_mutex_lock(&blockMutex);
 			list_add(cola_block, programaRemovido);
 			pthread_mutex_unlock(&blockMutex);
-		}
-
-		else{
-			sem_wait(&mutex_exit);
-			list_add(cola_exit, programaRemovido->programaTCB);
-			sem_post(&mutex_exit);
 		}
 
 		//se le avisa al programa Beso que se desconecto la CPU
