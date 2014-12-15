@@ -21,6 +21,7 @@ void escuchar_conexiones_programa(t_kernel* self);
 void pasarProgramaNewAReady(t_kernel* self);
 t_programaEnKernel* obtenerProgramaConsolaSegunDescriptor(t_kernel* self,int descriptor);
 void atenderProgramaConsola(t_kernel* self,t_programaEnKernel* programa, fd_set* master);
+void eliminarPrograma(t_kernel* self, t_programaEnKernel* programa);
 void atenderNuevaConexionPrograma(t_kernel* self,t_socket* socketNuevoCliente, fd_set* master, int* fdmax);
 t_TCB_Kernel* loaderCrearTCB(t_kernel* self, char *programaBeso, t_socket* socketNuevoCliente, int tamanioBeso);
 void loaderTrabajaConMSP(t_kernel* self);

@@ -7,11 +7,8 @@
 #include "commons/socketInBigBang.h"
 #include "commons/protocolStructInBigBang.h"
 #include <pthread.h>
-/*----------------------Estructuras del Kernel----------------------------------------*/
-#define MAXDATASIZE 1024
-#define PATH_CONFIG "archivoConfiguracion.cfg"
-#define PATH_LOG "logs/trace.log"
 
+/*----------------------Estructuras del Kernel----------------------------------------*/
 
 typedef struct{
 	int pid;

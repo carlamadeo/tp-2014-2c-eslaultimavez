@@ -180,10 +180,6 @@ void eliminarSegmentoDeListaDelPrograma(t_programa *programa, int numeroSegmento
 		return unSegmento->numero == numeroSegmento;
 	}
 
-	t_segmento *segmento = list_find(programa->tablaSegmentos, encontrarSegmento);
-
-	list_destroy_and_destroy_elements(segmento->tablaPaginas, free);
-
 	list_remove_and_destroy_by_condition(programa->tablaSegmentos, encontrarSegmento, free);
 
 }

@@ -1,4 +1,4 @@
-
+#include "Planificador.h"
 #include "Loader.h"
 #include "commons/protocolStructInBigBang.h"
 #include "kernelMSP.h"
@@ -6,7 +6,6 @@
 #include <unistd.h>
 
 int unPIDGlobal = 1;
-int unTIDGlobal = 1;
 
 pthread_mutex_t readyMutex;
 pthread_mutex_t newMutex;
@@ -96,9 +95,9 @@ void escuchar_conexiones_programa(t_kernel* self){
 
 					else{ //sino no es una nueva conexion busca un programa en la lista
 						log_debug(self->loggerLoader, "Loader: Mensaje del Programa descriptor = %d.", i);
-						t_programaEnKernel* programaCliente = obtenerProgramaConsolaSegunDescriptor(self,i);
+						t_programaEnKernel* programaCliente = obtenerProgramaConsolaSegunDescriptor(self, i);
 						log_debug(self->loggerLoader, "Loader: Mensaje del Programa PID = %d.", programaCliente->programaTCB->pid);
-						atenderProgramaConsola(self,programaCliente, &master);
+						atenderProgramaConsola(self, programaCliente, &master);
 						//exit(1);
 					}
 				}//fin del if FD_ISSET
@@ -165,52 +164,33 @@ t_programaEnKernel* obtenerProgramaConsolaSegunDescriptor(t_kernel* self,int des
 
 
 
-void atenderProgramaConsola(t_kernel* self,t_programaEnKernel* programa, fd_set* master){
+void atenderProgramaConsola(t_kernel* self, t_programaEnKernel* programa, fd_set* master){
 
-	t_socket_paquete *paqueteDesconectoPrograma = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
+	t_socket_paquete *paquetePrograma = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
-	if ((socket_recvPaquete(programa->socketProgramaConsola, paqueteDesconectoPrograma)) < 0) {
+	if ((socket_recvPaquete(programa->socketProgramaConsola, paquetePrograma)) < 0) {
 
-		log_debug(self->loggerLoader, "El programa Beso con PID: %d TID: %d ha cerrado la conexion.", programa->programaTCB->pid,programa->programaTCB->tid);
+		log_debug(self->loggerLoader, "El programa Beso con PID: %d ha cerrado la conexion.", programa->programaTCB->pid);
 		FD_CLR(programa->socketProgramaConsola->descriptor, master); // eliminar del conjunto maestro
 		close(programa->socketProgramaConsola->descriptor);
 
-		bool esProgramaDesconectado(t_programaEnKernel* programaEnLista){
-			return ((programaEnLista->programaTCB->pid == programa->programaTCB->pid) && (programaEnLista->programaTCB->tid == programa->programaTCB->tid));
-		}
+		eliminarPrograma(self, programa);
 
-
-		//pthread_mutex_lock(&programasBesoDisponibleMutex);
-		list_remove_by_condition(listaDeProgramasDisponibles, (void*)esProgramaDesconectado);
-		//pthread_mutex_unlock(&programasBesoDisponibleMutex);
-
-
-		//pthread_mutex_lock(&execMutex);
-		t_programaEnKernel* unProgramaExit = list_remove_by_condition(cola_exec, (void*)esProgramaDesconectado);//TODO ver si se lo manda a la cola EXIT
-		//pthread_mutex_unlock(&execMutex);
-
-
-		//pthread_mutex_lock(&exitMutex);
-		list_add(cola_exit, unProgramaExit->programaTCB);
-		//pthread_mutex_unlock(&exitMutex);
-
-		log_info(self->loggerLoader,"Loader: cantidad de TCBs enviados al Kernel :%d", list_size(listaDeProgramasDisponibles));
 		log_info(self->loggerLoader,"Loader: cantidad de TCBs en la cola NEW  :%d", list_size(cola_new));
 		log_info(self->loggerLoader,"Loader: cantidad de TCBs en la cola READY:%d", list_size(cola_ready));
 		log_info(self->loggerLoader,"Loader: cantidad de TCBs en la cola EXEC :%d", list_size(cola_exec));
 		log_info(self->loggerLoader,"Loader: cantidad de TCBs en la cola BLOCK:%d", list_size(cola_block));
 		log_info(self->loggerLoader,"Loader: cantidad de TCBs en la cola Exit:%d", list_size(cola_exit));
 
-
 	}
 
-	else if (paqueteDesconectoPrograma->header.type == ENTRADA_ESTANDAR_TEXT){
+	else if (paquetePrograma->header.type == ENTRADA_ESTANDAR_TEXT){
 
 		log_info(self->loggerLoader,"Loader: recibe un ENTRADA_ESTANDAR_TEXT");
 
 		t_entrada_textoKernel* unaEntradaDevueltaTexto = (t_entrada_textoKernel*) malloc(sizeof(t_entrada_textoKernel));
 
-		unaEntradaDevueltaTexto = (t_entrada_textoKernel*) (paqueteDesconectoPrograma->data);
+		unaEntradaDevueltaTexto = (t_entrada_textoKernel*) (paquetePrograma->data);
 
 		log_info(self->loggerLoader,"Loader: recibe un texto de una consola :%s", unaEntradaDevueltaTexto->texto);
 		log_info(self->loggerLoader,"Loader: recube una CPU con ID: %d", unaEntradaDevueltaTexto->idCPU);
@@ -223,10 +203,10 @@ void atenderProgramaConsola(t_kernel* self,t_programaEnKernel* programa, fd_set*
 		free(unaEntradaDevueltaTexto);
 	}
 
-	else if (paqueteDesconectoPrograma->header.type == ENTRADA_ESTANDAR_INT){
+	else if (paquetePrograma->header.type == ENTRADA_ESTANDAR_INT){
 
 		t_entrada_numeroKernel* unaEntradaDevueltaINT = (t_entrada_numeroKernel*) malloc(sizeof(t_entrada_numeroKernel));
-		unaEntradaDevueltaINT = (t_entrada_numeroKernel*) paqueteDesconectoPrograma->data;
+		unaEntradaDevueltaINT = (t_entrada_numeroKernel*) paquetePrograma->data;
 
 		log_info(self->loggerLoader,"Loader: recibe un int por Consola: %d", unaEntradaDevueltaINT->numero);
 		log_info(self->loggerLoader,"Loader: va a enviar al CPU con ID: %d", unaEntradaDevueltaINT->idCPU);
@@ -240,9 +220,102 @@ void atenderProgramaConsola(t_kernel* self,t_programaEnKernel* programa, fd_set*
 
 	}//else
 
-	socket_freePaquete(paqueteDesconectoPrograma);
+	socket_freePaquete(paquetePrograma);
 
 }
+
+void eliminarPrograma(t_kernel* self, t_programaEnKernel* programa){
+
+	bool hayDisponible, hayExec, hayBlock, hayNew, hayReady;
+	bool primeraVez = true;
+
+	void eliminarSegmentos(t_programaEnKernel* programaEliminar){
+		if(programaEliminar->programaTCB->pid == programa->programaTCB->pid){
+
+			if(primeraVez){
+				kernelDestruirSegmento(self, programaEliminar->programaTCB, programaEliminar->programaTCB->base_segmento_codigo);
+				primeraVez = false;
+			}
+
+			kernelDestruirSegmento(self, programaEliminar->programaTCB, programaEliminar->programaTCB->base_stack);
+		}
+	}
+
+	list_iterate(listaDeProgramasDisponibles, eliminarSegmentos);
+
+	bool esProgramaDesconectado(t_programaEnKernel* programaEnLista){
+		return (programaEnLista->programaTCB->pid == programa->programaTCB->pid) && (programaEnLista->programaTCB->km == 0);
+	}
+
+	hayDisponible = list_any_satisfy(listaDeProgramasDisponibles, (void*)esProgramaDesconectado);
+
+	while(hayDisponible){
+
+		pthread_mutex_lock(&programasBesoDisponibleMutex);
+		list_remove_by_condition(listaDeProgramasDisponibles, (void*)esProgramaDesconectado);
+		pthread_mutex_unlock(&programasBesoDisponibleMutex);
+
+		hayDisponible = list_any_satisfy(listaDeProgramasDisponibles, (void*)esProgramaDesconectado);
+	}
+
+	hayExec = list_any_satisfy(cola_exec, (void*)esProgramaDesconectado);
+
+	while(hayExec){
+
+		pthread_mutex_lock(&exitMutex);
+		pthread_mutex_lock(&execMutex);
+		list_add(cola_exit, list_remove_by_condition(cola_exec, (void*)esProgramaDesconectado));
+		pthread_mutex_unlock(&execMutex);
+		pthread_mutex_unlock(&exitMutex);
+
+		hayExec = list_any_satisfy(cola_exec, (void*)esProgramaDesconectado);
+
+	}
+
+	hayBlock = list_any_satisfy(cola_block, (void*)esProgramaDesconectado);
+
+	while(hayBlock){
+
+		pthread_mutex_lock(&exitMutex);
+		pthread_mutex_lock(&blockMutex);
+		list_add(cola_exit, list_remove_by_condition(cola_block, (void*)esProgramaDesconectado));
+		pthread_mutex_unlock(&blockMutex);
+		pthread_mutex_unlock(&exitMutex);
+
+		hayBlock = list_any_satisfy(cola_block, (void*)esProgramaDesconectado);
+
+	}
+
+	hayNew = list_any_satisfy(cola_new, (void*)esProgramaDesconectado);
+
+	while(hayNew){
+
+		pthread_mutex_lock(&exitMutex);
+		pthread_mutex_lock(&newMutex);
+		list_add(cola_exit, list_remove_by_condition(cola_new, (void*)esProgramaDesconectado));
+		pthread_mutex_unlock(&newMutex);
+		pthread_mutex_unlock(&exitMutex);
+
+		hayNew = list_any_satisfy(cola_new, (void*)esProgramaDesconectado);
+
+	}
+
+	hayReady = list_any_satisfy(cola_ready, (void*)esProgramaDesconectado);
+
+	while(hayReady){
+
+		pthread_mutex_lock(&exitMutex);
+		pthread_mutex_lock(&newMutex);
+		list_add(cola_exit, list_remove_by_condition(cola_ready, (void*)esProgramaDesconectado));
+		pthread_mutex_unlock(&newMutex);
+		pthread_mutex_unlock(&exitMutex);
+
+		hayReady = list_any_satisfy(cola_new, (void*)esProgramaDesconectado);
+
+	}
+
+}
+
 
 
 t_cpu* cpuPorIDEncontrado(t_kernel* self,int idCPU){
@@ -354,11 +427,15 @@ t_TCB_Kernel* loaderCrearTCB(t_kernel* self, char *programaBeso, t_socket* socke
 	t_TCB_Kernel* unTCB = malloc(sizeof(t_TCB_Kernel));
 
 	unTCB->pid = unPIDGlobal;
-	unTCB->tid = unTIDGlobal;
 	unTCB->km = 0;
 
+	bool contarTID(t_programaEnKernel *unPrograma){
+		return (unPrograma->programaTCB->pid == unTCB->pid);
+	}
+
+	unTCB->tid = list_count_satisfying(listaDeProgramasDisponibles, contarTID);
+
 	unPIDGlobal ++;
-	unTIDGlobal ++;
 
 	unTCB->tamanio_segmento_codigo = tamanioBeso;
 	unTCB->base_segmento_codigo = kernelCrearSegmento(self, unTCB->pid, tamanioBeso);
@@ -367,17 +444,17 @@ t_TCB_Kernel* loaderCrearTCB(t_kernel* self, char *programaBeso, t_socket* socke
 	int unaRespuesta = kernelEscribirMemoria(self, unTCB->pid, unTCB->base_segmento_codigo, programaBeso, tamanioBeso);
 
 	//Validar check de ERROR y si hay un error mandar a ProgramaBeso
-	loaderValidarEscrituraEnMSP(self,socketNuevoCliente,unaRespuesta);
+	loaderValidarEscrituraEnMSP(self, socketNuevoCliente, unaRespuesta);
 
 
 	unTCB->base_stack = kernelCrearSegmento(self, unTCB->pid, self->tamanioStack);
 	unTCB->cursor_stack = unTCB->base_stack;
 	log_info(self->loggerLoader,"Loader: La direccion de base de stack es: %0.8p para el PID: %d y TID:%d", self->tcbKernel->base_stack, self->tcbKernel->pid, self->tcbKernel->tid);
-	unTCB->registro_de_programacion[0]=0;
-	unTCB->registro_de_programacion[1]=0;
-	unTCB->registro_de_programacion[2]=0;
-	unTCB->registro_de_programacion[3]=0;
-	unTCB->registro_de_programacion[4]=0;
+	unTCB->registro_de_programacion[0] = 0;
+	unTCB->registro_de_programacion[1] = 0;
+	unTCB->registro_de_programacion[2] = 0;
+	unTCB->registro_de_programacion[3] = 0;
+	unTCB->registro_de_programacion[4] = 0;
 	return unTCB;
 }
 

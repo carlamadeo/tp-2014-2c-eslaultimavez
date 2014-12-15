@@ -69,7 +69,7 @@ void crearSegmentoKernel(t_socket* socketsKernel,t_socket_paquete *paquete){
 
 	log_info(self->logMSP, "MSP: Kernel esta solicitando la creacion de un segmento...");
 
-	log_info(self->logMSP, "MSP: Abriendo el paquete del Kernel: El paquete contiene PID: %d, Tamaño : %d", datosDeKernel->pid, datosDeKernel->tamanio);
+	log_info(self->logMSP, "MSP: Abriendo el paquete del Kernel: El paquete contiene PID: %d, Tamaño: %d", datosDeKernel->pid, datosDeKernel->tamanio);
 
 	buscarCrearPrograma(datosDeKernel->pid);
 
@@ -92,7 +92,7 @@ void destruirSegmentoKernel(t_socket* socketsKernel,t_socket_paquete *paquete){
 
 	log_info(self->logMSP, "MSP: Kernel esta solicitando la destruccion de un segmento...");
 
-	log_info(self->logMSP, "MSP: Abriendo el paquete del Kernel: El paquete contiene PID: %d, Tamaño : %d", datosDeKernel->pid, datosDeKernel->direccionBase);
+	log_info(self->logMSP, "MSP: Abriendo el paquete del Kernel: El paquete contiene PID: %d, Direccion Base: %0.8p", datosDeKernel->pid, datosDeKernel->direccionBase);
 
 	//Esto envía SIN_ERRORES si se destruyó el segmento correctamente
 	//o ERROR_POR_SEGMENTO_DESCONOCIDO si el segmento indicado es incorrecto
@@ -113,7 +113,7 @@ void escribirMemoriaKernel(t_socket* socketsKernel, t_socket_paquete *paquete){
 
 	log_info(self->logMSP, "MSP: Kernel esta solicitando escribir la memoria...");
 
-	log_info(self->logMSP, "MSP: Abriendo el paquete del Kernel: El paquete contiene PID: %d, Direccion Virtual : %0.8p, Tamaño: %d %s", datosDeKernel->pid, datosDeKernel->direccionVirtual, datosDeKernel->tamanio, datosDeKernel->buffer);
+	log_info(self->logMSP, "MSP: Abriendo el paquete del Kernel: El paquete contiene PID: %d, Direccion Virtual: %0.8p, Tamaño: %d %s", datosDeKernel->pid, datosDeKernel->direccionVirtual, datosDeKernel->tamanio, datosDeKernel->buffer);
 
 	//Esto envía SIN_ERRORES si se escribió la memoria correctamente
 	//o ERROR_POR_SEGMENTATION_FAULT si se intentó escribir memoria inválida

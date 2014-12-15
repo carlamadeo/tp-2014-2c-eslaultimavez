@@ -106,18 +106,4 @@ void ejecutar_UN_WAKE_HILO(t_kernel* self, t_socket_paquete* paquete);
 void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self, t_socket_paquete* paquete);
 void copiarValoresDosTCBs(t_TCB_Kernel *tcbHasta, t_TCB_Kernel *tcbDesde);
 
-/*
-uint32_t *recibirUnaDireccion(t_kernel* self, t_socket *socketCPU);
-void enviarTCByQUANTUMCPU(t_kernel* self,t_socket *socketNuevaConexionCPU,t_TCB_Kernel* tcbKernel);
-void recibirTCB(t_kernel* self,t_socket *socketNuevaConexionCPU,t_interrupcionKernel* unaInterripcion);
-
-void printfEntradaStandar(t_entrada_estandarKenel* entrada);
-void ejecutar_UN_CREAR_HILO(t_kernel* self);
-void ejecutar_UN_JOIN_HILO(t_kernel* self);
-void ejecutar_UN_BLOK_HILO(t_kernel* self);
-void ejecutar_UN_WAKE_HILO(t_kernel* self);
-void printTCBKernel(t_TCB_Kernel* unTCB);
-t_programaEnKernel* obtenerProgramaDeReady(t_TCB_Kernel* tcb);
-*/
-
 #endif // PLANIFICADOR_MENSAJE_H_

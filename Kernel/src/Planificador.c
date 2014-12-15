@@ -241,7 +241,7 @@ void planificadorEscucharConexionesCPU(t_kernel* self){
 						log_info(self->loggerPlanificador,"Planificador: Mensaje del Programa descriptor = %d.", i);
 						t_cpu* cpuCliente = obtenerCPUSegunDescriptor(self, i);
 						log_info(self->loggerPlanificador,"Planificador: Mensaje del CPU: %d", cpuCliente->socketCPU->descriptor);
-						atenderCPU(self, socketNuevaConexionCPU, cpuCliente, &master);
+						atenderCPU(self, cpuCliente, &master);
 					}
 				}//fin del if FD_ISSET
 			}// fin del for de las i
@@ -295,13 +295,10 @@ void agregarEnListaDeCPU(t_kernel* self, int id, t_socket* socketCPU){
 	sem_post(&sem_C);
 }
 
-void atenderCPU(t_kernel* self, t_socket *socketNuevaConexion, t_cpu *cpu, fd_set* master){
+void atenderCPU(t_kernel* self, t_cpu *cpu, fd_set* master){
 
 	t_socket_paquete *paqueteCPUAtendido = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
-	//t_interrupcionKernel* interrupcion = malloc(sizeof(t_interrupcionKernel));
-
-	//socket_recvPaquete(socketNuevaConexion, paqueteCPUAtendido);
 	if (socket_recvPaquete(cpu->socketCPU, paqueteCPUAtendido) > 0){
 
 		printf("Valor para el switch ACA: %d\n", paqueteCPUAtendido->header.type);
@@ -379,7 +376,9 @@ void atenderCPU(t_kernel* self, t_socket *socketNuevaConexion, t_cpu *cpu, fd_se
 			ejecutar_UN_MENSAJE_DE_ERROR(self, paqueteCPUAtendido);
 			break;
 		}
-	}else{   //fin switch(paqueteCPU->header.type)
+	}
+
+	else{   //fin switch(paqueteCPU->header.type)
 		ejecutar_DESCONECTAR_CPU(self, cpu, master);
 	}
 

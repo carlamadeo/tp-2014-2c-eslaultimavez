@@ -13,21 +13,24 @@ void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket_paquete *paquete
 	t_TCB_Kernel* tcbFinalizado = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
 	tcbFinalizado = (t_TCB_Kernel*) paqueteTCB->data;
 
-	bool _tcbParaExit(t_programaEnKernel* tcb){
-		return ((tcb->programaTCB->tid == tcbFinalizado->tid) && (tcb->programaTCB->pid == tcbFinalizado->pid));
-	}
+	if(programaBesoExiste(self, tcbFinalizado) != ERROR_POR_DESCONEXION_DE_CONSOLA){
 
-	pthread_mutex_lock(&execMutex);
-	t_programaEnKernel* unTcbProcesado = list_find(cola_exec, (void*)_tcbParaExit);
-	pthread_mutex_unlock(&execMutex);
+		bool _tcbParaExit(t_programaEnKernel* tcb){
+			return ((tcb->programaTCB->tid == tcbFinalizado->tid) && (tcb->programaTCB->pid == tcbFinalizado->pid));
+		}
 
-	if(unTcbProcesado != NULL){
-		socket_sendPaquete(unTcbProcesado->socketProgramaConsola, FINALIZAR_PROGRAMA_EXITO, 0, NULL);
-		desbloquearHilosBloqueadosPorElQueFinalizo(unTcbProcesado);
+		pthread_mutex_lock(&execMutex);
+		t_programaEnKernel* unTcbProcesado = list_find(cola_exec, (void*)_tcbParaExit);
+		pthread_mutex_unlock(&execMutex);
+
+		if(unTcbProcesado != NULL){
+			socket_sendPaquete(unTcbProcesado->socketProgramaConsola, FINALIZAR_PROGRAMA_EXITO, 0, NULL);
+			desbloquearHilosBloqueadosPorElQueFinalizo(unTcbProcesado);
+		}
 	}
 
 	else
-		log_error(self->loggerPlanificador, "Planificador: No se encontro ningun Programa. Esto es en ejecutar_FINALIZAR_PROGRAMA_EXITO");
+		log_error(self->loggerPlanificador, "Planificador: El Programa ha cerrado la conexion");
 
 }
 
@@ -71,19 +74,23 @@ void ejecutar_FINALIZAR_HILO_EXITO(t_kernel* self, t_socket_paquete *paqueteTCB)
 	t_TCB_Kernel* tcbFinalizado = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
 	tcbFinalizado = (t_TCB_Kernel*) paqueteTCB->data;
 
-	bool _tcbParaExit(t_programaEnKernel* tcb){
-		return ((tcb->programaTCB->tid == tcbFinalizado->tid) && (tcb->programaTCB->pid == tcbFinalizado->pid));
+	if(programaBesoExiste(self, tcbFinalizado) != ERROR_POR_DESCONEXION_DE_CONSOLA){
+
+		bool _tcbParaExit(t_programaEnKernel* tcb){
+			return ((tcb->programaTCB->tid == tcbFinalizado->tid) && (tcb->programaTCB->pid == tcbFinalizado->pid));
+		}
+
+		pthread_mutex_lock(&execMutex);
+		t_programaEnKernel* unTcbProcesado = list_find(cola_exec, (void*)_tcbParaExit);
+		pthread_mutex_unlock(&execMutex);
+
+		if(unTcbProcesado != NULL)
+			desbloquearHilosBloqueadosPorElQueFinalizo(unTcbProcesado);
+
 	}
 
-	pthread_mutex_lock(&execMutex);
-	t_programaEnKernel* unTcbProcesado = list_find(cola_exec, (void*)_tcbParaExit);
-	pthread_mutex_unlock(&execMutex);
-
-	if(unTcbProcesado != NULL)
-		desbloquearHilosBloqueadosPorElQueFinalizo(unTcbProcesado);
-
 	else
-		log_error(self->loggerPlanificador, "Planificador: No se encontro ningun Programa. Esto es en ejecutar_FINALIZAR_HILO_EXITO");
+		log_error(self->loggerPlanificador, "Planificador: El Programa ha cerrado la conexion");
 
 }
 
@@ -120,17 +127,10 @@ int programaBesoExiste(t_kernel* self, t_TCB_Kernel* TCBRecibido){
 	programaBuscado = list_find(listaDeProgramasDisponibles,(void*)_existeProgramaBeso);
 	pthread_mutex_unlock(&programasBesoDisponibleMutex);
 
-	if (programaBuscado == NULL){
-
-		pthread_mutex_lock(&cola_exit);
-		list_add(cola_exit, programaBuscado);
-		pthread_mutex_unlock(&cola_exit);
-		log_info(self->loggerPlanificador, "Planificador: se agrego un elemento a la cola exit PID:%d TID:%d",TCBRecibido->pid, TCBRecibido->tid);
-
+	if (programaBuscado == NULL)
 		return ERROR_POR_DESCONEXION_DE_CONSOLA;
-	}
 
-	return 10242015643; //este valor en realidad no importa, lo que importa es el ERROR_POR_DESCONEXION_DE_CONSOLA
+	return 0;
 }
 
 
@@ -163,29 +163,35 @@ void pasarProgramaDeExecAReady(t_TCB_Kernel *TCB){
 void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
 	sem_wait(&sem_interrupcion);
-
 	t_interrupcionKernel* interrupcion = (t_interrupcionKernel*) (paquete->data);
 
 	t_TCB_Kernel *TCBInterrupcion = malloc(sizeof(t_TCB_Kernel));
 
 	convertirLaInterrupcionEnTCB(interrupcion, TCBInterrupcion);
 
-	//Paso el TCB que llamo la interrupcion a la cola de Block
-	t_socket *socketConsola = pasarProgramaDeExecABlock(TCBInterrupcion);
+	if(programaBesoExiste(self, TCBInterrupcion) != ERROR_POR_DESCONEXION_DE_CONSOLA){
 
-	//Paso el TCB que llamo la interrupcion a la cola de bloqueados por System Calls
-	agregarTCBAColaSystemCalls(TCBInterrupcion, interrupcion->direccionKM);
+		//Paso el TCB que llamo la interrupcion a la cola de Block
+		t_socket *socketConsola = pasarProgramaDeExecABlock(TCBInterrupcion);
 
-	//Tomo al primer TCB que se encuentre en la lista de bloqueados por System Calls
-	t_TCBSystemCalls *TCBSystemCall = list_get(listaSystemCall, 0);
+		//Paso el TCB que llamo la interrupcion a la cola de bloqueados por System Calls
+		agregarTCBAColaSystemCalls(TCBInterrupcion, interrupcion->direccionKM);
 
-	//Modifico el TCB Kernel con los valores del TCB que llamo la interrupcion
-	modificarTCBKM(self->tcbKernel, TCBSystemCall);
+		//Tomo al primer TCB que se encuentre en la lista de bloqueados por System Calls
+		t_TCBSystemCalls *TCBSystemCall = list_get(listaSystemCall, 0);
 
-	//Paso el TCB Kernel a Ready
-	pasarProgramaDeBlockAReady(self->tcbKernel, socketConsola);
+		//Modifico el TCB Kernel con los valores del TCB que llamo la interrupcion
+		modificarTCBKM(self->tcbKernel, TCBSystemCall);
 
-	free(interrupcion);
+		//Paso el TCB Kernel a Ready
+		pasarProgramaDeBlockAReady(self->tcbKernel, socketConsola);
+
+		free(interrupcion);
+	}
+
+	else
+		log_error(self->loggerPlanificador, "Planificador: El Programa ha cerrado la conexion");
+
 
 }
 
@@ -195,27 +201,30 @@ void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 	//Recibo el TCB que finalizo la interrupcion
 	t_TCB_Kernel* tcbFinInterrupcion = (t_TCB_Kernel*) (paquete->data);
 
-	self->tcbKernel = tcbFinInterrupcion;
+	if(programaBesoExiste(self, tcbFinInterrupcion) != ERROR_POR_DESCONEXION_DE_CONSOLA){
 
-	//Vuelvo a bloquear al TCB Kernel
-	pasarProgramaDeExecABlock(self->tcbKernel);
+		self->tcbKernel = tcbFinInterrupcion;
 
-	//Busco al TCB que llego en la cola de bloqueados por System Calls y lo elimino
-	bool matchTCB(t_TCBSystemCalls *TCB){
-		return (TCB->programa->programaTCB->pid == tcbFinInterrupcion->pid) && (TCB->programa->programaTCB->tid == tcbFinInterrupcion->tid);
+		//Vuelvo a bloquear al TCB Kernel
+		pasarProgramaDeExecABlock(self->tcbKernel);
+
+		//Busco al TCB que llego en la cola de bloqueados por System Calls y lo elimino
+		bool matchTCB(t_TCBSystemCalls *TCB){
+			return (TCB->programa->programaTCB->pid == tcbFinInterrupcion->pid) && (TCB->programa->programaTCB->tid == tcbFinInterrupcion->tid);
+		}
+
+		t_TCBSystemCalls *TCBFinInterrupcion = list_remove_by_condition(listaSystemCall, matchTCB);
+
+		TCBFinInterrupcion->programa->programaTCB->tid = tcbFinInterrupcion->tid;
+
+		//Copio los valores de los registros del TCB que se ejecuto y pongo el km en 0
+		volverTCBAModoNoKernel(self->tcbKernel, TCBFinInterrupcion->programa->programaTCB);
+
+		//Saco al TCB de la cola de bloqueados y lo paso a Ready
+		pasarProgramaDeBlockAReady(TCBFinInterrupcion->programa->programaTCB, 0);
+
+		sem_post(&sem_interrupcion);
 	}
-
-	t_TCBSystemCalls *TCBFinInterrupcion = list_remove_by_condition(listaSystemCall, matchTCB);
-
-	TCBFinInterrupcion->programa->programaTCB->tid = tcbFinInterrupcion->tid;
-
-	//Copio los valores de los registros del TCB que se ejecuto y pongo el km en 0
-	volverTCBAModoNoKernel(self->tcbKernel, TCBFinInterrupcion->programa->programaTCB);
-
-	//Saco al TCB de la cola de bloqueados y lo paso a Ready
-	pasarProgramaDeBlockAReady(TCBFinInterrupcion->programa->programaTCB, 0);
-
-	sem_post(&sem_interrupcion);
 
 }
 
@@ -354,29 +363,35 @@ void ejecutar_UNA_ENTRADA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete*
 
 	t_entrada_estandarKenel* entradaEstandar = (t_entrada_estandarKenel*) paquete->data;
 
+
 	bool esProgramaEntrada(t_programaEnKernel* programaEnLista){
 		return (programaEnLista->programaTCB->pid == entradaEstandar->pid);
 	}
 
 	t_programaEnKernel* unPrograma = list_find(listaDeProgramasDisponibles, (void*)esProgramaEntrada);
 
-	if (entradaEstandar->tipo == ENTRADA_ESTANDAR_INT){
-		entradaEstandar->idCPU = cpu->id;
-		socket_sendPaquete(unPrograma->socketProgramaConsola, ENTRADA_ESTANDAR_INT, sizeof(t_entrada_estandarKenel), entradaEstandar);
-		log_info(self->loggerPlanificador, "Planificador: Envia ENTRADA_ESTANDAR_INT a Consola");
+	if(unPrograma != NULL){
 
-	}
+		if (entradaEstandar->tipo == ENTRADA_ESTANDAR_INT){
+			entradaEstandar->idCPU = cpu->id;
+			socket_sendPaquete(unPrograma->socketProgramaConsola, ENTRADA_ESTANDAR_INT, sizeof(t_entrada_estandarKenel), entradaEstandar);
+			log_info(self->loggerPlanificador, "Planificador: Envia ENTRADA_ESTANDAR_INT a Consola");
 
-	else if(entradaEstandar->tipo == ENTRADA_ESTANDAR_TEXT){
-		entradaEstandar->idCPU = cpu->id;
-		socket_sendPaquete(unPrograma->socketProgramaConsola, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_estandarKenel), entradaEstandar);
-		log_info(self->loggerPlanificador, "Planificador: Envia ENTRADA_ESTANDAR_TEXT a Consola");
+		}
+
+		else if(entradaEstandar->tipo == ENTRADA_ESTANDAR_TEXT){
+			entradaEstandar->idCPU = cpu->id;
+			socket_sendPaquete(unPrograma->socketProgramaConsola, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_estandarKenel), entradaEstandar);
+			log_info(self->loggerPlanificador, "Planificador: Envia ENTRADA_ESTANDAR_TEXT a Consola");
+		}
+
+		else
+			log_error(self->loggerPlanificador, "Planificador: Error al enviar UNA_ENTRADA_STANDAR de consola.");
+
 	}
 
 	else
-		log_error(self->loggerPlanificador, "Planificador: Error al enviar UNA_ENTRADA_STANDAR de consola.");
-
-
+		log_error(self->loggerPlanificador, "Planificador: El Programa ha cerrado la conexion");
 
 	free(entradaEstandar);
 
@@ -423,34 +438,37 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
 
 	t_programaEnKernel* programaHiloRecibido = list_find(cola_block, matchProgramaEnBlock);
 
-	copiarValoresDosTCBs(hiloNuevo, programaHiloRecibido->programaTCB);
+	if(programaHiloRecibido != NULL){
+		copiarValoresDosTCBs(hiloNuevo, programaHiloRecibido->programaTCB);
 
-	uint32_t baseStackPadre = programaHiloRecibido->programaTCB->base_stack;
-	uint32_t cursorStackPadre = programaHiloRecibido->programaTCB->cursor_stack;
+		uint32_t baseStackPadre = programaHiloRecibido->programaTCB->base_stack;
+		uint32_t cursorStackPadre = programaHiloRecibido->programaTCB->cursor_stack;
 
-	hiloNuevo->puntero_instruccion = (uint32_t)programaHiloRecibido->programaTCB->registro_de_programacion[1];
-	kernelLeerMemoria(self, hiloNuevo->pid, baseStackPadre, lecturaEscrituraMSP, self->tamanioStack);
+		hiloNuevo->puntero_instruccion = (uint32_t)programaHiloRecibido->programaTCB->registro_de_programacion[1];
+		kernelLeerMemoria(self, hiloNuevo->pid, baseStackPadre, lecturaEscrituraMSP, self->tamanioStack);
 
-	hiloNuevo->base_stack = kernelCrearSegmento(self, hiloNuevo->pid, self->tamanioStack);
-	hiloNuevo->cursor_stack = hiloNuevo->base_stack + (cursorStackPadre - baseStackPadre);
-	kernelEscribirMemoria(self, hiloNuevo->pid, hiloNuevo->base_stack, lecturaEscrituraMSP, self->tamanioStack);
+		hiloNuevo->base_stack = kernelCrearSegmento(self, hiloNuevo->pid, self->tamanioStack);
+		hiloNuevo->cursor_stack = hiloNuevo->base_stack + (cursorStackPadre - baseStackPadre);
+		kernelEscribirMemoria(self, hiloNuevo->pid, hiloNuevo->base_stack, lecturaEscrituraMSP, self->tamanioStack);
 
-	hiloNuevo->tid++;
+		hiloNuevo->tid++;
 
-	t_programaEnKernel* programaNuevoHilo = malloc(sizeof(t_programaEnKernel));
+		t_programaEnKernel* programaNuevoHilo = malloc(sizeof(t_programaEnKernel));
 
-	programaNuevoHilo->programaTCB = hiloNuevo;
-	programaNuevoHilo->socketProgramaConsola = programaHiloRecibido->socketProgramaConsola;
+		programaNuevoHilo->programaTCB = hiloNuevo;
+		programaNuevoHilo->socketProgramaConsola = programaHiloRecibido->socketProgramaConsola;
 
-	list_add(listaDeProgramasDisponibles, programaNuevoHilo);
+		list_add(listaDeProgramasDisponibles, programaNuevoHilo);
 
-	pthread_mutex_lock(&readyMutex);
-	list_add(cola_ready, programaNuevoHilo);
-	pthread_mutex_unlock(&readyMutex);
+		pthread_mutex_lock(&readyMutex);
+		list_add(cola_ready, programaNuevoHilo);
+		pthread_mutex_unlock(&readyMutex);
+
+		sem_post(&sem_B);
+	}
 
 	free(lecturaEscrituraMSP);
 
-	sem_post(&sem_B);
 }
 
 
@@ -485,27 +503,33 @@ void ejecutar_UN_JOIN_HILO(t_kernel* self, t_socket_paquete* paquete){
 
 	t_programaEnKernel* programaTIDLlamador = list_find(listaDeProgramasDisponibles, matchPrograma);
 
-	pthread_mutex_lock(&blockMutex);
-	list_add(cola_block, programaTIDLlamador);
-	pthread_mutex_unlock(&blockMutex);
+	if(programaTIDLlamador != NULL){
 
-	bool matchHilo(t_BloqueadoPorOtro *hiloBloqueador){
-		return ((hiloBloqueador->pid == joinHilos->pid) && (hiloBloqueador->TIDbloqueador == joinHilos->tid_esperar));
-	}
+		pthread_mutex_lock(&blockMutex);
+		list_add(cola_block, programaTIDLlamador);
+		pthread_mutex_unlock(&blockMutex);
 
-	t_BloqueadoPorOtro *bloqueador = list_find(listaBloqueadosPorOtroHilo, matchHilo);
+		bool matchHilo(t_BloqueadoPorOtro *hiloBloqueador){
+			return ((hiloBloqueador->pid == joinHilos->pid) && (hiloBloqueador->TIDbloqueador == joinHilos->tid_esperar));
+		}
 
-	if(bloqueador == NULL){
-		t_BloqueadoPorOtro *bloqueadorNuevo = malloc(sizeof(t_BloqueadoPorOtro));
-		bloqueadorNuevo->pid = joinHilos->pid;
-		bloqueadorNuevo->TIDbloqueador = joinHilos->tid_esperar;
-		bloqueadorNuevo->hilosBloqueados = list_create();
-		list_add(listaBloqueadosPorOtroHilo, bloqueadorNuevo);
-		list_add(bloqueadorNuevo->hilosBloqueados, joinHilos->tid_llamador);
+		t_BloqueadoPorOtro *bloqueador = list_find(listaBloqueadosPorOtroHilo, matchHilo);
+
+		if(bloqueador == NULL){
+			t_BloqueadoPorOtro *bloqueadorNuevo = malloc(sizeof(t_BloqueadoPorOtro));
+			bloqueadorNuevo->pid = joinHilos->pid;
+			bloqueadorNuevo->TIDbloqueador = joinHilos->tid_esperar;
+			bloqueadorNuevo->hilosBloqueados = list_create();
+			list_add(listaBloqueadosPorOtroHilo, bloqueadorNuevo);
+			list_add(bloqueadorNuevo->hilosBloqueados, joinHilos->tid_llamador);
+		}
+
+		else
+			list_add(bloqueador->hilosBloqueados, joinHilos->tid_llamador);
 	}
 
 	else
-		list_add(bloqueador->hilosBloqueados, joinHilos->tid_llamador);
+		log_error(self->loggerPlanificador, "Planificador: El Programa ha cerrado la conexion");
 
 }
 
@@ -524,23 +548,28 @@ void ejecutar_UN_BLOCK_HILO(t_kernel* self, t_socket_paquete* paquete){
 
 	t_programaEnKernel* programaABloquear = list_find(listaDeProgramasDisponibles, matchPrograma);
 
-	bool matchRecurso(t_recurso *unRecurso){
-		return unRecurso->identificador == blockHilo->id_recurso;
-	}
+	if(programaABloquear != NULL){
 
-	t_recurso *recursoEncontrado = list_find(listaDeRecursos, matchRecurso);
+		bool matchRecurso(t_recurso *unRecurso){
+			return unRecurso->identificador == blockHilo->id_recurso;
+		}
 
-	if(recursoEncontrado == NULL){
-		t_recurso *recurso = malloc(sizeof(t_recurso));
-		recurso->identificador = blockHilo->id_recurso;
-		recurso->listaBloqueados = list_create();
-		list_add(listaDeRecursos, recurso);
-		list_add(recurso->listaBloqueados, programaABloquear);
+		t_recurso *recursoEncontrado = list_find(listaDeRecursos, matchRecurso);
+
+		if(recursoEncontrado == NULL){
+			t_recurso *recurso = malloc(sizeof(t_recurso));
+			recurso->identificador = blockHilo->id_recurso;
+			recurso->listaBloqueados = list_create();
+			list_add(listaDeRecursos, recurso);
+			list_add(recurso->listaBloqueados, programaABloquear);
+		}
+
+		else
+			list_add(recursoEncontrado->listaBloqueados, programaABloquear);
 	}
 
 	else
-		list_add(recursoEncontrado->listaBloqueados, programaABloquear);
-
+		log_error(self->loggerPlanificador, "Planificador: El Programa ha cerrado la conexion");
 }
 
 
@@ -597,66 +626,72 @@ void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self, t_socket_paquete* paquete){
 
 	t_programaEnKernel *programaAEnviar = list_find(listaDeProgramasDisponibles, matchProgramaConsola);
 
-	t_entrada_textoKernel *enviarMensaje = malloc(sizeof(t_entrada_textoKernel)); //Uso la misma estructura que para la ENTRADA_ESTANDAR
+	if(programaAEnviar != NULL){
+		t_entrada_textoKernel *enviarMensaje = malloc(sizeof(t_entrada_textoKernel)); //Uso la misma estructura que para la ENTRADA_ESTANDAR
 
-	switch(errorParaConsola->identificadorError){
+		switch(errorParaConsola->identificadorError){
 
-	case ERROR_REGISTRO_DESCONOCIDO:
+		case ERROR_REGISTRO_DESCONOCIDO:
 
-		mensaje = "Ha ocurrido un error por un registro desconocido";
+			mensaje = "Ha ocurrido un error por un registro desconocido";
 
-		break;
+			break;
 
-	case ERROR_POR_EJECUCION_ILICITA:
+		case ERROR_POR_EJECUCION_ILICITA:
 
-		mensaje = "Ha ocurrido un error al intentar acceder a un area de memoria protegida";
+			mensaje = "Ha ocurrido un error al intentar acceder a un area de memoria protegida";
 
-		break;
+			break;
 
-	case ERROR_POR_TAMANIO_EXCEDIDO:
+		case ERROR_POR_TAMANIO_EXCEDIDO:
 
-		mensaje = "Ha ocurrido un error al solicitar un tamanio de segmento mayor al permitido";
+			mensaje = "Ha ocurrido un error al solicitar un tamanio de segmento mayor al permitido";
 
-		break;
+			break;
 
-	case ERROR_POR_MEMORIA_LLENA:
+		case ERROR_POR_MEMORIA_LLENA:
 
-		mensaje = "Ha ocurrido un error de memoria. No hay espacio disponible";
+			mensaje = "Ha ocurrido un error de memoria. No hay espacio disponible";
 
-		break;
+			break;
 
-	case ERROR_POR_NUMERO_NEGATIVO:
+		case ERROR_POR_NUMERO_NEGATIVO:
 
-		mensaje = "Ha ocurrido un error al solicitar la creacion de un segmento con tamanio menor a 1";
+			mensaje = "Ha ocurrido un error al solicitar la creacion de un segmento con tamanio menor a 1";
 
-		break;
+			break;
 
-	case ERROR_POR_SEGMENTO_DESCONOCIDO:
+		case ERROR_POR_SEGMENTO_DESCONOCIDO:
 
-		mensaje = "Ha ocurrido un error al solicitar la destruccion de un segmento invalido";
+			mensaje = "Ha ocurrido un error al solicitar la destruccion de un segmento invalido";
 
-		break;
+			break;
 
-	case ERROR_POR_SEGMENTATION_FAULT:
+		case ERROR_POR_SEGMENTATION_FAULT:
 
-		mensaje = "Ha ocurrido un error por Segmentation Fault";
+			mensaje = "Ha ocurrido un error por Segmentation Fault";
 
-		break;
+			break;
 
-	default:
+		default:
 
-		mensaje = "Ha ocurrido un error desconocido";
+			mensaje = "Ha ocurrido un error desconocido";
 
-		break;
+			break;
+		}
+
+		memset(enviarMensaje->texto, 0, 150);
+		memcpy(enviarMensaje->texto, mensaje, strlen(mensaje) + 1);
+
+		if(socket_sendPaquete(programaAEnviar->socketProgramaConsola, MENSAJE_DE_ERROR, sizeof(t_entrada_textoKernel), enviarMensaje) >= 0)
+			log_debug(self->loggerPlanificador, "Planificador: Envia ERROR a la Consola");
+
+		free(enviarMensaje);
 	}
 
-	memset(enviarMensaje->texto, 0, 150);
-	memcpy(enviarMensaje->texto, mensaje, strlen(mensaje) + 1);
+	else
+		log_error(self->loggerPlanificador, "Planificador: El Programa ha cerrado la conexion");
 
-	if(socket_sendPaquete(programaAEnviar->socketProgramaConsola, MENSAJE_DE_ERROR, sizeof(t_entrada_textoKernel), enviarMensaje) >= 0)
-		log_debug(self->loggerPlanificador, "Planificador: Envia ERROR a la Consola");
-
-	free(enviarMensaje);
 	free(errorParaConsola);
 }
 
