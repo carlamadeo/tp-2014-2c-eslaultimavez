@@ -51,7 +51,7 @@ uint32_t cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
 	t_datos_aMSP* datosAEnviar = malloc(sizeof(t_datos_aMSP));
 	t_datos_deMSP *datosRecibidos = malloc(sizeof(t_datos_deMSP));
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-	int direccionBase;
+	uint32_t direccionBase;
 
 	datosAEnviar->pid = pid;
 	datosAEnviar->tamanio = tamanio;
@@ -63,9 +63,10 @@ uint32_t cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
 
 			if(paquete->header.type == CREAR_SEGMENTO){
 
+				datosRecibidos = (t_datos_deMSP *) (paquete->data);
+
 				direccionBase = datosRecibidos->direccionBase;
 
-				datosRecibidos = (t_datos_deMSP *) (paquete->data);
 				log_info(self->loggerCPU, "CPU: Se recibio de la MSP la direccion base %0.8p ", direccionBase);
 
 				if(datosRecibidos->direccionBase == SIN_ERRORES)
