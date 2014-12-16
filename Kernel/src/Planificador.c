@@ -417,31 +417,16 @@ void ejecutar_DESCONECTAR_CPU(t_kernel* self, t_cpu* cpu, fd_set* master){
 		sem_post(&mutex_exec);
 
 		if(programaRemovido->programaTCB->km == 1){
-
-			bool esProgramaInterrupcion(t_programaEnKernel* programaEnLista){
-				return ((programaEnLista->programaTCB->pid == cpuRemovido->TCB->pid) && (programaEnLista->programaTCB->tid == cpuRemovido->TCB->tid));
-			}
-
-			pthread_mutex_lock(&blockMutex);
-			t_programaEnKernel* programaInterrupcion = list_find(cola_block, (void*)esProgramaInterrupcion);
-			pthread_mutex_unlock(&blockMutex);
-
-			sem_wait(&mutex_exit);
-			list_add(cola_exit, programaInterrupcion->programaTCB);
-			sem_post(&mutex_exit);
-
-			self->tcbKernel = programaRemovido->programaTCB;
-
-			pthread_mutex_lock(&blockMutex);
-			list_add(cola_block, programaRemovido);
-			pthread_mutex_unlock(&blockMutex);
+			log_info(self->loggerPlanificador,"Planificador: se murio el TCB KM = 1 ");
+		}else{
+			log_info(self->loggerPlanificador,"Planificador: se murio un TCB el KM = 0 ");
 		}
 
 		//se le avisa al programa Beso que se desconecto la CPU
 		if (socket_sendPaquete(programaRemovido->socketProgramaConsola, ERROR_POR_DESCONEXION_DE_CPU, 0, NULL) >= 0)
-			log_info(self->loggerPlanificador, "Planificador: Envia ERROR_POR_DESCONEXION_DE_CPU a un programa Beso.");
+			log_info(self->loggerPlanificador,"Planificador: Envia ERROR_POR_DESCONEXION_DE_CPU a un programa Beso.");
 		else
-			log_error(self->loggerPlanificador, "Planificador: error al enviar ERROR_POR_DESCONEXION_DE_CPU a un programa Beso.");
+			log_error(self->loggerPlanificador,"Planificador: error al enviar ERROR_POR_DESCONEXION_DE_CPU a un programa Beso.");
 
 		//TODO importante hacer esta funcion para que la MSP borre un el contenido del programa beso
 		//avisarQueTerminoUnProgramaDestruirSusSegmentos(cpuRemovido->TCB->pid);
@@ -456,6 +441,7 @@ void ejecutar_DESCONECTAR_CPU(t_kernel* self, t_cpu* cpu, fd_set* master){
 	log_info(self->loggerPlanificador,"Planificador: tamanio de la lista de CPU Exec %d", list_size(listaDeCPUExec));
 	log_info(self->loggerPlanificador,"Planificador: tamanio de la lista de CPU Libres %d", list_size(listaDeCPULibres));
 }
+
 
 
 t_cpu* obtenerCPUSegunDescriptor(t_kernel* self, int descriptor){

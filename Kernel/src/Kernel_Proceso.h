@@ -121,6 +121,7 @@ void kernel_crearColaDeEstados(void);
 int  kernel_escuchar_conexiones(void);
 void verificar_argumentosKernel(int argc, char* argv[]);
 
-
+void ponerProgramaEnExit(t_TCB_Kernel* unTCB);
+t_programaEnKernel* buscarProgramaEnLista(t_TCB_Kernel* unTCB, t_list* unaLista);
 
 #endif /* KERNEL_H_ */

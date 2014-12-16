@@ -31,7 +31,7 @@ void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket_paquete *paquete
 	}
 
 	else
-		log_error(self->loggerPlanificador, "Planificador: El Programa ha cerrado la conexion");
+		log_error(self->loggerPlanificador,"Planificador: El Programa ha cerrado la conexion");
 
 }
 
@@ -95,7 +95,7 @@ void ejecutar_FINALIZAR_HILO_EXITO(t_kernel* self, t_socket_paquete *paqueteTCB)
 	}
 
 	else
-		log_error(self->loggerPlanificador, "Planificador: El Programa ha cerrado la conexion");
+		log_error(self->loggerPlanificador,"Planificador: El Programa ha cerrado la conexion");
 
 }
 
@@ -625,6 +625,7 @@ void ejecutar_UN_WAKE_HILO(t_kernel* self, t_socket_paquete* paquete){
 
 void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self, t_socket_paquete* paquete){
 
+	int mandarMensaje =0;
 	char *mensaje = malloc(sizeof(char) * 150);
 
 	t_errorKernel *errorParaConsola = (t_errorKernel*) (paquete->data);
@@ -633,7 +634,7 @@ void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self, t_socket_paquete* paquete){
 		return (programa->programaTCB->pid == errorParaConsola->pid);
 	}
 
-	t_programaEnKernel *programaAEnviar = list_find(listaDeProgramasDisponibles, matchProgramaConsola);
+	t_programaEnKernel *programaAEnviar = list_find(listaDeProgramasDisponibles,(void*)matchProgramaConsola);
 
 	if(programaAEnviar != NULL){
 		t_entrada_textoKernel *enviarMensaje = malloc(sizeof(t_entrada_textoKernel)); //Uso la misma estructura que para la ENTRADA_ESTANDAR
@@ -699,7 +700,7 @@ void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self, t_socket_paquete* paquete){
 	}
 
 	else
-		log_error(self->loggerPlanificador, "Planificador: El Programa ha cerrado la conexion");
+		log_error(self->loggerPlanificador,"Planificador: El Programa ha cerrado la conexion (ejecutar_UN_MENSAJE_DE_ERROR)");
 
 	free(errorParaConsola);
 }
