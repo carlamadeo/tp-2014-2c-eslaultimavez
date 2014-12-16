@@ -1925,7 +1925,7 @@ int SHIF_ESO(t_CPU *self){
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion SHIF");
 
 		memcpy(&(numero), lecturaDeMSP, sizeof(int32_t));
-		memcpy(&(registro), (lecturaDeMSP) + sizeof(char), sizeof(char));
+		memcpy(&(registro), (lecturaDeMSP) + sizeof(int32_t), sizeof(char));
 
 		reg = determinar_registro(registro);
 
@@ -1934,7 +1934,7 @@ int SHIF_ESO(t_CPU *self){
 				if(numero > 0)
 					self->tcb->registro_de_programacion[reg]>>=numero;
 				else
-					self->tcb->registro_de_programacion[reg]<<=numero;
+				self->tcb->registro_de_programacion[reg]<<=numero;
 			}else{
 				switch(reg){
 				case 6:
@@ -1955,7 +1955,12 @@ int SHIF_ESO(t_CPU *self){
 					else
 						self->tcb->base_stack<<=numero;
 					break;
-				case 9: self->tcb->cursor_stack++; break;
+				case 9:
+					if(numero > 0)
+						self->tcb->cursor_stack>>=numero;
+					else
+						self->tcb->cursor_stack<<=numero;
+					break;
 				}
 			}
 
