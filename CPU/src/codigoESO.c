@@ -1056,6 +1056,9 @@ int COMP_ESO(t_CPU *self){
 	int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
+
+		self->tcb->puntero_instruccion += tamanio;
+
 		log_info(self->loggerCPU, "Recibiendo parametros de instruccion COMP");
 
 		memcpy(&(registroA), lecturaDeMSP, sizeof(char));
@@ -1221,7 +1224,7 @@ int COMP_ESO(t_CPU *self){
 
 			}
 
-			log_info(self->loggerCPU, "CPU: COMPR ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
+			log_info(self->loggerCPU, "CPU: COMP ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
 			//cambio_registros(registros_cpu);
 		}
