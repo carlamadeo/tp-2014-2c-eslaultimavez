@@ -2162,7 +2162,7 @@ int MALC_ESO(t_CPU *self){
 			return ERROR_POR_NUMERO_NEGATIVO;
 
 		default:
-			self->tcb->registro_de_programacion[0] = estado_malc;
+			self->tcb->registro_de_programacion[0] = (int32_t)estado_malc;
 			log_info(self->loggerCPU, "CPU: MALC ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			cpuInicializarRegistrosCPU(self, registros_cpu);
 			//cambio_registros(registros_cpu);

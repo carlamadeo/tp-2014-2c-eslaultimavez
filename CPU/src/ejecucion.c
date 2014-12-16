@@ -68,13 +68,13 @@ int cpuProcesarTCB(t_CPU *self){
 
 		case FINALIZAR_PROGRAMA_EXITO:
 
-			if(self->tcb->km == 0 && self->tcb->tid == 1){
+			if(self->tcb->km == 0 && self->tcb->tid == 0){
 				printf("CPU: ENVIA FINALIZAR PROGRAMA EXITO\n");
 				num = cpuFinalizarProgramaExitoso(self);
 				salida = 1;
 			}
 
-			else if(self->tcb->km == 0 && self->tcb->tid != 1){
+			else if(self->tcb->km == 0 && self->tcb->tid != 0){
 				printf("CPU: ENVIA FINALIZAR HILO EXITO\n");
 				num = cpuFinalizarHiloExitoso(self);
 				salida = 1;
