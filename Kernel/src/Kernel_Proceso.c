@@ -104,3 +104,25 @@ void verificar_argumentosKernel(int argc, char* argv[]){
 		exit (EXIT_FAILURE);
 	}
 }
+
+
+void ponerProgramaEnExit(t_TCB_Kernel* unTCB){
+
+	t_programaEnKernel* programaInterrupcion = buscarProgramaEnLista(unTCB, cola_exec);
+
+	pthread_mutex_lock(&exitMutex);
+	list_add(cola_exit,programaInterrupcion->programaTCB);
+	pthread_mutex_unlock(&exitMutex);
+}
+
+t_programaEnKernel* buscarProgramaEnLista(t_TCB_Kernel* unTCB, t_list* unaLista){
+	bool esProgramaInterrupcion(t_programaEnKernel* programaEnLista){
+		return ((programaEnLista->programaTCB->pid == unTCB->pid) && (programaEnLista->programaTCB->tid == unTCB->tid));
+	}
+
+	pthread_mutex_lock(&blockMutex);
+	t_programaEnKernel* programaInterrupcion = list_find(unaLista, (void*)esProgramaInterrupcion);
+	pthread_mutex_unlock(&blockMutex);
+
+	return programaInterrupcion;
+}
