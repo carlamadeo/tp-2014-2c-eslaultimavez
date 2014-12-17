@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
 	sem_init(&sem_A, 0, 0);
 	sem_init(&sem_B, 0, 0);
 	sem_init(&sem_C, 0, 0);
-	sem_init(&sem_interrupcion, 1, 1);
+	//sem_init(&sem_interrupcion, 1, 1);
 
 
 	//hace el boot y le manda a la msp el archivo de SystemCall

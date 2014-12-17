@@ -103,7 +103,7 @@ t_list *listaBloqueadosPorOtroHilo;
 sem_t sem_A;
 sem_t sem_B;
 sem_t sem_C;
-sem_t sem_interrupcion;
+//sem_t sem_interrupcion;
 sem_t mutex_new;
 sem_t mutex_block;      // Mutex cola Block
 sem_t mutex_ready;      // Mutex cola Ready

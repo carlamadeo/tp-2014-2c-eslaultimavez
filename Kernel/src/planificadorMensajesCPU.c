@@ -2,6 +2,8 @@
 #include "kernelMSP.h"
 #include "commons/protocolStructInBigBang.h"
 
+pthread_mutex_t sem_interrupcion = PTHREAD_MUTEX_INITIALIZER;
+
 /***************************************************************************************************\
  *								--Comienzo Finalizar Programa con Exito--							*
 \***************************************************************************************************/
@@ -167,7 +169,7 @@ void pasarProgramaDeExecAReady(t_TCB_Kernel *TCB){
 
 void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
-	sem_wait(&sem_interrupcion);
+	pthread_mutex_lock(&sem_interrupcion);
 	t_interrupcionKernel* interrupcion = (t_interrupcionKernel*) (paquete->data);
 
 	t_TCB_Kernel *TCBInterrupcion = malloc(sizeof(t_TCB_Kernel));
@@ -228,7 +230,7 @@ void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 		//Saco al TCB de la cola de bloqueados y lo paso a Ready
 		pasarProgramaDeBlockAReady(TCBFinInterrupcion->programa->programaTCB, 0);
 
-		sem_post(&sem_interrupcion);
+		pthread_mutex_unlock(&sem_interrupcion);
 	}
 
 }
