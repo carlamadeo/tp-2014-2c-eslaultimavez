@@ -267,9 +267,15 @@ void imprimirMarcos() {
 		log_info(self->logMSP, "Marco#: %d | PID: - | Numero de Segmento: - | Numero de Pagina: -", unMarco->numero);
 	}
 
+
+
 	void iterarPagina(t_pagina *unaPagina){
 		if(unaPagina->numeroMarco >= 0){
-			log_info(self->logMSP, "Marco#: %d | PID: %d | Numero de Segmento: %d | Numero de Pagina: %d", unaPagina->numeroMarco, pid, numeroSegmento, unaPagina->numero);
+			bool matchMarco(t_marco *unMarco){
+						return unMarco->numero == unaPagina->numeroMarco;
+			}
+			t_marco *marco = list_find(self->marcosOcupados, matchMarco);
+			log_info(self->logMSP, "Marco#: %d | PID: %d | Numero de Segmento: %d | Numero de Pagina: %d | valor clock:%d", unaPagina->numeroMarco, pid, numeroSegmento, unaPagina->numero, marco->categoriaClockModificado);
 			cantidadMarcosOcupados+=1;
 		}
 	}
