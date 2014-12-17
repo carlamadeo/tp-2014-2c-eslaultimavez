@@ -4,7 +4,7 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../src/Kernel.c \
+../src/Kernel_Proceso.c \
 ../src/Loader.c \
 ../src/Planificador.c \
 ../src/boot.c \
@@ -13,7 +13,7 @@ C_SRCS += \
 ../src/planificadorMensajesCPU.c 
 
 OBJS += \
-./src/Kernel.o \
+./src/Kernel_Proceso.o \
 ./src/Loader.o \
 ./src/Planificador.o \
 ./src/boot.o \
@@ -22,7 +22,7 @@ OBJS += \
 ./src/planificadorMensajesCPU.o 
 
 C_DEPS += \
-./src/Kernel.d \
+./src/Kernel_Proceso.d \
 ./src/Loader.d \
 ./src/Planificador.d \
 ./src/boot.d \
