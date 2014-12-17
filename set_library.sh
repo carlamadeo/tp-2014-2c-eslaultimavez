@@ -1,5 +1,5 @@
 #!/bin/bash
-# Para que tenga efecto ejecutar asi: . ./set_library_.sh
-dir=../..
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./Commons/make/
+# Para que tenga efecto ejecutar asi 
+# dentro de la carpeta make . ../../set_library_.sh
+export LD_LIBRARY_PATH=../../Commons/make/
 
