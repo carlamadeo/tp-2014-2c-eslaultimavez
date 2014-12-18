@@ -308,33 +308,33 @@ void atenderCPU(t_kernel* self, t_cpu *cpu, fd_set* master){
 		switch(paqueteCPUAtendido->header.type){
 
 		case TERMINAR_QUANTUM:
-			cpuOcupadaALibre(cpu);
 			log_info(self->loggerPlanificador, "Planificador: Recibe TERMINAR_QUANTUM");
 			ejecutar_TERMINAR_QUANTUM(self, paqueteCPUAtendido);
+			cpuOcupadaALibre(cpu);
 			break;
 
 		case FINALIZAR_PROGRAMA_EXITO:
-			cpuOcupadaALibre(cpu);
 			log_info(self->loggerPlanificador, "Planificador: Recibe FINALIZAR_PROGRAMA_EXITO");
 			ejecutar_FINALIZAR_PROGRAMA_EXITO(self, paqueteCPUAtendido);
+			cpuOcupadaALibre(cpu);
 			break;
 
 		case MENSAJE_DE_ERROR:
-			cpuOcupadaALibre(cpu);
 			log_info(self->loggerPlanificador, "Planificador: Recibe un MENSAJE_DE_ERROR");
 			ejecutar_UN_MENSAJE_DE_ERROR(self, paqueteCPUAtendido);
+			cpuOcupadaALibre(cpu);
 			break;
 
 		case INTERRUPCION:
-			cpuOcupadaALibre(cpu);
 			log_info(self->loggerPlanificador, "Planificador: Recibe una INTERRUPCION");
 			ejecutar_UNA_INTERRUPCION(self, paqueteCPUAtendido);
+			cpuOcupadaALibre(cpu);
 			break;
 
 		case TERMINAR_INTERRUPCION:
-			cpuOcupadaALibre(cpu);
 			log_info(self->loggerPlanificador, "Planificador: Recibe TERMINAR_INTERRUPCION");
 			ejecutar_FIN_DE_INTERRUPCION(self, paqueteCPUAtendido);
+			cpuOcupadaALibre(cpu);
 			break;
 
 		case ENTRADA_ESTANDAR:
@@ -348,9 +348,9 @@ void atenderCPU(t_kernel* self, t_cpu *cpu, fd_set* master){
 			break;
 
 		case FINALIZAR_HILO_EXITO:
-			cpuOcupadaALibre(cpu);
 			log_info(self->loggerPlanificador, "Planificador: Recibe un FINALIZAR_HILO_EXITO");
 			ejecutar_FINALIZAR_HILO_EXITO(self, paqueteCPUAtendido);
+			cpuOcupadaALibre(cpu);
 			break;
 
 		case CREAR_HILO:

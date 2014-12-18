@@ -8,8 +8,7 @@ pthread_mutex_t sem_interrupcion = PTHREAD_MUTEX_INITIALIZER;
  *								--Comienzo Finalizar Programa con Exito--							*
 \***************************************************************************************************/
 
-//TODO Se deben liberar los recursos!!
-//Pasa el programa finalizado de la cola exec a la cola exit
+
 void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket_paquete *paqueteTCB){
 
 	t_TCB_Kernel* tcbFinalizado = (t_TCB_Kernel*) malloc(sizeof(t_TCB_Kernel));
@@ -84,12 +83,10 @@ void ejecutar_FINALIZAR_HILO_EXITO(t_kernel* self, t_socket_paquete *paqueteTCB)
 		}
 
 		pthread_mutex_lock(&execMutex);
-		t_programaEnKernel* unTcbProcesado = list_find(cola_exec, (void*)_tcbParaExit);
+		t_programaEnKernel* unTcbProcesado = list_remove_by_condition(cola_exec, (void*)_tcbParaExit);
 		pthread_mutex_unlock(&execMutex);
 
 		if(unTcbProcesado != NULL){
-
-			log_info(self->loggerPlanificador,"Planificador: envia un FINALIZAR_PROGRAMA_EXITO a una consola");
 			desbloquearHilosBloqueadosPorElQueFinalizo(unTcbProcesado);
 		}
 
@@ -210,7 +207,7 @@ void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
 	if(programaBesoExiste(self, tcbFinInterrupcion) != ERROR_POR_DESCONEXION_DE_CONSOLA){
 
-		self->tcbKernel = tcbFinInterrupcion;
+		copiarValoresDosTCBs(self->tcbKernel, tcbFinInterrupcion);
 
 		//Vuelvo a bloquear al TCB Kernel
 		pasarProgramaDeExecABlock(self->tcbKernel);
@@ -221,8 +218,6 @@ void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 		}
 
 		t_TCBSystemCalls *TCBFinInterrupcion = list_remove_by_condition(listaSystemCall, matchTCB);
-
-		TCBFinInterrupcion->programa->programaTCB->tid = tcbFinInterrupcion->tid;
 
 		//Copio los valores de los registros del TCB que se ejecuto y pongo el km en 0
 		volverTCBAModoNoKernel(self->tcbKernel, TCBFinInterrupcion->programa->programaTCB);
@@ -246,7 +241,7 @@ t_socket *pasarProgramaDeExecABlock(t_TCB_Kernel *TCB){
 	t_programaEnKernel *programaBuscado = list_remove_by_condition(cola_exec, matchPrograma);
 	pthread_mutex_unlock(&execMutex);
 
-	programaBuscado->programaTCB = TCB;
+	copiarValoresDosTCBs(programaBuscado->programaTCB, TCB);
 
 	pthread_mutex_lock(&blockMutex);
 	list_add(cola_block, programaBuscado);
@@ -265,10 +260,9 @@ void agregarTCBAColaSystemCalls(t_TCB_Kernel* TCBInterrupcion, uint32_t direccio
 	t_programaEnKernel *programaBuscado = list_find(listaDeProgramasDisponibles, matchPrograma);
 
 	//El programa que se encuentra en la lista de programas disponible no tiene las mismas direcciones que el que busco ahora, por eso actualizo
-	programaBuscado->programaTCB = TCBInterrupcion;
+	copiarValoresDosTCBs(programaBuscado->programaTCB, TCBInterrupcion);
 
 	t_TCBSystemCalls *TCBSystemCall = malloc(sizeof(t_TCBSystemCalls));
-
 	TCBSystemCall->programa = programaBuscado;
 	TCBSystemCall->direccionKM = direccionKM;
 
