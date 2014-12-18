@@ -24,6 +24,7 @@ int cpuProcesarTCB(t_CPU *self){
 	int estado_ejecucion_instruccion, estado, encontrado, indice, num;
 	int salida = 0;
 	int error = 0;
+	int esJoin = 0;
 
 	//COPIO LA ESTRUCTURA DEL TCB AL hilo_log
 	//hilo_log = (t_hilo_log *) self->tcb;
@@ -53,7 +54,7 @@ int cpuProcesarTCB(t_CPU *self){
 
 			if(strncmp(instrucciones_eso[indice], datosDeMSP, 4) == 0){
 				encontrado = 1;
-				estado_ejecucion_instruccion = ejecutar_instruccion(self, indice);
+				estado_ejecucion_instruccion = ejecutar_instruccion(self, indice, &esJoin);
 			}
 
 			indice++;
@@ -68,6 +69,7 @@ int cpuProcesarTCB(t_CPU *self){
 
 		case FINALIZAR_PROGRAMA_EXITO:
 
+			//TODO Sacar todos los printf
 			if(self->tcb->km == 0 && self->tcb->tid == 0){
 				printf("CPU: ENVIA FINALIZAR PROGRAMA EXITO\n");
 				num = cpuFinalizarProgramaExitoso(self);
@@ -81,13 +83,17 @@ int cpuProcesarTCB(t_CPU *self){
 			}
 
 			else{
-				if(self->tcb->km == 1){
+				if(esJoin){
+					printf("CPU: ENVIA FINALIZAR INTERRUPCION PARA JOIN\n");
+					cpuFinalizarInterrupcion(self, 1);
+					esJoin = 0;
+				}
+				else{
 					printf("CPU: ENVIA FINALIZAR INTERRUPCION\n");
-					cpuFinalizarInterrupcion(self);
-					salida = 1;
-				}else
-					printf("CPU: si entra ACA es un error, solo KM = 1 puede enviar FINALIZAR INTERRUPCION\n");
+					cpuFinalizarInterrupcion(self, 0);
 
+				}
+				salida = 1;
 			}
 			break;
 
@@ -136,7 +142,7 @@ int determinar_registro(char registro){
 }
 
 
-int ejecutar_instruccion(t_CPU *self, int linea){
+int ejecutar_instruccion(t_CPU *self, int linea, int *esJoin){
 	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 
 	int estado = 0;
@@ -275,6 +281,7 @@ int ejecutar_instruccion(t_CPU *self, int linea){
 		break;
 	case JOIN:
 		estado = JOIN_ESO(self);
+		*esJoin = 1;
 		break;
 	case BLOK:
 		estado = BLOK_ESO(self);

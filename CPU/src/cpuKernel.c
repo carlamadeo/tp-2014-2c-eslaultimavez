@@ -181,10 +181,28 @@ int cpuFinalizarHiloExitoso(t_CPU *self){
 }
 
 
-int cpuFinalizarInterrupcion(t_CPU *self){
+int cpuFinalizarInterrupcion(t_CPU *self, int esJoin){
 
-	socket_sendPaquete(self->socketPlanificador->socket, TERMINAR_INTERRUPCION, sizeof(t_TCB_CPU), self->tcb);
-	log_info(self->loggerCPU, "CPU: envia al Kernel un  TERMINAR_INTERRUPCION, se manda un TCB KM =1 !!!!");
+	t_finInterrupcion *tcbFinInterrupcion = malloc(sizeof(t_finInterrupcion));
+
+	tcbFinInterrupcion->pid = self->tcb->pid;
+	tcbFinInterrupcion->tid = self->tcb->tid;
+	tcbFinInterrupcion->km = self->tcb->km;
+	tcbFinInterrupcion->base_segmento_codigo = self->tcb->base_segmento_codigo;
+	tcbFinInterrupcion->tamanio_segmento_codigo = self->tcb->tamanio_segmento_codigo;
+	tcbFinInterrupcion->tamanio_segmento_codigo = self->tcb->tamanio_segmento_codigo;
+	tcbFinInterrupcion->puntero_instruccion = self->tcb->puntero_instruccion;
+	tcbFinInterrupcion->base_stack = self->tcb->base_stack;
+	tcbFinInterrupcion->cursor_stack = self->tcb->cursor_stack;
+	tcbFinInterrupcion->registro_de_programacion[0] = self->tcb->registro_de_programacion[0];
+	tcbFinInterrupcion->registro_de_programacion[1] = self->tcb->registro_de_programacion[1];
+	tcbFinInterrupcion->registro_de_programacion[2] = self->tcb->registro_de_programacion[2];
+	tcbFinInterrupcion->registro_de_programacion[3] = self->tcb->registro_de_programacion[3];
+	tcbFinInterrupcion->registro_de_programacion[4] = self->tcb->registro_de_programacion[4];
+	tcbFinInterrupcion->esJoin = esJoin;
+
+	socket_sendPaquete(self->socketPlanificador->socket, TERMINAR_INTERRUPCION, sizeof(t_finInterrupcion), tcbFinInterrupcion);
+
 	return SIN_ERRORES;
 }
 

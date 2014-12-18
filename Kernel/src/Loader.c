@@ -176,11 +176,11 @@ void atenderProgramaConsola(t_kernel* self, t_programaEnKernel* programa, fd_set
 
 		eliminarPrograma(self, programa);
 
-		log_info(self->loggerLoader,"Loader: cantidad de TCBs en la cola NEW  :%d", list_size(cola_new));
-		log_info(self->loggerLoader,"Loader: cantidad de TCBs en la cola READY:%d", list_size(cola_ready));
-		log_info(self->loggerLoader,"Loader: cantidad de TCBs en la cola EXEC :%d", list_size(cola_exec));
-		log_info(self->loggerLoader,"Loader: cantidad de TCBs en la cola BLOCK:%d", list_size(cola_block));
-		log_info(self->loggerLoader,"Loader: cantidad de TCBs en la cola Exit:%d", list_size(cola_exit));
+		log_info(self->loggerLoader,"Loader: Cantidad de TCBs en la cola NEW  :%d", list_size(cola_new));
+		log_info(self->loggerLoader,"Loader: Cantidad de TCBs en la cola READY:%d", list_size(cola_ready));
+		log_info(self->loggerLoader,"Loader: Cantidad de TCBs en la cola EXEC :%d", list_size(cola_exec));
+		log_info(self->loggerLoader,"Loader: Cantidad de TCBs en la cola BLOCK:%d", list_size(cola_block));
+		log_info(self->loggerLoader,"Loader: Cantidad de TCBs en la cola EXIT :%d", list_size(cola_exit));
 
 	}
 

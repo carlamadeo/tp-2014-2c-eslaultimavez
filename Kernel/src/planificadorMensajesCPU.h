@@ -17,6 +17,19 @@ typedef struct {
 	uint32_t direccionKM;
 } t_interrupcionKernel;
 
+typedef struct {
+	int pid;
+	int tid;
+	short km;
+	uint32_t base_segmento_codigo;
+	int tamanio_segmento_codigo;
+	uint32_t puntero_instruccion;
+	uint32_t base_stack;
+	uint32_t cursor_stack;
+	int32_t registro_de_programacion[5];
+	int esJoin;
+} t_finInterrupcionKernel;
+
 
 typedef struct {
 	int pid;
@@ -81,6 +94,7 @@ typedef struct {
 void agregarEnListaDeCPU(t_kernel* self, int id, t_socket* socketCPU);
 
 void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket_paquete *paqueteTCB);
+void desbloquearHilosBloqueadosPorElQueFinalizo(t_kernel *self, t_programaEnKernel* unTcbProcesado);
 void ejecutar_TERMINAR_QUANTUM(t_kernel* self, t_socket_paquete *paqueteTCB);
 void cpuLibreAOcupada(t_cpu *CPU);
 void cpuOcupadaALibre(t_cpu *CPU);
@@ -90,6 +104,7 @@ int programaBesoExiste(t_kernel* self, t_TCB_Kernel* TCBRecibido);
 
 void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete);
 void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete);
+void copiarValoresFinInterrupcionATCB(t_finInterrupcionKernel* informacionFinInterrupcion, t_TCB_Kernel *TCBFinInterrupcion);
 t_socket *pasarProgramaDeExecABlock(t_TCB_Kernel *TCB);
 void agregarTCBAColaSystemCalls(t_TCB_Kernel* TCBInterrupcion, uint32_t direccionKM);
 void modificarTCBKM(t_TCB_Kernel *TCBKernel, t_TCBSystemCalls *TCBSystemCall);
@@ -101,8 +116,8 @@ void ejecutar_UNA_ENTRADA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete*
 void ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete* paquete);
 void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete);
 void ejecutar_UN_JOIN_HILO(t_kernel* self, t_socket_paquete* paquete);
-void ejecutar_UN_WAIT_HILO(t_kernel* self, t_socket_paquete* paquete);
-void ejecutar_UN_SIGNAL_HILO(t_kernel* self, t_socket_paquete* paquete);
+void ejecutar_UN_BLOCK_HILO(t_kernel* self, t_socket_paquete* paquete);
+void ejecutar_UN_WAKE_HILO(t_kernel* self, t_socket_paquete* paquete);
 void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self, t_socket_paquete* paquete);
 void copiarValoresDosTCBs(t_TCB_Kernel *tcbHasta, t_TCB_Kernel *tcbDesde);
 

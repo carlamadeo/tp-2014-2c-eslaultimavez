@@ -365,13 +365,13 @@ void atenderCPU(t_kernel* self, t_cpu *cpu, fd_set* master){
 			break;
 
 		case BLOK_HILO:
-			log_info(self->loggerPlanificador, "Planificador: Recibe un WAIT_HILO");
-			ejecutar_UN_WAIT_HILO(self, paqueteCPUAtendido);
+			log_info(self->loggerPlanificador, "Planificador: Recibe un BLOCK_HILO");
+			ejecutar_UN_BLOCK_HILO(self, paqueteCPUAtendido);
 			break;
 
 		case WAKE_HILO:
 			log_info(self->loggerPlanificador, "Planificador: Recibe un WAKE_HILO");
-			ejecutar_UN_SIGNAL_HILO(self, paqueteCPUAtendido);
+			ejecutar_UN_WAKE_HILO(self, paqueteCPUAtendido);
 			break;
 
 		default:

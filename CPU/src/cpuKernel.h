@@ -69,6 +69,20 @@ typedef struct {
 	uint32_t direccionKM;
 } t_interrupcion;
 
+
+typedef struct {
+	int pid;
+	int tid;
+	short km;
+	uint32_t base_segmento_codigo;
+	int tamanio_segmento_codigo;
+	uint32_t puntero_instruccion;
+	uint32_t base_stack;
+	uint32_t cursor_stack;
+	int32_t registro_de_programacion[5];
+	int esJoin;
+} t_finInterrupcion;
+
 /*
  * Nombre: t_join
  * Descripcion: envia al Kernel un tid_llamador, que se bloquea hasta que el tid_esperar termine su ejecucion.
@@ -139,7 +153,7 @@ typedef struct {
 } t_error;
 
 
-int cpuFinalizarInterrupcion(t_CPU *self);
+int cpuFinalizarInterrupcion(t_CPU *self, int esJoin);
 void cpuConectarConKernel(t_CPU *self);
 void cpuRealizarHandshakeConKernel(t_CPU *self);
 int cpuRecibirTCB(t_CPU *self);

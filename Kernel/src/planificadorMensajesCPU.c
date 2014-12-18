@@ -3,6 +3,7 @@
 #include "commons/protocolStructInBigBang.h"
 
 pthread_mutex_t sem_interrupcion = PTHREAD_MUTEX_INITIALIZER;
+int seBloqueo = 0;
 
 /***************************************************************************************************\
  *								--Comienzo Finalizar Programa con Exito--							*
@@ -26,18 +27,18 @@ void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket_paquete *paquete
 
 		if(unTcbProcesado != NULL){
 			socket_sendPaquete(unTcbProcesado->socketProgramaConsola, FINALIZAR_PROGRAMA_EXITO, 0, NULL);
-			log_info(self->loggerPlanificador,"Planificador: envia un FINALIZAR_PROGRAMA_EXITO a una consola");
-			desbloquearHilosBloqueadosPorElQueFinalizo(unTcbProcesado);
+			log_info(self->loggerPlanificador,"Planificador: Envia un FINALIZAR_PROGRAMA_EXITO a una consola");
+			desbloquearHilosBloqueadosPorElQueFinalizo(self, unTcbProcesado);
 		}
 	}
 
 	else
-		log_error(self->loggerPlanificador,"Planificador: error por desconexion de consola, no se puede ejecutar Finalizar programa Exito");
+		log_error(self->loggerPlanificador,"Planificador: El Programa ha cerrado la conexion");
 
 }
 
 
-void desbloquearHilosBloqueadosPorElQueFinalizo(t_programaEnKernel* unTcbProcesado){
+void desbloquearHilosBloqueadosPorElQueFinalizo(t_kernel *self, t_programaEnKernel* unTcbProcesado){
 
 	int i;
 
@@ -62,6 +63,7 @@ void desbloquearHilosBloqueadosPorElQueFinalizo(t_programaEnKernel* unTcbProcesa
 
 			if(programaADesbloquear != NULL){
 				pasarProgramaDeBlockAReady(programaADesbloquear->programaTCB, 0);
+				log_info(self->loggerPlanificador,"Planificador: Se ha desbloqueado al TCB con PID %d, TID %d", programaADesbloquear->programaTCB->pid, programaADesbloquear->programaTCB->tid);
 			}
 
 		}
@@ -86,12 +88,13 @@ void ejecutar_FINALIZAR_HILO_EXITO(t_kernel* self, t_socket_paquete *paqueteTCB)
 		t_programaEnKernel* unTcbProcesado = list_remove_by_condition(cola_exec, (void*)_tcbParaExit);
 		pthread_mutex_unlock(&execMutex);
 
-		if(unTcbProcesado != NULL){
-			log_info(self->loggerPlanificador,"Planificador: unTcbProcesado != NULL, en ejecutar_FINALIZAR_HILO_EXITO ");
-			desbloquearHilosBloqueadosPorElQueFinalizo(unTcbProcesado);
-		}else
-			log_info(self->loggerPlanificador,"Planificador: unTcbProcesado == NULL, en ejecutar_FINALIZAR_HILO_EXITO ");
+		pthread_mutex_lock(&exitMutex);
+		list_add(cola_exit, unTcbProcesado);
+		pthread_mutex_unlock(&exitMutex);
 
+		if(unTcbProcesado != NULL){
+			desbloquearHilosBloqueadosPorElQueFinalizo(self, unTcbProcesado);
+		}
 
 	}
 
@@ -205,33 +208,59 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
 	//Recibo el TCB que finalizo la interrupcion
-	t_TCB_Kernel* tcbFinInterrupcion = (t_TCB_Kernel*) (paquete->data);
+	t_finInterrupcionKernel* informacionFinInterrupcion = (t_finInterrupcionKernel*) (paquete->data);
 
-	if(programaBesoExiste(self, tcbFinInterrupcion) != ERROR_POR_DESCONEXION_DE_CONSOLA){
+	t_TCB_Kernel *TCBFinInterrupcion = malloc(sizeof(t_TCB_Kernel));
 
-		copiarValoresDosTCBs(self->tcbKernel, tcbFinInterrupcion);
+	copiarValoresFinInterrupcionATCB(informacionFinInterrupcion, TCBFinInterrupcion);
+
+	if(programaBesoExiste(self, TCBFinInterrupcion) != ERROR_POR_DESCONEXION_DE_CONSOLA){
+
+		copiarValoresDosTCBs(self->tcbKernel, TCBFinInterrupcion);
 
 		//Vuelvo a bloquear al TCB Kernel
 		pasarProgramaDeExecABlock(self->tcbKernel);
 
 		//Busco al TCB que llego en la cola de bloqueados por System Calls y lo elimino
 		bool matchTCB(t_TCBSystemCalls *TCB){
-			return (TCB->programa->programaTCB->pid == tcbFinInterrupcion->pid) && (TCB->programa->programaTCB->tid == tcbFinInterrupcion->tid);
+			return (TCB->programa->programaTCB->pid == TCBFinInterrupcion->pid) && (TCB->programa->programaTCB->tid == TCBFinInterrupcion->tid);
 		}
 
-		log_info(self->loggerPlanificador,"Planificador: tamanio de la listaSystemCall :%d",list_size(listaSystemCall));
-		t_TCBSystemCalls *TCBFinInterrupcion = list_remove_by_condition(listaSystemCall,(void*) matchTCB);
+		t_TCBSystemCalls *TCBFinDeInterrupcionSystemCall = list_remove_by_condition(listaSystemCall, matchTCB);
 
-		//Copio los valores de los registros del TCB que se ejecuto y pongo el km en 0
-		volverTCBAModoNoKernel(self->tcbKernel, TCBFinInterrupcion->programa->programaTCB);
-		log_info(self->loggerPlanificador,"Planificador: se realiza la carga de TCB KM = 1 a TCB KM =0 correctamente!!!!");
-		//Saco al TCB de la cola de bloqueados y lo paso a Ready
-		pasarProgramaDeBlockAReady(TCBFinInterrupcion->programa->programaTCB, 0);
+		if(informacionFinInterrupcion->esJoin != 1 || seBloqueo != 1){
+			//Copio los valores de los registros del TCB que se ejecuto y pongo el km en 0
+			volverTCBAModoNoKernel(self->tcbKernel, TCBFinDeInterrupcionSystemCall->programa->programaTCB);
+			//Saco al TCB de la cola de bloqueados y lo paso a Ready
+			pasarProgramaDeBlockAReady(TCBFinDeInterrupcionSystemCall->programa->programaTCB, 0);
+			seBloqueo = 0;
+		}
 
 		pthread_mutex_unlock(&sem_interrupcion);
-	}else
-		log_error(self->loggerPlanificador,"Planificador: la consola se a desconectado no se puede ejecutar la operación FIN_DE_INTERRUPCION");
+	}
 
+else
+		log_error(self->loggerPlanificador,"Planificador: La Consola se ha desconectado. No se puede ejecutar la operación FIN_DE_INTERRUPCION");
+
+}
+
+
+void copiarValoresFinInterrupcionATCB(t_finInterrupcionKernel* informacionFinInterrupcion, t_TCB_Kernel *TCBFinInterrupcion){
+
+	TCBFinInterrupcion->pid = informacionFinInterrupcion->pid;
+	TCBFinInterrupcion->tid = informacionFinInterrupcion->tid;
+	TCBFinInterrupcion->km = informacionFinInterrupcion->km;
+	TCBFinInterrupcion->base_segmento_codigo = informacionFinInterrupcion->base_segmento_codigo;
+	TCBFinInterrupcion->tamanio_segmento_codigo = informacionFinInterrupcion->tamanio_segmento_codigo;
+	TCBFinInterrupcion->tamanio_segmento_codigo = informacionFinInterrupcion->tamanio_segmento_codigo;
+	TCBFinInterrupcion->puntero_instruccion = informacionFinInterrupcion->puntero_instruccion;
+	TCBFinInterrupcion->base_stack = informacionFinInterrupcion->base_stack;
+	TCBFinInterrupcion->cursor_stack = informacionFinInterrupcion->cursor_stack;
+	TCBFinInterrupcion->registro_de_programacion[0] = informacionFinInterrupcion->registro_de_programacion[0];
+	TCBFinInterrupcion->registro_de_programacion[1] = informacionFinInterrupcion->registro_de_programacion[1];
+	TCBFinInterrupcion->registro_de_programacion[2] = informacionFinInterrupcion->registro_de_programacion[2];
+	TCBFinInterrupcion->registro_de_programacion[3] = informacionFinInterrupcion->registro_de_programacion[3];
+	TCBFinInterrupcion->registro_de_programacion[4] = informacionFinInterrupcion->registro_de_programacion[4];
 
 }
 
@@ -510,18 +539,18 @@ void copiarValoresDosTCBs(t_TCB_Kernel *tcbHasta, t_TCB_Kernel *tcbDesde){
 void ejecutar_UN_JOIN_HILO(t_kernel* self, t_socket_paquete* paquete){
 
 	t_joinKernel *joinHilos = (t_joinKernel*) paquete->data;
+	seBloqueo = 0;
 
-	bool matchPrograma(t_programaEnKernel *unPrograma){
-		return ((unPrograma->programaTCB->pid == joinHilos->pid) && (unPrograma->programaTCB->tid == joinHilos->tid_llamador));
+	bool matchTCBEsperar(t_TCB_Kernel *unTCB){
+		return ((unTCB->pid == joinHilos->pid) && (unTCB->tid == joinHilos->tid_esperar));
 	}
 
-	t_programaEnKernel* programaTIDLlamador = list_find(listaDeProgramasDisponibles, matchPrograma);
+	//Si el hilo que debe bloquear ya finalizo no bloqueo al tid_llamador
+	t_TCB_Kernel *TCBFinalizado = list_find(cola_exit, matchTCBEsperar);
 
-	if(programaTIDLlamador != NULL){
+	if(TCBFinalizado != NULL){
 
-		pthread_mutex_lock(&blockMutex);
-		list_add(cola_block, programaTIDLlamador);
-		pthread_mutex_unlock(&blockMutex);
+		seBloqueo = 1;
 
 		bool matchHilo(t_BloqueadoPorOtro *hiloBloqueador){
 			return ((hiloBloqueador->pid == joinHilos->pid) && (hiloBloqueador->TIDbloqueador == joinHilos->tid_esperar));
@@ -534,16 +563,16 @@ void ejecutar_UN_JOIN_HILO(t_kernel* self, t_socket_paquete* paquete){
 			bloqueadorNuevo->pid = joinHilos->pid;
 			bloqueadorNuevo->TIDbloqueador = joinHilos->tid_esperar;
 			bloqueadorNuevo->hilosBloqueados = list_create();
-			list_add(listaBloqueadosPorOtroHilo, bloqueadorNuevo);
 			list_add(bloqueadorNuevo->hilosBloqueados, joinHilos->tid_llamador);
+			list_add(listaBloqueadosPorOtroHilo, bloqueadorNuevo);
+
 		}
 
 		else
 			list_add(bloqueador->hilosBloqueados, joinHilos->tid_llamador);
-	}
 
-	else
-		log_error(self->loggerPlanificador, "Planificador: El Programa ha cerrado la conexion");
+		log_info(self->loggerPlanificador, "Planificador: Para el PID %d, TID %d, se bloquea al TCB con TID %d", joinHilos->pid, joinHilos->tid_esperar, joinHilos->tid_llamador);
+	}
 
 }
 
@@ -552,7 +581,7 @@ void ejecutar_UN_JOIN_HILO(t_kernel* self, t_socket_paquete* paquete){
  *								        --Comienzo BLOCK--							                *
 \***************************************************************************************************/
 
-void ejecutar_UN_WAIT_HILO(t_kernel* self, t_socket_paquete* paquete){
+void ejecutar_UN_BLOCK_HILO(t_kernel* self, t_socket_paquete* paquete){
 
 	t_bloquearKernel *blockHilo = (t_bloquearKernel*) (paquete->data);
 
@@ -584,8 +613,10 @@ void ejecutar_UN_WAIT_HILO(t_kernel* self, t_socket_paquete* paquete){
 			log_info(self->loggerPlanificador,"Planificador: se encontro recurso en block BLOCK_HILO");
 		}
 
-	}else
-		log_error(self->loggerPlanificador,"Planificador: la consola ya no existe no se puede realizar la operacion BLOCK_HILO");
+	}
+
+	else
+		log_error(self->loggerPlanificador,"Planificador: La Consola ya no existe. No se puede realizar la operacion BLOCK_HILO");
 }
 
 
@@ -593,7 +624,7 @@ void ejecutar_UN_WAIT_HILO(t_kernel* self, t_socket_paquete* paquete){
  *								      --Comienzo WAKE--							                    *
 \***************************************************************************************************/
 
-void ejecutar_UN_SIGNAL_HILO(t_kernel* self, t_socket_paquete* paquete){
+void ejecutar_UN_WAKE_HILO(t_kernel* self, t_socket_paquete* paquete){
 
 	t_despertarKernel *recursoDespertarHilo = (t_bloquearKernel*) (paquete->data);
 
