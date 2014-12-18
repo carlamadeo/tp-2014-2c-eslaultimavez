@@ -81,9 +81,13 @@ int cpuProcesarTCB(t_CPU *self){
 			}
 
 			else{
-				printf("CPU: ENVIA FINALIZAR INTERRUPCION\n");
-				cpuFinalizarInterrupcion(self);
-				salida = 1;
+				if(self->tcb->km == 1){
+					printf("CPU: ENVIA FINALIZAR INTERRUPCION\n");
+					cpuFinalizarInterrupcion(self);
+					salida = 1;
+				}else
+					printf("CPU: si entra ACA es un error, solo KM = 1 puede enviar FINALIZAR INTERRUPCION\n");
+
 			}
 			break;
 

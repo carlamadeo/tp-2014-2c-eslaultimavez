@@ -101,8 +101,8 @@ void ejecutar_UNA_ENTRADA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete*
 void ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete* paquete);
 void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete);
 void ejecutar_UN_JOIN_HILO(t_kernel* self, t_socket_paquete* paquete);
-void ejecutar_UN_BLOCK_HILO(t_kernel* self, t_socket_paquete* paquete);
-void ejecutar_UN_WAKE_HILO(t_kernel* self, t_socket_paquete* paquete);
+void ejecutar_UN_WAIT_HILO(t_kernel* self, t_socket_paquete* paquete);
+void ejecutar_UN_SIGNAL_HILO(t_kernel* self, t_socket_paquete* paquete);
 void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self, t_socket_paquete* paquete);
 void copiarValoresDosTCBs(t_TCB_Kernel *tcbHasta, t_TCB_Kernel *tcbDesde);
 

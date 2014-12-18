@@ -219,16 +219,19 @@ void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 			return (TCB->programa->programaTCB->pid == tcbFinInterrupcion->pid) && (TCB->programa->programaTCB->tid == tcbFinInterrupcion->tid);
 		}
 
-		t_TCBSystemCalls *TCBFinInterrupcion = list_remove_by_condition(listaSystemCall, matchTCB);
+		log_info(self->loggerPlanificador,"Planificador: tamanio de la listaSystemCall :%d",list_size(listaSystemCall));
+		t_TCBSystemCalls *TCBFinInterrupcion = list_remove_by_condition(listaSystemCall,(void*) matchTCB);
 
 		//Copio los valores de los registros del TCB que se ejecuto y pongo el km en 0
 		volverTCBAModoNoKernel(self->tcbKernel, TCBFinInterrupcion->programa->programaTCB);
-
+		log_info(self->loggerPlanificador,"Planificador: se realiza la carga de TCB KM = 1 a TCB KM =0 correctamente!!!!");
 		//Saco al TCB de la cola de bloqueados y lo paso a Ready
 		pasarProgramaDeBlockAReady(TCBFinInterrupcion->programa->programaTCB, 0);
 
 		pthread_mutex_unlock(&sem_interrupcion);
-	}
+	}else
+		log_error(self->loggerPlanificador,"Planificador: la consola se a desconectado no se puede ejecutar la operación FIN_DE_INTERRUPCION");
+
 
 }
 
@@ -309,6 +312,7 @@ void pasarProgramaDeBlockAReady(t_TCB_Kernel *TCB, t_socket *socketConsola){
 	list_iterate(listaDeRecursos, busquedaPorLista);
 
 	if(!encontrado){
+		printf("Block_A_Ready: se encontro programa que no esta bloqueado por recurso\n");
 		pthread_mutex_lock(&execMutex);
 		t_programaEnKernel *programaBuscado = list_remove_by_condition(cola_block, matchPrograma);
 		pthread_mutex_unlock(&execMutex);
@@ -324,7 +328,10 @@ void pasarProgramaDeBlockAReady(t_TCB_Kernel *TCB, t_socket *socketConsola){
 		pthread_mutex_unlock(&blockMutex);
 
 		sem_post(&sem_B);
-	}
+		printf("Block_A_Ready: se cargo un programa a READY correctamente\n");
+	}else
+		printf("Block_A_Ready: se encontro programa bloqueado por recurso\n");
+
 }
 
 
@@ -545,7 +552,7 @@ void ejecutar_UN_JOIN_HILO(t_kernel* self, t_socket_paquete* paquete){
  *								        --Comienzo BLOCK--							                *
 \***************************************************************************************************/
 
-void ejecutar_UN_BLOCK_HILO(t_kernel* self, t_socket_paquete* paquete){
+void ejecutar_UN_WAIT_HILO(t_kernel* self, t_socket_paquete* paquete){
 
 	t_bloquearKernel *blockHilo = (t_bloquearKernel*) (paquete->data);
 
@@ -553,7 +560,7 @@ void ejecutar_UN_BLOCK_HILO(t_kernel* self, t_socket_paquete* paquete){
 		return ((unPrograma->programaTCB->pid == blockHilo->pid) && (unPrograma->programaTCB->tid == blockHilo->tid));
 	}
 
-	t_programaEnKernel* programaABloquear = list_find(listaDeProgramasDisponibles, matchPrograma);
+	t_programaEnKernel* programaABloquear = list_find(listaDeProgramasDisponibles, (void*) matchPrograma);
 
 	if(programaABloquear != NULL){
 
@@ -561,22 +568,24 @@ void ejecutar_UN_BLOCK_HILO(t_kernel* self, t_socket_paquete* paquete){
 			return unRecurso->identificador == blockHilo->id_recurso;
 		}
 
-		t_recurso *recursoEncontrado = list_find(listaDeRecursos, matchRecurso);
+		t_recurso *recursoEncontrado = list_find(listaDeRecursos, (void*) matchRecurso);
 
 		if(recursoEncontrado == NULL){
 			t_recurso *recurso = malloc(sizeof(t_recurso));
 			recurso->identificador = blockHilo->id_recurso;
 			recurso->listaBloqueados = list_create();
 			list_add(listaDeRecursos, recurso);
+			log_info(self->loggerPlanificador,"Planificador: carga un recurso a la listaDeRecursos :%d", recurso->identificador);
 			list_add(recurso->listaBloqueados, programaABloquear);
+			log_info(self->loggerPlanificador,"Planificador: carga un programa a la ListeBloqueados con tamanio de la lista: %d", list_size(recurso->listaBloqueados));
+
+		}else{
+			list_add(recursoEncontrado->listaBloqueados, programaABloquear);
+			log_info(self->loggerPlanificador,"Planificador: se encontro recurso en block BLOCK_HILO");
 		}
 
-		else
-			list_add(recursoEncontrado->listaBloqueados, programaABloquear);
-	}
-
-	else
-		log_error(self->loggerPlanificador, "Planificador: El Programa ha cerrado la conexion");
+	}else
+		log_error(self->loggerPlanificador,"Planificador: la consola ya no existe no se puede realizar la operacion BLOCK_HILO");
 }
 
 
@@ -584,7 +593,7 @@ void ejecutar_UN_BLOCK_HILO(t_kernel* self, t_socket_paquete* paquete){
  *								      --Comienzo WAKE--							                    *
 \***************************************************************************************************/
 
-void ejecutar_UN_WAKE_HILO(t_kernel* self, t_socket_paquete* paquete){
+void ejecutar_UN_SIGNAL_HILO(t_kernel* self, t_socket_paquete* paquete){
 
 	t_despertarKernel *recursoDespertarHilo = (t_bloquearKernel*) (paquete->data);
 
