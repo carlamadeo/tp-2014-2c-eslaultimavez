@@ -185,15 +185,15 @@ int SETM_ESO(t_CPU *self){
 
 				char* byte_a_escribir = malloc(sizeof(int32_t));
 				memset(byte_a_escribir, 0, sizeof(int32_t));
-				if(regB <= 5)
-					sprintf(byte_a_escribir, "%d", self->tcb->registro_de_programacion[regB]);
-
-				else{
+				if(regB <= 5){
+					memcpy(byte_a_escribir, &(self->tcb->registro_de_programacion[regB]),numero);
+					printf("TEST: setando memoria con  %s\n", byte_a_escribir);
+				}else{
 					switch(regB){
-					case 6:sprintf(byte_a_escribir, "%d", self->tcb->base_segmento_codigo);break;
-					case 7:sprintf(byte_a_escribir, "%d", self->tcb->puntero_instruccion);break;
-					case 8:sprintf(byte_a_escribir, "%d", self->tcb->base_stack);break;
-					case 9:sprintf(byte_a_escribir, "%d", self->tcb->cursor_stack);break;
+					case 6:memcpy(byte_a_escribir, &(self->tcb->base_segmento_codigo),numero);break;
+					case 7:memcpy(byte_a_escribir, &(self->tcb->puntero_instruccion),numero);break;
+					case 8:memcpy(byte_a_escribir, &(self->tcb->base_stack),numero);break;
+					case 9:memcpy(byte_a_escribir, &(self->tcb->cursor_stack),numero);break;
 					}
 				}
 
@@ -1876,8 +1876,9 @@ int INTE_ESO(t_CPU *self){
 	//int estado_bloque = estado_lectura;
 
 	if (estado_lectura == SIN_ERRORES){
-
+		printf("TEST: el puntero de instruccion vale %d\n", self->tcb->puntero_instruccion);
 		self->tcb->puntero_instruccion += tamanio;
+		printf("TEST: el puntero de instruccion vale %d\n", self->tcb->puntero_instruccion);
 
 		log_info(self->loggerCPU, "CPU: Recibiendo parametros de instruccion INTE");
 
@@ -2348,7 +2349,7 @@ int OUTC_ESO(t_CPU* self){
 
 		//TODO Esto lo cambie porque dice que se lee lo que apunta el registro A no el cursor_de_stack, esta bien??
 		int estado_lectura = cpuLeerMemoriaSinKM(self, self->tcb->registro_de_programacion[0], lecturaDeMSP, self->tcb->registro_de_programacion[1]);
-
+		printf("TEST: se leyo de memoria   %s\n", lecturaDeMSP);
 		if (estado_lectura == ERROR_POR_SEGMENTATION_FAULT)
 			estado_outc = ERROR_POR_SEGMENTATION_FAULT;
 
