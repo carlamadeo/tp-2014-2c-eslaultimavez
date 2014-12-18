@@ -32,7 +32,7 @@ void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket_paquete *paquete
 	}
 
 	else
-		log_error(self->loggerPlanificador,"Planificador: El Programa ha cerrado la conexion");
+		log_error(self->loggerPlanificador,"Planificador: error por desconexion de consola, no se puede ejecutar Finalizar programa Exito");
 
 }
 
@@ -45,7 +45,7 @@ void desbloquearHilosBloqueadosPorElQueFinalizo(t_programaEnKernel* unTcbProcesa
 		return ((unTcbProcesado->programaTCB->tid == tcbBloqueador->TIDbloqueador) && (unTcbProcesado->programaTCB->pid == tcbBloqueador->pid));
 	}
 
-	t_BloqueadoPorOtro* pidTidBloqueador = list_remove_by_condition(listaBloqueadosPorOtroHilo, matchHilo);
+	t_BloqueadoPorOtro* pidTidBloqueador = list_remove_by_condition(listaBloqueadosPorOtroHilo, (void*) matchHilo);
 
 	if(pidTidBloqueador != NULL){
 
@@ -87,8 +87,10 @@ void ejecutar_FINALIZAR_HILO_EXITO(t_kernel* self, t_socket_paquete *paqueteTCB)
 		pthread_mutex_unlock(&execMutex);
 
 		if(unTcbProcesado != NULL){
+			log_info(self->loggerPlanificador,"Planificador: unTcbProcesado != NULL, en ejecutar_FINALIZAR_HILO_EXITO ");
 			desbloquearHilosBloqueadosPorElQueFinalizo(unTcbProcesado);
-		}
+		}else
+			log_info(self->loggerPlanificador,"Planificador: unTcbProcesado == NULL, en ejecutar_FINALIZAR_HILO_EXITO ");
 
 
 	}

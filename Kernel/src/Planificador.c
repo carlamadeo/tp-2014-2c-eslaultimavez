@@ -316,6 +316,7 @@ void atenderCPU(t_kernel* self, t_cpu *cpu, fd_set* master){
 		case FINALIZAR_PROGRAMA_EXITO:
 			log_info(self->loggerPlanificador, "Planificador: Recibe FINALIZAR_PROGRAMA_EXITO");
 			ejecutar_FINALIZAR_PROGRAMA_EXITO(self, paqueteCPUAtendido);
+			sem_wait(&sem_B);
 			cpuOcupadaALibre(cpu);
 			break;
 
@@ -417,9 +418,9 @@ void ejecutar_DESCONECTAR_CPU(t_kernel* self, t_cpu* cpu, fd_set* master){
 		sem_post(&mutex_exec);
 
 		if(programaRemovido->programaTCB->km == 1){
-			log_info(self->loggerPlanificador,"Planificador: se murio el TCB KM = 1 ");
+			log_info(self->loggerPlanificador,"Planificador: se murio el TCB KM = 1, porque se desconecto una CPU ");
 		}else{
-			log_info(self->loggerPlanificador,"Planificador: se murio un TCB el KM = 0 ");
+			log_info(self->loggerPlanificador,"Planificador: se murio un TCB el KM = 0, porque se desconecto una CPU ");
 		}
 
 		//se le avisa al programa Beso que se desconecto la CPU

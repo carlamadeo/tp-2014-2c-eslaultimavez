@@ -184,7 +184,7 @@ int cpuFinalizarHiloExitoso(t_CPU *self){
 int cpuFinalizarInterrupcion(t_CPU *self){
 
 	socket_sendPaquete(self->socketPlanificador->socket, TERMINAR_INTERRUPCION, sizeof(t_TCB_CPU), self->tcb);
-
+	log_info(self->loggerCPU, "CPU: envia al Kernel un  TERMINAR_INTERRUPCION !!!!");
 	return SIN_ERRORES;
 }
 
