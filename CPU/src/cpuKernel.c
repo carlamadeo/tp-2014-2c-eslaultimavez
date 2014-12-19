@@ -88,7 +88,7 @@ int cpuRecibirQuantum(t_CPU *self){
 			t_quantumCPU* unQuantum = (t_quantumCPU*) paquetePlanificadorQuantum->data;
 			self->quantum = unQuantum->quantumCPU;
 
-			log_debug(self->loggerCPU, "CPU: Recibe un quantum: %d",self->quantum);
+			//log_debug(self->loggerCPU, "CPU: Recibe un quantum: %d",self->quantum);
 		}
 
 		else{

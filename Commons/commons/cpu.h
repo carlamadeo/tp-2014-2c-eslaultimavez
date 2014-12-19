@@ -42,7 +42,7 @@
 	 *
 	 * @param  registros  Estructura conteniendo cada uno de los registros de la CPU.
 	 */
-	void cambio_registros(t_registros_cpu registros);
+	void cambio_registros(t_registros_cpu* registros);
 
 	//-------------------------------------------------
 	//Retrocompatibilidad con el ejemplo del enunciado:

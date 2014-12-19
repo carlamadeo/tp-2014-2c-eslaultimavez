@@ -38,6 +38,9 @@ int main(int argc, char** argv) {
 		return EXIT_SUCCESS;
 	}
 
+	procesoCPU = 1;
+	inicializar_panel(procesoCPU, argv[1]);
+
 	cpuConectarConMPS(self);
 	cpuConectarConKernel(self);
 

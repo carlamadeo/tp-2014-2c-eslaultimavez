@@ -15,7 +15,7 @@
 //t_log *logger;
 //linea para hacer push
 //#include <commons/threadInBigBang.h>
-
+t_tipo_proceso procesoCPU;
 
 typedef struct {
 	int pid;

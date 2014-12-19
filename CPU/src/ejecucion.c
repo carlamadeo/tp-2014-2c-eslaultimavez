@@ -27,10 +27,17 @@ int cpuProcesarTCB(t_CPU *self){
 	int esJoin = 0;
 
 	//COPIO LA ESTRUCTURA DEL TCB AL hilo_log
-	//hilo_log = (t_hilo_log *) self->tcb;
-	//ejecucion_hilo(hilo_log, self->quantum);
+	t_hilo* hilo_log = malloc(sizeof(t_hilo));
 
-	log_info(self->loggerCPU, "CPU: Comienzo a procesar el TCB de pid: %d y direccion: %0.8p", self->tcb->pid, self->tcb->puntero_instruccion);
+	hilo_log->pid=(uint32_t)self->tcb->pid;
+
+	hilo_log->tid=(uint32_t)self->tcb->tid;
+
+	hilo_log->kernel_mode=(bool)self->tcb->km;
+
+	comienzo_ejecucion(hilo_log, (uint32_t)self->quantum);
+
+	//log_info(self->loggerCPU, "CPU: Comienzo a procesar el TCB de pid: %d y direccion: %0.8p", self->tcb->pid, self->tcb->puntero_instruccion);
 
 	while(!salida && ((self->quantum > 0) || (self->tcb->km == 1))){
 		printTCBCPU(self->tcb);
@@ -121,7 +128,7 @@ int cpuProcesarTCB(t_CPU *self){
 			break;
 		}
 	}
-
+	free(hilo_log);
 	free(datosDeMSP);
 	return error;
 
@@ -149,14 +156,14 @@ int ejecutar_instruccion(t_CPU *self, int linea, int *esJoin){
 	t_registros_cpu* registros_cpu = malloc(sizeof(t_registros_cpu));
 
 	int estado = 0;
-	parametros = list_create();
+	//parametros = list_create();
 
 	self->tcb->puntero_instruccion += 4; //avanzo el puntero de instruccion
 	cpuInicializarRegistrosCPU(self, registros_cpu);
-	//cambio_registros(registros_cpu);
+	cambio_registros(registros_cpu);
 	free(registros_cpu);
 
-	log_info(self->loggerCPU, "CPU: TCB KM %d", self->tcb->km);
+	//log_info(self->loggerCPU, "CPU: TCB KM %d", self->tcb->km);
 	usleep(self->retardo);
 
 	//-----------------------------------INICIO SWITCH - CASE--------------------------------
