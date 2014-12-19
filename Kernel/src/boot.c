@@ -108,4 +108,5 @@ void bootEscribirMemoria(t_kernel* self, int pid, uint32_t direccionVirtual, cha
 
 	free(escrituraDeCodigo);
 	free(paqueteConfirmacionEscritura);
+	free(unaConfirmacionEscritura);
 }

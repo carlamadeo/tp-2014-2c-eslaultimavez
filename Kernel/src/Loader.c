@@ -355,6 +355,7 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 			log_error(self->loggerLoader, "Loader: Error al enviar los datos de la Consola.");
 
 		//se recibe el codigo del archivo Beso
+
 		t_socket_header header;
 
 		if(recv(socketNuevoCliente->descriptor, &header, sizeof(t_socket_header), NULL) != sizeof(t_socket_header))
@@ -362,7 +363,7 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 
 		int sizePrograma = header.length - sizeof(t_socket_header);
 		char *programaBeso = malloc(sizePrograma);
-		memset(programaBeso, 0, sizePrograma + 1);
+		memset(programaBeso, 0, sizePrograma);
 
 		if(recv(socketNuevoCliente->descriptor, programaBeso, sizePrograma, NULL) != sizePrograma)
 			log_error(self->loggerLoader, "Loader: No se ha podido recibir el programa Beso de la Consola");
@@ -412,7 +413,7 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 		}
 
 		//free(unPrograma);
-		//free(programaBeso);
+		free(programaBeso);
 	}//fin de else
 
 	socket_freePaquete(paquete);

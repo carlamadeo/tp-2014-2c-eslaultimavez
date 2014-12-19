@@ -42,6 +42,7 @@ uint32_t kernelCrearSegmento(t_kernel *self, int pid, int tamanio){
 	t_datos_aMSP* datosAEnviar = malloc(sizeof(t_datos_aMSP));
 	t_datos_deMSP *datosRecibidos = malloc(sizeof(t_datos_deMSP));
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+	uint32_t estado;
 
 	datosAEnviar->pid = pid;
 	datosAEnviar->tamanio = tamanio;
@@ -53,9 +54,10 @@ uint32_t kernelCrearSegmento(t_kernel *self, int pid, int tamanio){
 
 			if(paquete->header.type == CREAR_SEGMENTO){
 				datosRecibidos = (t_datos_deMSP *) (paquete->data);
+				estado = datosRecibidos->direccionBase;
 
-				if(datosRecibidos->direccionBase >= 0)
-					log_info(self->loggerKernel, "Kernel: Se recibio de la MSP la direccion base %0.8p ", datosRecibidos->direccionBase);
+				if(estado >= 0)
+					log_info(self->loggerKernel, "Kernel: Se recibio de la MSP la direccion base %0.8p ", estado);
 			}
 		}
 
@@ -67,7 +69,8 @@ uint32_t kernelCrearSegmento(t_kernel *self, int pid, int tamanio){
 
 	socket_freePaquete(paquete);
 	free(datosAEnviar);
-	return datosRecibidos->direccionBase;
+	free(datosRecibidos);
+	return estado;
 }
 
 
@@ -76,6 +79,7 @@ int kernelDestruirSegmento(t_kernel *self, t_TCB_Kernel *tcb, uint32_t direccion
 	t_destruirSegmento* destruir_segmento = malloc(sizeof(t_destruirSegmento));
 	t_socket_paquete *paqueteConfirmacionDestruccionSegmento = malloc(sizeof(t_socket_paquete));
 	t_confirmacion* confirmacion = malloc(sizeof(t_confirmacion));
+	int estado;
 
 	destruir_segmento->pid = tcb->pid;
 	destruir_segmento->direccionVirtual = direccionVirtual;
@@ -86,13 +90,16 @@ int kernelDestruirSegmento(t_kernel *self, t_TCB_Kernel *tcb, uint32_t direccion
 
 	confirmacion = (t_confirmacion *) paqueteConfirmacionDestruccionSegmento->data;
 
-	if(confirmacion->estado == SIN_ERRORES)
+	estado = confirmacion->estado;
+
+	if(estado == SIN_ERRORES)
 		log_info(self->loggerKernel, "CPU: Se destruyo el segmento con base virtual %0.8p correctamente", direccionVirtual);
 
 	free(destruir_segmento);
 	free(paqueteConfirmacionDestruccionSegmento);
+	free(confirmacion);
 
-	return confirmacion->estado;
+	return estado;
 }
 
 int kernelLeerMemoria(t_kernel *self, int pid, uint32_t direccionVirtual, char *programa, int tamanio){
@@ -100,7 +107,6 @@ int kernelLeerMemoria(t_kernel *self, int pid, uint32_t direccionVirtual, char *
 	t_datos_aMSPLectura *datosAMSP = malloc(sizeof(t_datos_aMSPLectura));
 	t_socket_paquete *paqueteLectura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 	t_datos_deMSPLectura *unaLectura = (t_datos_deMSPLectura *)malloc(sizeof(t_datos_deMSPLectura));
-
 	int estado;
 
 	datosAMSP->direccionVirtual = direccionVirtual;
@@ -120,6 +126,8 @@ int kernelLeerMemoria(t_kernel *self, int pid, uint32_t direccionVirtual, char *
 
 	estado = unaLectura->estado;
 
+	free(datosAMSP);
+	free(paqueteLectura);
 	free(unaLectura);
 	return estado;
 }
@@ -130,6 +138,7 @@ int kernelEscribirMemoria(t_kernel* self, int pid, uint32_t direccionVirtual, ch
 	t_escribirSegmentoBeso* escrituraDeCodigo = malloc(sizeof(t_escribirSegmentoBeso));
 	t_socket_paquete *paqueteConfirmacionEscritura = (t_socket_paquete *)malloc(sizeof(t_socket_paquete));
 	t_confirmacionEscritura *unaConfirmacionEscritura = (t_confirmacionEscritura *)malloc(sizeof(t_confirmacionEscritura));
+	int estado;
 
 	escrituraDeCodigo->direccionVirtual = direccionVirtual;
 	escrituraDeCodigo->pid = pid;
@@ -144,10 +153,13 @@ int kernelEscribirMemoria(t_kernel* self, int pid, uint32_t direccionVirtual, ch
 
 	unaConfirmacionEscritura = (t_confirmacionEscritura *) paqueteConfirmacionEscritura->data;
 
+	estado = unaConfirmacionEscritura->estado;
+
 	if(unaConfirmacionEscritura->estado == SIN_ERRORES)
 		log_info(self->loggerKernel, "Kernel: Se ha escrito en memoria correctamente");
 
 	free(escrituraDeCodigo);
 	free(paqueteConfirmacionEscritura);
-	return unaConfirmacionEscritura->estado;
+	free(unaConfirmacionEscritura);
+	return estado;
 }
