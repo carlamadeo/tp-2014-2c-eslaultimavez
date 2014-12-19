@@ -82,6 +82,7 @@ typedef struct {
 
 typedef struct{
 	int pid;
+	int tid;
 	char cadena[1000];
 } t_salida_estandarKernel;
 
@@ -120,5 +121,6 @@ void ejecutar_UN_BLOCK_HILO(t_kernel* self, t_socket_paquete* paquete);
 void ejecutar_UN_WAKE_HILO(t_kernel* self, t_socket_paquete* paquete);
 void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self, t_socket_paquete* paquete);
 void copiarValoresDosTCBs(t_TCB_Kernel *tcbHasta, t_TCB_Kernel *tcbDesde);
+void mostrarHilosEjecutando();
 
 #endif // PLANIFICADOR_MENSAJE_H_

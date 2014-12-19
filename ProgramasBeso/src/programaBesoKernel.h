@@ -10,7 +10,8 @@ typedef struct{
 }t_datosKernel;
 
 typedef struct{
-	int codigo;
+	int pid;
+	int tid;
 	char mensaje[TAMANIO_MAXIMO];
 }t_datosMostrarConsola;
 

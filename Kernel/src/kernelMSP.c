@@ -93,7 +93,7 @@ int kernelDestruirSegmento(t_kernel *self, t_TCB_Kernel *tcb, uint32_t direccion
 	estado = confirmacion->estado;
 
 	if(estado == SIN_ERRORES)
-		log_info(self->loggerKernel, "CPU: Se destruyo el segmento con base virtual %0.8p correctamente", direccionVirtual);
+		log_info(self->loggerKernel, "Kernel: Se destruyo el segmento con base virtual %0.8p correctamente", direccionVirtual);
 
 	free(destruir_segmento);
 	free(paqueteConfirmacionDestruccionSegmento);

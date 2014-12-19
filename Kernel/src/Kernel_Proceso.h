@@ -7,6 +7,8 @@
 #include "commons/socketInBigBang.h"
 #include "commons/protocolStructInBigBang.h"
 #include "commons/kernel.h"
+#include "commons/config.h"
+#include "commons/panel.h"
 #include <pthread.h>
 
 /*----------------------Estructuras del Kernel----------------------------------------*/
@@ -89,7 +91,7 @@ t_list* cola_new;
 t_list* cola_ready;
 t_list* cola_exec;
 t_list* cola_block; //POR CUATRO, bloqueado por systemCall, por recurso, por esperando un hilo
-t_list* cola_exit;  //guarda solo TCB, no t_programaEnKernel
+t_list* cola_exit; 
 
 //Guardan solo TCB para planificador (t_cpu)
 t_list* listaDeCPUExec;
@@ -98,6 +100,9 @@ t_list* listaSystemCall;
 t_list* listaDeRecursos;
 t_list *listaBloqueadosPorOtroHilo;
 
+t_tipo_proceso procesoKernel;
+t_hilo hiloKernel;
+t_list *listaHilosKernel;
 
 // Semaforos
 sem_t sem_A;

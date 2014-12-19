@@ -293,6 +293,7 @@ int cpuEnviarSalidaEstandar(t_CPU *self, char *salidaEstandar, int tamanio){
 
 	t_salida_estandar *salida_estandar = malloc(sizeof(t_salida_estandar));
 	salida_estandar->pid = self->tcb->pid;
+	salida_estandar->tid = self->tcb->tid;
 	memset(salida_estandar->cadena, 0, tamanio);
 	memcpy(salida_estandar->cadena, salidaEstandar, tamanio + 1);
 

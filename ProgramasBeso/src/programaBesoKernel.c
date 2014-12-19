@@ -109,10 +109,10 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 				unNumero->numero = atoi(numeroEnChar);
 
 				if(socket_sendPaquete(self->socketKernel->socket, ENTRADA_ESTANDAR_INT, sizeof(t_entrada_numero), unNumero) > 0)
-					log_info(self->loggerProgramaBESO, "Consola: Envia un numero: %d", unNumero->numero);
+					log_info(self->loggerProgramaBESO, "Consola: Envia un numero al Kernel: %d", unNumero->numero);
 
 				else
-					log_info(self->loggerProgramaBESO, "Consola: Error al enviar un numero.");
+					log_info(self->loggerProgramaBESO, "Consola: Error al enviar un numero al Kernel.");
 
 				free(unNumero);
 				free(numeroEnChar);
@@ -138,12 +138,11 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 				memcpy(unTexto->texto, texto, recibidoDelKernel->tamanio);
 
 				if(socket_sendPaquete(self->socketKernel->socket, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_texto), unTexto) > 0){
-					log_info(self->loggerProgramaBESO, "Consola: envia un texto  :%s", unTexto->texto);
-					log_info(self->loggerProgramaBESO, "Consola: envia un CPU id :%d", unTexto->idCPU);
+					log_info(self->loggerProgramaBESO, "Consola: Envia un texto al Kernel: %s", unTexto->texto);
 				}
 
 				else
-					log_info(self->loggerProgramaBESO, "Consola: Error al enviar un texto.");
+					log_info(self->loggerProgramaBESO, "Consola: Error al enviar un texto al Kernel.");
 
 				free(unTexto);
 				free(texto);

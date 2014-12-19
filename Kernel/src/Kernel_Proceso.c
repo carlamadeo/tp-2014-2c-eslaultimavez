@@ -13,7 +13,6 @@
 #include "boot.h"
 #include "kernelMSP.h"
 #include "Loader.h"
-#include "commons/config.h"
 
 pthread_mutex_t blockMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t execMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -21,12 +20,8 @@ pthread_mutex_t exitMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t readyMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t newMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t cpuMutex = PTHREAD_MUTEX_INITIALIZER;
-
 pthread_mutex_t programasBesoDisponibleMutex = PTHREAD_MUTEX_INITIALIZER;
 
-//t_list *listaDeProgramasDisponibles;
-//t_list* cola_new;
-//t_list* cola_ready;
 
 int main(int argc, char** argv) {
 
@@ -39,9 +34,7 @@ int main(int argc, char** argv) {
 		return EXIT_SUCCESS;
 	}
 
-	//printf("El ip cargado es %s\n", self->ipMsp);
-	//printf("El puerto cargado es %d\n", self->puertoMsp);
-	//log_info(self->loggerKernel, "Kernel: Comienza a ejecutar.");
+	inicializar_panel(procesoKernel, argv[1]);
 
 	cola_new = list_create();
 	cola_ready = list_create();
@@ -111,7 +104,7 @@ void ponerProgramaEnExit(t_TCB_Kernel* unTCB){
 	t_programaEnKernel* programaInterrupcion = buscarProgramaEnLista(unTCB, cola_exec);
 
 	pthread_mutex_lock(&exitMutex);
-	list_add(cola_exit,programaInterrupcion->programaTCB);
+	list_add(cola_exit,programaInterrupcion);
 	pthread_mutex_unlock(&exitMutex);
 }
 

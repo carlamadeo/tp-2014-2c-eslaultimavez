@@ -1,6 +1,9 @@
 #include "planificadorMensajesCPU.h"
 #include "kernelMSP.h"
 #include "commons/protocolStructInBigBang.h"
+#include "commons/kernel.h"
+#include "commons/config.h"
+#include "commons/panel.h"
 
 pthread_mutex_t sem_interrupcion = PTHREAD_MUTEX_INITIALIZER;
 int seBloqueo = 0;
@@ -27,7 +30,7 @@ void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket_paquete *paquete
 
 		if(unTcbProcesado != NULL){
 			socket_sendPaquete(unTcbProcesado->socketProgramaConsola, FINALIZAR_PROGRAMA_EXITO, 0, NULL);
-			log_info(self->loggerPlanificador,"Planificador: Envia un FINALIZAR_PROGRAMA_EXITO a una consola");
+			log_info(self->loggerPlanificador, "Planificador: Envia a COnsola \"Finalizacion de Hilo exitoso\"");
 			desbloquearHilosBloqueadosPorElQueFinalizo(self, unTcbProcesado);
 		}
 	}
@@ -91,6 +94,8 @@ void ejecutar_FINALIZAR_HILO_EXITO(t_kernel* self, t_socket_paquete *paqueteTCB)
 		pthread_mutex_lock(&exitMutex);
 		list_add(cola_exit, unTcbProcesado);
 		pthread_mutex_unlock(&exitMutex);
+
+		mostrarHilosEjecutando();
 
 		if(unTcbProcesado != NULL){
 			desbloquearHilosBloqueadosPorElQueFinalizo(self, unTcbProcesado);
@@ -162,7 +167,8 @@ void pasarProgramaDeExecAReady(t_TCB_Kernel *TCB){
 	pthread_mutex_unlock(&readyMutex);
 
 	sem_post(&sem_B);
-	printf("Exec_A_Ready: sem_post(&sem_B): %d \n",sem_B);
+
+	mostrarHilosEjecutando();
 }
 
 /***************************************************************************************************\
@@ -178,6 +184,8 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 	t_TCB_Kernel *TCBInterrupcion = malloc(sizeof(t_TCB_Kernel));
 
 	convertirLaInterrupcionEnTCB(interrupcion, TCBInterrupcion);
+
+	log_info(logg, "El hilo { PID: %d, TID: %d } ejecutó la instrucción: Interrupcion", TCBInterrupcion->pid, TCBInterrupcion->tid);
 
 	if(programaBesoExiste(self, TCBInterrupcion) != ERROR_POR_DESCONEXION_DE_CONSOLA){
 
@@ -240,7 +248,7 @@ void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 		pthread_mutex_unlock(&sem_interrupcion);
 	}
 
-else
+	else
 		log_error(self->loggerPlanificador,"Planificador: La Consola se ha desconectado. No se puede ejecutar la operación FIN_DE_INTERRUPCION");
 
 }
@@ -281,6 +289,8 @@ t_socket *pasarProgramaDeExecABlock(t_TCB_Kernel *TCB){
 	pthread_mutex_lock(&blockMutex);
 	list_add(cola_block, programaBuscado);
 	pthread_mutex_unlock(&blockMutex);
+
+	mostrarHilosEjecutando();
 
 	return programaBuscado->socketProgramaConsola;
 }
@@ -324,6 +334,7 @@ void modificarTCBKM(t_TCB_Kernel *TCBKernel, t_TCBSystemCalls *TCBSystemCall){
 void pasarProgramaDeBlockAReady(t_TCB_Kernel *TCB, t_socket *socketConsola){
 
 	int encontrado = 0;
+	t_list *hilosEjecutando;
 
 	bool matchPrograma(t_programaEnKernel *unPrograma){
 		return (unPrograma->programaTCB->pid == TCB->pid) && (unPrograma->programaTCB->tid == TCB->tid);
@@ -342,7 +353,6 @@ void pasarProgramaDeBlockAReady(t_TCB_Kernel *TCB, t_socket *socketConsola){
 	list_iterate(listaDeRecursos, busquedaPorLista);
 
 	if(!encontrado){
-		printf("Block_A_Ready: se encontro programa que no esta bloqueado por recurso\n");
 		pthread_mutex_lock(&execMutex);
 		t_programaEnKernel *programaBuscado = list_remove_by_condition(cola_block, matchPrograma);
 		pthread_mutex_unlock(&execMutex);
@@ -358,9 +368,9 @@ void pasarProgramaDeBlockAReady(t_TCB_Kernel *TCB, t_socket *socketConsola){
 		pthread_mutex_unlock(&blockMutex);
 
 		sem_post(&sem_B);
-		printf("Block_A_Ready: se cargo un programa a READY correctamente\n");
-	}else
-		printf("Block_A_Ready: se encontro programa bloqueado por recurso\n");
+	}
+
+	mostrarHilosEjecutando();
 
 }
 
@@ -403,7 +413,6 @@ void ejecutar_UNA_ENTRADA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete*
 
 	t_entrada_estandarKenel* entradaEstandar = (t_entrada_estandarKenel*) paquete->data;
 
-
 	bool esProgramaEntrada(t_programaEnKernel* programaEnLista){
 		return (programaEnLista->programaTCB->pid == entradaEstandar->pid);
 	}
@@ -415,18 +424,18 @@ void ejecutar_UNA_ENTRADA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete*
 		if (entradaEstandar->tipo == ENTRADA_ESTANDAR_INT){
 			entradaEstandar->idCPU = cpu->id;
 			socket_sendPaquete(unPrograma->socketProgramaConsola, ENTRADA_ESTANDAR_INT, sizeof(t_entrada_estandarKenel), entradaEstandar);
-			log_info(self->loggerPlanificador, "Planificador: Envia ENTRADA_ESTANDAR_INT a Consola");
+			log_info(self->loggerPlanificador, "Planificador: Envia una peticion de entrada estandar texto a Consola");
 
 		}
 
 		else if(entradaEstandar->tipo == ENTRADA_ESTANDAR_TEXT){
 			entradaEstandar->idCPU = cpu->id;
 			socket_sendPaquete(unPrograma->socketProgramaConsola, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_estandarKenel), entradaEstandar);
-			log_info(self->loggerPlanificador, "Planificador: Envia ENTRADA_ESTANDAR_TEXT a Consola");
+			log_info(self->loggerPlanificador, "Planificador: Envia una peticion de entrada estandar numero a Consola");
 		}
 
 		else
-			log_error(self->loggerPlanificador, "Planificador: Error al enviar UNA_ENTRADA_STANDAR de consola.");
+			log_error(self->loggerPlanificador, "Planificador: Error al enviar una entrada estandar a Consola.");
 
 	}
 
@@ -455,7 +464,9 @@ ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete* paque
 	t_programaEnKernel* unProgramaSalida = list_find(listaDeProgramasDisponibles, (void*)esProgramaSalida);
 
 	if(socket_sendPaquete(unProgramaSalida->socketProgramaConsola, SALIDA_ESTANDAR, sizeof(t_salida_estandarKernel), salidaEstandar) >= 0)
-		log_debug(self->loggerPlanificador, "Planificador: envia UNA_SALIDA_ESTANDAR a la Consola");
+		log_info(self->loggerPlanificador, "Planificador: Envia una salida estandar a la Consola");
+
+	log_info(logg, "El hilo { PID: %d, TID: %d } ejecutó la instrucción: Salida Estandar", salidaEstandar->pid, salidaEstandar->tid);
 
 	free(salidaEstandar);
 }
@@ -477,6 +488,8 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
 	}
 
 	t_programaEnKernel* programaHiloRecibido = list_find(cola_block, matchProgramaEnBlock);
+
+	log_info(logg, "El hilo { PID: %d, TID: %d } ejecutó la instrucción: Crear Hilo", datosRecibidos->pid, datosRecibidos->tid);
 
 	if(programaHiloRecibido != NULL){
 		copiarValoresDosTCBs(hiloNuevo, programaHiloRecibido->programaTCB);
@@ -508,8 +521,9 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
 		list_add(cola_ready, programaNuevoHilo);
 		pthread_mutex_unlock(&readyMutex);
 
+		mostrarHilosEjecutando();
+
 		sem_post(&sem_B);
-		printf("Crear_Hilo:valor sem_C: %d \n",sem_C);
 	}
 
 	free(lecturaEscrituraMSP);
@@ -543,14 +557,16 @@ void ejecutar_UN_JOIN_HILO(t_kernel* self, t_socket_paquete* paquete){
 	t_joinKernel *joinHilos = (t_joinKernel*) paquete->data;
 	seBloqueo = 0;
 
-	bool matchTCBEsperar(t_TCB_Kernel *unTCB){
-		return ((unTCB->pid == joinHilos->pid) && (unTCB->tid == joinHilos->tid_esperar));
+	log_info(logg, "El hilo { PID: %d, TID: %d } ejecutó la instrucción: Join Hilo", joinHilos->pid, joinHilos->tid_llamador);
+
+	bool matchProgramaEsperar(t_programaEnKernel* unPrograma){
+		return ((unPrograma->programaTCB->pid == joinHilos->pid) && (unPrograma->programaTCB->tid == joinHilos->tid_esperar));
 	}
 
 	//Si el hilo que debe bloquear ya finalizo no bloqueo al tid_llamador
-	t_TCB_Kernel *TCBFinalizado = list_find(cola_exit, matchTCBEsperar);
+	t_programaEnKernel* programaFinalizado = list_find(cola_exit, matchProgramaEsperar);
 
-	if(TCBFinalizado != NULL){
+	if(programaFinalizado == NULL){
 
 		seBloqueo = 1;
 
@@ -587,6 +603,8 @@ void ejecutar_UN_BLOCK_HILO(t_kernel* self, t_socket_paquete* paquete){
 
 	t_bloquearKernel *blockHilo = (t_bloquearKernel*) (paquete->data);
 
+	log_info(logg, "El hilo { PID: %d, TID: %d } ejecutó la instrucción: Block Hilo", blockHilo->pid, blockHilo->tid);
+
 	bool matchPrograma(t_programaEnKernel *unPrograma){
 		return ((unPrograma->programaTCB->pid == blockHilo->pid) && (unPrograma->programaTCB->tid == blockHilo->tid));
 	}
@@ -606,14 +624,12 @@ void ejecutar_UN_BLOCK_HILO(t_kernel* self, t_socket_paquete* paquete){
 			recurso->identificador = blockHilo->id_recurso;
 			recurso->listaBloqueados = list_create();
 			list_add(listaDeRecursos, recurso);
-			log_info(self->loggerPlanificador,"Planificador: carga un recurso a la listaDeRecursos :%d", recurso->identificador);
 			list_add(recurso->listaBloqueados, programaABloquear);
-			log_info(self->loggerPlanificador,"Planificador: carga un programa a la ListeBloqueados con tamanio de la lista: %d", list_size(recurso->listaBloqueados));
 
-		}else{
-			list_add(recursoEncontrado->listaBloqueados, programaABloquear);
-			log_info(self->loggerPlanificador,"Planificador: se encontro recurso en block BLOCK_HILO");
 		}
+
+		else
+			list_add(recursoEncontrado->listaBloqueados, programaABloquear);
 
 	}
 
@@ -652,6 +668,8 @@ void ejecutar_UN_WAKE_HILO(t_kernel* self, t_socket_paquete* paquete){
 			pthread_mutex_lock(&blockMutex);
 			list_add(cola_ready, programaBuscado);
 			pthread_mutex_unlock(&blockMutex);
+
+			mostrarHilosEjecutando();
 		}
 
 	}
@@ -665,7 +683,6 @@ void ejecutar_UN_WAKE_HILO(t_kernel* self, t_socket_paquete* paquete){
 
 void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self, t_socket_paquete* paquete){
 
-	int mandarMensaje =0;
 	char *mensaje = malloc(sizeof(char) * 150);
 
 	t_errorKernel *errorParaConsola = (t_errorKernel*) (paquete->data);
@@ -734,7 +751,7 @@ void ejecutar_UN_MENSAJE_DE_ERROR(t_kernel* self, t_socket_paquete* paquete){
 		memcpy(enviarMensaje->texto, mensaje, strlen(mensaje) + 1);
 
 		if(socket_sendPaquete(programaAEnviar->socketProgramaConsola, MENSAJE_DE_ERROR, sizeof(t_entrada_textoKernel), enviarMensaje) >= 0)
-			log_debug(self->loggerPlanificador, "Planificador: Envia ERROR a la Consola");
+			log_info(self->loggerPlanificador, "Planificador: Envia ERROR a la Consola");
 
 		free(enviarMensaje);
 	}
@@ -767,3 +784,52 @@ void printTCBKernel(t_TCB_Kernel* unTCB){
 	printf("Regristros E: %d\n", unTCB->registro_de_programacion[4]);
 
 }
+
+
+void mostrarHilosEjecutando(){
+
+	void mostrarPrograma(t_programaEnKernel *unPrograma){
+		log_info(logg, "Hilo { PID: %d, TID: %d } Registros: { A: %d, B: %d, C: %d, D: %d, E: %d, M: %d, P: %d, S: %d, K: %d }",
+				unPrograma->programaTCB->pid,
+				unPrograma->programaTCB->tid,
+				unPrograma->programaTCB->registro_de_programacion[0],
+				unPrograma->programaTCB->registro_de_programacion[1],
+				unPrograma->programaTCB->registro_de_programacion[2],
+				unPrograma->programaTCB->registro_de_programacion[3],
+				unPrograma->programaTCB->registro_de_programacion[4],
+				unPrograma->programaTCB->base_segmento_codigo,
+				unPrograma->programaTCB->puntero_instruccion,
+				unPrograma->programaTCB->cursor_stack,
+				unPrograma->programaTCB->km
+		);
+	}
+
+	if(list_size(cola_new) > 0){
+		log_info(logg, "Elementos en la Cola NEW:");
+		list_iterate(cola_new, mostrarPrograma);
+	}
+
+	if(list_size(cola_ready) > 0){
+		log_info(logg, "Elementos en la Cola READY:");
+		list_iterate(cola_ready, mostrarPrograma);
+	}
+
+	if(list_size(cola_exec) > 0){
+		log_info(logg, "Elementos en la Cola EXEC:");
+		list_iterate(cola_exec, mostrarPrograma);
+	}
+
+
+	if(list_size(cola_block) > 0){
+		log_info(logg, "Elementos en la Cola BLOCK:");
+		list_iterate(cola_block, mostrarPrograma);
+	}
+
+	if(list_size(cola_exit) > 0){
+		log_info(logg, "Elementos en la Cola EXIT:");
+		list_iterate(cola_exit, mostrarPrograma);
+	}
+
+
+}
+

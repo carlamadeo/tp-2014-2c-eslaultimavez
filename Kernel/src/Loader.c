@@ -2,6 +2,9 @@
 #include "Loader.h"
 #include "commons/protocolStructInBigBang.h"
 #include "kernelMSP.h"
+#include "commons/kernel.h"
+#include "commons/config.h"
+#include "commons/panel.h"
 #include <errno.h>
 #include <unistd.h>
 
@@ -9,8 +12,6 @@ int unPIDGlobal = 1;
 
 pthread_mutex_t readyMutex;
 pthread_mutex_t newMutex;
-//t_list *listaDeProgramasDisponibles;
-//t_list* cola_new;
 
 pthread_mutex_t mutexLoader = PTHREAD_MUTEX_INITIALIZER;
 
@@ -19,7 +20,7 @@ void kernel_comenzar_Loader(t_kernel* self){
 	//el primero para crear TCB y cargarlos en la cola_NEW
 	iretThreadLoader = pthread_create(&hiloMandarNew, NULL, (void*) escuchar_conexiones_programa, self);
 	if(iretThreadLoader)
-		log_error(self->loggerLoader, "Loader: Error al crear el hilo hiloMandaeNew");
+		log_error(self->loggerLoader, "Loader: Error al crear el hilo hiloMandarNew");
 
 
 	//el segundo para sacar de a lista New pasarlo a la cola_READY
@@ -52,7 +53,7 @@ void escuchar_conexiones_programa(t_kernel* self){
 		log_error(self->loggerLoader, "Loader: Error al poner a escuchar al Loader: %s", strerror(errno));
 
 	else
-		log_info(self->loggerLoader, "Loader: Escuchando conexiones entrantes en el puerto: %d",self->puertoLoader);
+		log_info(self->loggerLoader, "Loader: Escuchando conexiones entrantes en el puerto: %d", self->puertoLoader);
 
 	FD_SET(socketEscucha->descriptor, &master);
 	fdmax = socketEscucha->descriptor; /* seguir la pista del descriptor de fichero mayor*/
@@ -61,10 +62,7 @@ void escuchar_conexiones_programa(t_kernel* self){
 	while(1){
 
 		read_fds = master;
-		//printf("antes select: %d\n",  1111);
 		int selectResult = select(fdmax+1, &read_fds, NULL, NULL, NULL);
-		log_info(self->loggerLoader,"Loader: Select = %d",selectResult);
-		//printf("after select: %d\n",  1111);
 
 		if (selectResult == -1){
 			log_error(self->loggerLoader, "Error en el select del Loader.");
@@ -80,23 +78,18 @@ void escuchar_conexiones_programa(t_kernel* self){
 
 				if (FD_ISSET(i, &read_fds)){ //¡¡tenemos datos!!
 
-					log_info(self->loggerLoader,"Se encontraron datos en el elemento de la lista i = %d, descriptorEscucha = %d",i,socketEscucha->descriptor);
-
 					if(i == socketEscucha->descriptor){  //gestionar nuevas conexiones
 
 						if((socketNuevaConexion = socket_acceptClient(socketEscucha)) == 0)
 							log_error(self->loggerLoader, "Loader: Error en el accept");
 
-						else{
-							log_debug(self->loggerLoader, "Loader: Accept completo!");
+						else
 							atenderNuevaConexionPrograma(self, socketNuevaConexion, &master, &fdmax);
-						}
+
 					}
 
 					else{ //sino no es una nueva conexion busca un programa en la lista
-						log_debug(self->loggerLoader, "Loader: Mensaje del Programa descriptor = %d.", i);
 						t_programaEnKernel* programaCliente = obtenerProgramaConsolaSegunDescriptor(self, i);
-						log_debug(self->loggerLoader, "Loader: Mensaje del Programa PID = %d.", programaCliente->programaTCB->pid);
 						atenderProgramaConsola(self, programaCliente, &master);
 						//exit(1);
 					}
@@ -110,33 +103,25 @@ void escuchar_conexiones_programa(t_kernel* self){
 
 void pasarProgramaNewAReady(t_kernel* self){
 
-	log_debug(self->loggerLoader,"New_A_Ready: Comienza a ejecutarse hilo de New a Ready");
-
 	while(1){
-		printf("\nNew_A_Ready: antes sem_wait(&sem_A) %d \n",sem_A);
+
 		sem_wait(&sem_A);
-		printf("New_A_Ready:  despues sem_wait(&sem_A) %d \n",sem_A);
 
 		t_programaEnKernel* programaParaReady = malloc(sizeof(t_programaEnKernel));
 
-		log_info(self->loggerLoader,"New_A_Ready: Tamanio de la cola New: %d", list_size(cola_new));
-		if(list_size(cola_new)>0){
+		if(list_size(cola_new) > 0){
+
 			pthread_mutex_lock(&newMutex);
 			programaParaReady = list_remove(cola_new, 0); //se remueve el primer elemento de la cola NEW
 			pthread_mutex_unlock(&newMutex);
-
-			log_info(self->loggerLoader,"New_A_Ready: Mueve de New a Ready el proceso con PID:%d TID:%d KM:%d", programaParaReady->programaTCB->pid,programaParaReady->programaTCB->tid,programaParaReady->programaTCB->km);
 
 			pthread_mutex_lock(&readyMutex);
 			list_add(cola_ready, programaParaReady); // se agrega el programa buscado a la cola READY
 			pthread_mutex_unlock(&readyMutex);
 
-			log_info(self->loggerLoader,"Hilo NEW_to_READY: tamanio de la cola New: %d", list_size(cola_new));
-			log_info(self->loggerLoader,"Hilo NEW_to_READY: tamanio de la cola Ready: %d",list_size(cola_ready));
-
+			mostrarHilosEjecutando();
 
 			sem_post(&sem_B);
-			printf("New_A_Ready: sem_post(&sem_B): %d \n",sem_B);
 
 		}
 	}
@@ -146,8 +131,6 @@ void pasarProgramaNewAReady(t_kernel* self){
 
 //Busca una conexion ya existente
 t_programaEnKernel* obtenerProgramaConsolaSegunDescriptor(t_kernel* self,int descriptor){
-	log_info(self->loggerLoader,"Loader: comienza busqueda descriptor");
-	log_info(self->loggerLoader,"Loader: Buscando el descriptor %d de una Consola",descriptor);
 
 	bool _esCPUDescriptor(t_programaEnKernel* programaBeso) {
 		return (programaBeso->socketProgramaConsola->descriptor == descriptor);
@@ -155,15 +138,6 @@ t_programaEnKernel* obtenerProgramaConsolaSegunDescriptor(t_kernel* self,int des
 
 	t_programaEnKernel* descriptorBuscado = list_find(listaDeProgramasDisponibles, (void*)_esCPUDescriptor); //MMM ver esto
 
-	//	if(descriptorBuscado == NULL){
-	//		sem_wait(&mutex_cpuLibre);
-	//		descriptorBuscado = list_find(listaDeProgramasDisponibles, (void*)_esCPUDescriptor);
-	//		sem_post(&mutex_cpuLibre);
-	//	}
-
-	log_info(self->loggerLoader,"Loader: Se encontro un Programa con PID: %d TID: %d KM: %d", descriptorBuscado->programaTCB->pid, descriptorBuscado->programaTCB->tid,descriptorBuscado->programaTCB->km);
-	//cpuBuscado->socket->descriptor = descriptor;
-	log_info(self->loggerLoader,"Loader: termina busqueda descriptor");
 	return descriptorBuscado;
 }
 
@@ -181,29 +155,24 @@ void atenderProgramaConsola(t_kernel* self, t_programaEnKernel* programa, fd_set
 
 		eliminarPrograma(self, programa);
 
-		log_info(self->loggerLoader,"Loader: Cantidad de TCBs en la cola NEW  :%d", list_size(cola_new));
-		log_info(self->loggerLoader,"Loader: Cantidad de TCBs en la cola READY:%d", list_size(cola_ready));
-		log_info(self->loggerLoader,"Loader: Cantidad de TCBs en la cola EXEC :%d", list_size(cola_exec));
-		log_info(self->loggerLoader,"Loader: Cantidad de TCBs en la cola BLOCK:%d", list_size(cola_block));
-		log_info(self->loggerLoader,"Loader: Cantidad de TCBs en la cola EXIT :%d", list_size(cola_exit));
+		mostrarHilosEjecutando();
 
 	}
 
 	else if (paquetePrograma->header.type == ENTRADA_ESTANDAR_TEXT){
 
-		log_info(self->loggerLoader,"Loader: recibe un ENTRADA_ESTANDAR_TEXT");
-
 		t_entrada_textoKernel* unaEntradaDevueltaTexto = (t_entrada_textoKernel*) malloc(sizeof(t_entrada_textoKernel));
 
 		unaEntradaDevueltaTexto = (t_entrada_textoKernel*) (paquetePrograma->data);
 
-		log_info(self->loggerLoader,"Loader: recibe un texto de una consola :%s", unaEntradaDevueltaTexto->texto);
-		log_info(self->loggerLoader,"Loader: recube una CPU con ID: %d", unaEntradaDevueltaTexto->idCPU);
+		log_info(self->loggerLoader,"Loader: Recibe un texto de Consola: %s", unaEntradaDevueltaTexto->texto);
 
 		t_cpu* cpuTexto = cpuPorIDEncontrado(self, unaEntradaDevueltaTexto->idCPU);
 
+		log_info(logg, "El hilo { PID: %d, TID: %d } ejecutó la instrucción: Entrada Estandar", cpuTexto->TCB->pid, cpuTexto->TCB->tid);
+
 		if(socket_sendPaquete(cpuTexto->socketCPU, ENTRADA_ESTANDAR_TEXT, sizeof(t_entrada_textoKernel), unaEntradaDevueltaTexto) >= 0)
-			log_debug(self->loggerPlanificador, "Planificador: Envia %s a CPU", unaEntradaDevueltaTexto->texto);
+			log_info(self->loggerPlanificador, "Loader: Envia %s a CPU", unaEntradaDevueltaTexto->texto);
 
 		free(unaEntradaDevueltaTexto);
 	}
@@ -213,13 +182,14 @@ void atenderProgramaConsola(t_kernel* self, t_programaEnKernel* programa, fd_set
 		t_entrada_numeroKernel* unaEntradaDevueltaINT = (t_entrada_numeroKernel*) malloc(sizeof(t_entrada_numeroKernel));
 		unaEntradaDevueltaINT = (t_entrada_numeroKernel*) paquetePrograma->data;
 
-		log_info(self->loggerLoader,"Loader: recibe un int por Consola: %d", unaEntradaDevueltaINT->numero);
-		log_info(self->loggerLoader,"Loader: va a enviar al CPU con ID: %d", unaEntradaDevueltaINT->idCPU);
+		log_info(self->loggerLoader,"Loader: Recibe un numero de Consola: %d", unaEntradaDevueltaINT->numero);
 
 		t_cpu* cpuINT = cpuPorIDEncontrado(self, unaEntradaDevueltaINT->idCPU);
 
+		log_info(logg, "El hilo { PID: %d, TID: %d } ejecutó la instrucción: Entrada Estandar", cpuINT->TCB->pid, cpuINT->TCB->tid);
+
 		if(socket_sendPaquete(cpuINT->socketCPU, ENTRADA_ESTANDAR_INT, sizeof(t_entrada_numeroKernel), unaEntradaDevueltaINT) >= 0)
-			log_debug(self->loggerPlanificador, "Planificador: Envia %d a CPU", unaEntradaDevueltaINT->numero);
+			log_info(self->loggerPlanificador, "Loader: Envia %d a CPU", unaEntradaDevueltaINT->numero);
 
 		free(unaEntradaDevueltaINT);
 
@@ -233,6 +203,8 @@ void eliminarPrograma(t_kernel* self, t_programaEnKernel* programa){
 
 	bool hayDisponible, hayExec, hayBlock, hayNew, hayReady;
 	bool primeraVez = true;
+
+	desconexion_consola(programa->socketProgramaConsola->descriptor);
 
 	void eliminarSegmentos(t_programaEnKernel* programaEliminar){
 		if(programaEliminar->programaTCB->pid == programa->programaTCB->pid){
@@ -315,9 +287,11 @@ void eliminarPrograma(t_kernel* self, t_programaEnKernel* programa){
 		pthread_mutex_unlock(&newMutex);
 		pthread_mutex_unlock(&exitMutex);
 
-		hayReady = list_any_satisfy(cola_new, (void*)esProgramaDesconectado);
+		hayReady = list_any_satisfy(cola_ready, (void*)esProgramaDesconectado);
 
 	}
+
+	mostrarHilosEjecutando();
 
 }
 
@@ -330,8 +304,6 @@ t_cpu* cpuPorIDEncontrado(t_kernel* self,int idCPU){
 	}
 
 	t_cpu* cpuEncontrada = list_find(listaDeCPUExec, (void*)esCPU);
-	log_info(self->loggerLoader,"Loader: encuentra CPU con ID: %d",cpuEncontrada->id );
-	log_info(self->loggerLoader,"Loader: encuentra CPU con descriptor: %d", cpuEncontrada->socketCPU->descriptor);
 
 	return cpuEncontrada;
 }
@@ -355,7 +327,7 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 	else{
 
 		if (socket_sendPaquete(socketNuevoCliente, HANDSHAKE_LOADER, 0, NULL) >= 0)
-			log_info(self->loggerLoader, "Loader: Envia a Consola HANDSHAKE_LOADER");
+			log_info(self->loggerLoader, "Loader: Envia a Consola Handshake Loader");
 		else
 			log_error(self->loggerLoader, "Loader: Error al enviar los datos de la Consola.");
 
@@ -377,7 +349,7 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 			log_info(self->loggerLoader,"Loader: Recibio un programaBeso de Consola: %s", programaBeso);
 
 		t_TCB_Kernel* unTCBenLoader = loaderCrearTCB(self, programaBeso, socketNuevoCliente, sizePrograma);
-		log_info(self->loggerLoader, "Loader: TCB completo.");
+		log_info(self->loggerLoader, "Loader: La creacion del TCB se realizo correctamente.");
 
 		if(unTCBenLoader != NULL){
 
@@ -386,40 +358,36 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 			unPrograma->programaTCB = unTCBenLoader;
 			unPrograma->socketProgramaConsola = socketNuevoCliente;
 
-			log_info(self->loggerPlanificador,"Planificador: Cola NEW tamanio antes de un programa: %d ",list_size(cola_new));
-
 			pthread_mutex_lock(&newMutex);
 			list_add(cola_new, unPrograma);
 			pthread_mutex_unlock(&newMutex);
 
-			log_info(self->loggerPlanificador,"Planificador: Cola NEW tamanio despues de un programa: %d ",list_size(cola_new));
+			mostrarHilosEjecutando();
 
 			list_add(listaDeProgramasDisponibles, unPrograma);
-
-			log_info(self->loggerLoader,"Loader: Agrego un elemento a la Cola New con el PID:%d  TID:%d ", unTCBenLoader->pid, unTCBenLoader->tid);
 
 			//Luego se tiene que actualizar las lista que se usan en el select
 			FD_SET(socketNuevoCliente->descriptor, master); /*añadir al conjunto maestro*/
 
-			if (socketNuevoCliente->descriptor > *fdmax) {
-				log_info(self->loggerLoader, "Se actualiza y añade el conjunto maestro %d", socketNuevoCliente->descriptor);
+			if (socketNuevoCliente->descriptor > *fdmax)
 				*fdmax = socketNuevoCliente->descriptor; /*actualizar el máximo*/
-			}
 
 			sem_post(&sem_A);
-			printf("\nNew_A_Ready: sem_post(&sem_A) %d \n",sem_A);
+
+			conexion_consola(unPrograma->socketProgramaConsola->descriptor);
 		}
 
 		else{
 			//se tiene que hacer dos cosas
 			//1) avisarle al programa que tiene un error
-			log_error(self->loggerLoader, "Loader: Error al crear unTCB.");
+			log_error(self->loggerLoader, "Loader: Error al crear un TCB.");
 			//2) avisar a la MSP que hay un error y destruir segmento
 		}
 
 		//free(unPrograma);
 		free(programaBeso);
 	}//fin de else
+
 
 	socket_freePaquete(paquete);
 }
@@ -454,16 +422,16 @@ t_TCB_Kernel* loaderCrearTCB(t_kernel* self, char *programaBeso, t_socket* socke
 
 
 	unTCB->base_stack = kernelCrearSegmento(self, unTCB->pid, self->tamanioStack);
+
 	unTCB->cursor_stack = unTCB->base_stack;
-	log_info(self->loggerLoader,"Loader: La direccion de base de stack es: %0.8p para el PID: %d y TID:%d", self->tcbKernel->base_stack, self->tcbKernel->pid, self->tcbKernel->tid);
 	unTCB->registro_de_programacion[0] = 0;
 	unTCB->registro_de_programacion[1] = 0;
 	unTCB->registro_de_programacion[2] = 0;
 	unTCB->registro_de_programacion[3] = 0;
 	unTCB->registro_de_programacion[4] = 0;
+
 	return unTCB;
 }
-
 
 
 void loaderValidarEscrituraEnMSP(t_kernel* self, t_socket* socketNuevoCliente, int unaRespuesta){
@@ -501,7 +469,7 @@ void loaderValidarEscrituraEnMSP(t_kernel* self, t_socket* socketNuevoCliente, i
 			log_error(self->loggerLoader, "Loader: Error al enviar a Consola: ERROR_POR_SEGMENTATION_FAULT");
 		break;
 	default:
-		log_info(self->loggerLoader, "Loader: Escribio en la MSP, correctamente");
+		log_info(self->loggerLoader, "Loader: Escribio en la MSP correctamente");
 		break;
 
 	}// fin del switch

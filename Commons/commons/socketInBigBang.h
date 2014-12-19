@@ -35,12 +35,6 @@ typedef struct {
 	void* data;
 } __attribute__((packed)) t_socket_paquete;
 
-typedef struct { //para hilos
-	pthread_t tid;
-	int32_t fdPipe[2]; // fdPipe[0] de lectura/ fdPipe[1] de escritura
-	t_socket socket;
-	int sock;
-} t_hiloBigBang;
 
 t_socket* socket_createServer(int port);
 t_socket_client* socket_createClient();
