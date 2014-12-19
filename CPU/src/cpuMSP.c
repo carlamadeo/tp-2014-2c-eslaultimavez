@@ -67,7 +67,7 @@ uint32_t cpuCrearSegmento(t_CPU *self, int pid, int tamanio){
 
 				direccionBase = datosRecibidos->direccionBase;
 
-				log_info(self->loggerCPU, "CPU: Se recibio de la MSP la direccion base %0.8p ", direccionBase);
+				log_info(self->loggerCPU, "CPU: Se recibio de la MSP la Direccion Base  de segmento %0.8p ", direccionBase);
 
 				if(datosRecibidos->direccionBase == SIN_ERRORES)
 					log_info(self->loggerCPU, "CPU: Se creo correctamente el segmento solicitado. Direccion base: %0.8p correctamente", direccionBase);
@@ -104,7 +104,7 @@ int cpuDestruirSegmento(t_CPU *self, uint32_t direccionVirtual){
 	confirmacion = (t_confirmacion *) paqueteConfirmacionDestruccionSegmento->data;
 
 	if(confirmacion->estado == SIN_ERRORES)
-		log_info(self->loggerCPU, "CPU: Se destruyo el segmento con base virtual %0.8p correctamente", direccionVirtual);
+		log_info(self->loggerCPU, "CPU: Se destruyo el segmento con Direccion Virtual %0.8p correctamente", direccionVirtual);
 
 	intConfirmacion = confirmacion->estado;
 
@@ -123,7 +123,9 @@ int cpuEscribirMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, i
 	int intConfirmacion;
 
 	escrituraDeCodigo->direccionVirtual = direccionVirtual;
-	escrituraDeCodigo->pid = self->tcb->pid;
+	int pid = 0;
+	if(self->tcb->km == 0) pid = self->tcb->pid;
+	escrituraDeCodigo->pid = pid;
 	escrituraDeCodigo->tamanio = tamanio;
 	strcpy(escrituraDeCodigo->bufferCodigoBeso, programa);
 
@@ -136,7 +138,7 @@ int cpuEscribirMemoria(t_CPU *self, uint32_t direccionVirtual, char *programa, i
 	unaConfirmacionEscritura = (t_confirmacion *) paqueteConfirmacionEscritura->data;
 
 	if(unaConfirmacionEscritura->estado == SIN_ERRORES)
-		log_info(self->loggerCPU, "CPU: Se escribio correctamente en memoria, base virtual %0.8p", direccionVirtual);
+		log_info(self->loggerCPU, "CPU: Se escribio correctamente en memoria, Direccion Virtual %0.8p", direccionVirtual);
 
 	intConfirmacion = unaConfirmacionEscritura->estado;
 

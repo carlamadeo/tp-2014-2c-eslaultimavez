@@ -98,7 +98,7 @@ int GETM_ESO(t_CPU *self){
 			imprimirDosRegistros(registroA, registroB, "GETM");
 
 			int tamanioMSP = sizeof(char);
-			char *lecturaMSP = malloc(sizeof(char));
+			char *lecturaMSP = malloc(sizeof(char)*tamanioMSP + 1);
 			//char leido;
 
 
