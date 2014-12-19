@@ -508,6 +508,7 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
 		pthread_mutex_unlock(&readyMutex);
 
 		sem_post(&sem_B);
+		printf("Crear_Hilo:valor sem_C: %d \n",sem_C);
 	}
 
 	free(lecturaEscrituraMSP);

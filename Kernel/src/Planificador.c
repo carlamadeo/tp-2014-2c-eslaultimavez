@@ -36,6 +36,8 @@ void pasarTCB_Ready_A_Exec(t_kernel* self){
 
 		sem_wait(&sem_B);
 		sem_wait(&sem_C);
+		printf("\nReady_A_Exec:sem_wait(&sem_B): %d \n",sem_B);
+		printf("Ready_A_Exec:sem_wait(&sem_C): %d \n",sem_C);
 
 		log_info(self->loggerPlanificador,"Ready_A_Exec: Se encuentra %d procesos en ready", list_size(cola_ready));
 		log_info(self->loggerPlanificador,"Ready_A_Exec: Se encuentra %d CPU libres", list_size(listaDeCPULibres));
@@ -178,6 +180,7 @@ void cpuOcupadaALibre(t_cpu *CPU){
 	pthread_mutex_unlock(&cpuLibreMutex);
 
 	sem_post(&sem_C);
+	printf("\n en ocupada a libre: sem_C: %d \n",sem_C);
 }
 
 
@@ -295,6 +298,7 @@ void agregarEnListaDeCPU(t_kernel* self, int id, t_socket* socketCPU){
 	//conexion_cpu(unaCpu->id);
 	log_info(self->loggerPlanificador,"Planificador: Tiene una nueva CPU con descriptor: %d",unaCpu->socketCPU->descriptor);
 	sem_post(&sem_C);
+	printf("\n en nueva CPU sem_C: %d \n",sem_C);
 }
 
 void atenderCPU(t_kernel* self, t_cpu *cpu, fd_set* master){
@@ -316,8 +320,9 @@ void atenderCPU(t_kernel* self, t_cpu *cpu, fd_set* master){
 		case FINALIZAR_PROGRAMA_EXITO:
 			log_info(self->loggerPlanificador, "Planificador: Recibe FINALIZAR_PROGRAMA_EXITO");
 			ejecutar_FINALIZAR_PROGRAMA_EXITO(self, paqueteCPUAtendido);
-			sem_wait(&sem_B);
 			cpuOcupadaALibre(cpu);
+			sem_wait(&sem_B);
+			printf("atenderCPU: sem_wait(&sem_B) %d \n",sem_B);
 			break;
 
 		case MENSAJE_DE_ERROR:
@@ -440,6 +445,8 @@ void ejecutar_DESCONECTAR_CPU(t_kernel* self, t_cpu* cpu, fd_set* master){
 	}
 
 	log_info(self->loggerPlanificador,"Planificador: tamanio de la lista de CPU Exec %d", list_size(listaDeCPUExec));
+	sem_wait(&sem_C);
+	printf("\n en desconectar CPU sem_C: %d \n",sem_C);
 	log_info(self->loggerPlanificador,"Planificador: tamanio de la lista de CPU Libres %d", list_size(listaDeCPULibres));
 }
 

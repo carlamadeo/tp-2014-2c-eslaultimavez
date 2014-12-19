@@ -113,7 +113,9 @@ void pasarProgramaNewAReady(t_kernel* self){
 	log_debug(self->loggerLoader,"New_A_Ready: Comienza a ejecutarse hilo de New a Ready");
 
 	while(1){
+		printf("\nNew_A_Ready: antes sem_wait(&sem_A) %d \n",sem_A);
 		sem_wait(&sem_A);
+		printf("New_A_Ready:  despues sem_wait(&sem_A) %d \n",sem_A);
 
 		t_programaEnKernel* programaParaReady = malloc(sizeof(t_programaEnKernel));
 
@@ -131,7 +133,10 @@ void pasarProgramaNewAReady(t_kernel* self){
 
 			log_info(self->loggerLoader,"Hilo NEW_to_READY: tamanio de la cola New: %d", list_size(cola_new));
 			log_info(self->loggerLoader,"Hilo NEW_to_READY: tamanio de la cola Ready: %d",list_size(cola_ready));
+
+
 			sem_post(&sem_B);
+			printf("New_A_Ready: sem_post(&sem_B): %d \n",sem_B);
 
 		}
 	}
@@ -392,7 +397,6 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 			list_add(listaDeProgramasDisponibles, unPrograma);
 
 			log_info(self->loggerLoader,"Loader: Agrego un elemento a la Cola New con el PID:%d  TID:%d ", unTCBenLoader->pid, unTCBenLoader->tid);
-			//sem_post(&mutex_BloqueoPlanificador);   //bloquea al planificador hasta que la lista sea distinta de new
 
 			//Luego se tiene que actualizar las lista que se usan en el select
 			FD_SET(socketNuevoCliente->descriptor, master); /*añadir al conjunto maestro*/
@@ -403,6 +407,7 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 			}
 
 			sem_post(&sem_A);
+			printf("\nNew_A_Ready: sem_post(&sem_A) %d \n",sem_A);
 		}
 
 		else{
