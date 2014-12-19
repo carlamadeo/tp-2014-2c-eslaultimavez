@@ -320,8 +320,8 @@ void atenderCPU(t_kernel* self, t_cpu *cpu, fd_set* master){
 		case FINALIZAR_PROGRAMA_EXITO:
 			log_info(self->loggerPlanificador, "Planificador: Recibe FINALIZAR_PROGRAMA_EXITO");
 			ejecutar_FINALIZAR_PROGRAMA_EXITO(self, paqueteCPUAtendido);
+			//sem_wait(&sem_B);
 			cpuOcupadaALibre(cpu);
-			sem_wait(&sem_B);
 			printf("atenderCPU: sem_wait(&sem_B) %d \n",sem_B);
 			break;
 

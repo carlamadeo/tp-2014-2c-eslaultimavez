@@ -149,7 +149,7 @@ void pasarProgramaDeExecAReady(t_TCB_Kernel *TCB){
 		return (unPrograma->programaTCB->pid == TCB->pid) && (unPrograma->programaTCB->tid == TCB->tid) && (unPrograma->programaTCB->km == TCB->km);
 	}
 
-	t_programaEnKernel *program = list_get(cola_exec, 0);
+	//t_programaEnKernel *program = list_get(cola_exec, 0);
 
 	pthread_mutex_lock(&execMutex);
 	t_programaEnKernel *programaBuscado = list_remove_by_condition(cola_exec,(void*)matchPrograma);
@@ -162,6 +162,7 @@ void pasarProgramaDeExecAReady(t_TCB_Kernel *TCB){
 	pthread_mutex_unlock(&readyMutex);
 
 	sem_post(&sem_B);
+	printf("Exec_A_Ready: sem_post(&sem_B): %d \n",sem_B);
 }
 
 /***************************************************************************************************\
