@@ -50,20 +50,23 @@ int cpuProcesarTCB(t_CPU *self){
 			estado_ejecucion_instruccion = ERROR_DE_LECTURA_DE_MEMORIA;
 		}
 
-		while ((encontrado == 0) && (indice <= CANTIDAD_INSTRUCCIONES)){
+		else{
 
-			if(strncmp(instrucciones_eso[indice], datosDeMSP, 4) == 0){
-				encontrado = 1;
-				estado_ejecucion_instruccion = ejecutar_instruccion(self, indice, &esJoin);
+			while ((encontrado == 0) && (indice <= CANTIDAD_INSTRUCCIONES)){
+
+				if(strncmp(instrucciones_eso[indice], datosDeMSP, 4) == 0){
+					encontrado = 1;
+					estado_ejecucion_instruccion = ejecutar_instruccion(self, indice, &esJoin);
+				}
+
+				indice++;
 			}
 
-			indice++;
+			self->quantum = self->quantum - 1;
+
+			if((self->quantum == 0) && (self->tcb->km == 0) && (estado_ejecucion_instruccion == SIN_ERRORES))
+				estado_ejecucion_instruccion = TERMINAR_QUANTUM;
 		}
-
-		self->quantum = self->quantum - 1;
-
-		if((self->quantum == 0) && (self->tcb->km == 0) && (estado_ejecucion_instruccion == SIN_ERRORES))
-			estado_ejecucion_instruccion = TERMINAR_QUANTUM;
 
 		switch(estado_ejecucion_instruccion){
 
