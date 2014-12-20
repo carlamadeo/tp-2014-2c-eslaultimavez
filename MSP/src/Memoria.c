@@ -407,7 +407,7 @@ void buscarPaginasYEscribirMemoria(int pid, t_direccion direccionReal, t_list *p
 
 				//Si lo que queda por escribir supera o es igual a TAMANIO_PAGINA escribo toda la pagina
 				else if(faltaEscribir >= TAMANIO_PAGINA){
-					memmove(self->memoria + marco->inicio, buffer + tamanioParaPrimeraPagina, TAMANIO_PAGINA);
+					memmove(self->memoria + marco->inicio, buffer + posicionDondeLeer, TAMANIO_PAGINA);
 					faltaEscribir -= TAMANIO_PAGINA;
 					posicionDondeLeer += TAMANIO_PAGINA;
 				}
@@ -532,7 +532,7 @@ void buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *pagin
 
 				//Si lo que queda por leer supera o es igual a TAMANIO_PAGINA leo todo_el marco
 				else if(faltaLeer >= TAMANIO_PAGINA){
-					memmove(leido + tamanioParaPrimerMarco, self->memoria + marco->inicio, TAMANIO_PAGINA);
+					memmove(leido + posicionDondeLeer, self->memoria + marco->inicio, TAMANIO_PAGINA);
 					faltaLeer -= TAMANIO_PAGINA;
 					posicionDondeLeer += TAMANIO_PAGINA;
 				}
