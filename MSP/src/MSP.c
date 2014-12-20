@@ -34,7 +34,7 @@ int main(int argc, char *argv[]){
 		return EXIT_SUCCESS;
 	}
 
-	self->logMSP = log_create("logMSP.log", "MSP", 1, LOG_LEVEL_TRACE);
+	self->logMSP = log_create("logMSP.log", "MSP", 0, LOG_LEVEL_TRACE);
 
 	log_info(self->logMSP, "MSP: Iniciando consola de la MSP...");
 

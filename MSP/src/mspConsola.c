@@ -181,14 +181,20 @@ void imprimirTablaDeSegmentos() {
 	else{
 
 		log_info(self->logMSP, "TABLA DE SEGMENTOS:");
+		printf("TABLA DE SEGMENTOS:\n");
 		void mostrarSegmento(t_segmento *unSegmento){
 			direccionBase = calculoDireccionBase(unSegmento->numero);
 
-			if(direccionBase == 0)
+			if(direccionBase == 0){
 				log_info(self->logMSP,"Segmento#: %d | Tamanio: %d | Direccion Base: 0x00000000 | Pertenece a Programa: %d", unSegmento->numero, unSegmento->tamanio, pid);
-			else
-				log_info(self->logMSP,"Segmento#: %d | Tamanio: %d | Direccion Base: %0.8p | Pertenece a Programa: %d", unSegmento->numero, unSegmento->tamanio, direccionBase, pid);
+				printf("Segmento#: %d | Tamanio: %d | Direccion Base: 0x00000000 | Pertenece a Programa: %d\n", unSegmento->numero, unSegmento->tamanio, pid);
 
+			}
+				else {
+				log_info(self->logMSP,"Segmento#: %d | Tamanio: %d | Direccion Base: %0.8p | Pertenece a Programa: %d", unSegmento->numero, unSegmento->tamanio, direccionBase, pid);
+				printf("Segmento#: %d | Tamanio: %d | Direccion Base: %0.8p | Pertenece a Programa: %d\n", unSegmento->numero, unSegmento->tamanio, direccionBase, pid);
+
+				}
 			cantSegmentos+=1;
 		}
 
@@ -199,9 +205,10 @@ void imprimirTablaDeSegmentos() {
 
 		list_iterate(self->programas, mostrarPrograma);
 
-		if(cantSegmentos == 0)
+		if(cantSegmentos == 0){
 			log_info(self->logMSP, "No hay Segmentos. Nada que mostrar");
-
+		printf("No hay Segmentos. Nada que mostrar\n");
+		}
 	}
 	getchar();
 }
@@ -215,21 +222,28 @@ void consolaImprimirTablaDePaginas() {
 	scanf("%d", &pid);
 
 	log_info(self->logMSP, "TABLA DE PAGINAS PARA EL PID %d:", pid);
+	printf("TABLA DE PAGINAS PARA EL PID %d:\n", pid);
+
 
 	bool matchPrograma(t_programa *unPrograma){
 		return unPrograma->pid == pid;
 	}
 
-	if (list_is_empty(self->programas))
+	if (list_is_empty(self->programas)){
 		log_info(self->logMSP, "No hay programas. Nada que mostrar");
+	printf("No hay programas. Nada que mostrar\n");
+	}
 
 
 	else{
 		t_programa *programa = list_find(self->programas, matchPrograma);
 
-		if(programa == NULL)
+		if(programa == NULL){
 			log_error(self->logMSP, "No existe el programa con PID %d", pid);
+			printf("No existe el programa con PID %d\n", pid);
 
+
+		}
 		else{
 			void mostrarPagina(t_pagina *unaPagina){
 				if(unaPagina->numeroMarco != NO_EN_MEMORIA){
@@ -239,6 +253,9 @@ void consolaImprimirTablaDePaginas() {
 					enMemoria = "No";
 				}
 				log_info(self->logMSP,"Pagina#: %d | En Memoria Principal: %s | Pertenece a Segmento: %d", unaPagina->numero, enMemoria, numeroSegmento);
+				printf("Pagina#: %d | En Memoria Principal: %s | Pertenece a Segmento: %d\n", unaPagina->numero, enMemoria, numeroSegmento);
+
+
 			}
 
 			void mostrarSegmento(t_segmento *unSegmento){
@@ -248,6 +265,9 @@ void consolaImprimirTablaDePaginas() {
 
 			if(list_is_empty(programa->tablaSegmentos)){
 				log_warning(self->logMSP, "No hay paginas para el PID %d. Nada que mostrar", pid);
+				printf("No hay paginas para el PID %d. Nada que mostrar\n", pid);
+
+
 			}
 
 			list_iterate(programa->tablaSegmentos, mostrarSegmento);
@@ -265,6 +285,9 @@ void imprimirMarcos() {
 
 	void mostrarMarcosLibres(t_marco *unMarco){
 		log_info(self->logMSP, "Marco#: %d | PID: - | Numero de Segmento: - | Numero de Pagina: -", unMarco->numero);
+		printf("Marco#: %d | PID: - | Numero de Segmento: - | Numero de Pagina: -\n", unMarco->numero);
+
+
 	}
 
 
@@ -276,6 +299,9 @@ void imprimirMarcos() {
 			}
 			t_marco *marco = list_find(self->marcosOcupados, matchMarco);
 			log_info(self->logMSP, "Marco#: %d | PID: %d | Numero de Segmento: %d | Numero de Pagina: %d | Valor Clock: %d", unaPagina->numeroMarco, pid, numeroSegmento, unaPagina->numero, marco->categoriaClockModificado);
+			printf("Marco#: %d | PID: %d | Numero de Segmento: %d | Numero de Pagina: %d | Valor Clock: %d\n", unaPagina->numeroMarco, pid, numeroSegmento, unaPagina->numero, marco->categoriaClockModificado);
+
+
 			cantidadMarcosOcupados+=1;
 		}
 	}
@@ -291,18 +317,23 @@ void imprimirMarcos() {
 	}
 
 	log_info(self->logMSP, "\n----------------------------------------------Marcos Libres----------------------------------------------\n\n");
+	printf("\n----------------------------------------------Marcos Libres----------------------------------------------\n\n");
 
 	if(list_size(self->marcosLibres) > 0)
 		list_iterate(self->marcosLibres, mostrarMarcosLibres);
 
 	log_info(self->logMSP, "\n---------------------------------------------Marcos Ocupados---------------------------------------------\n\n");
+	printf("\n---------------------------------------------Marcos Ocupados---------------------------------------------\n\n");
 
 	if(list_size(self->programas) > 0)
 		list_iterate(self->programas, iterarPrograma);
 
-	if(cantidadMarcosOcupados == 0)
+	if(cantidadMarcosOcupados == 0){
 		log_info(self->logMSP,"No hay marcos ocupados que mostrar");
+		printf("No hay marcos ocupados que mostrar\n");
 
+
+	}
 	getchar();
 }
 
