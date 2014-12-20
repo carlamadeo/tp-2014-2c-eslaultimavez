@@ -396,7 +396,7 @@ void ejecutar_DESCONECTAR_CPU(t_kernel* self, t_cpu* cpu, fd_set* master){
 		if (socket_sendPaquete(programaRemovido->socketProgramaConsola, ERROR_POR_DESCONEXION_DE_CPU, 0, NULL) >= 0)
 			log_error(self->loggerPlanificador, "Planificador: Envia \"Error por desconexion de CPU\" a la Consola");
 		else
-			log_error(self->loggerPlanificador, "Planificador: Envia \"Error por desconexion de CPU\" a la Consola");
+			log_error(self->loggerPlanificador, "Planificador: no se pudo enviar \"Error por desconexion de CPU\" a la Consola");
 
 	}
 
@@ -407,9 +407,10 @@ void ejecutar_DESCONECTAR_CPU(t_kernel* self, t_cpu* cpu, fd_set* master){
 		sem_post(&mutex_cpuLibre);
 	}
 
+	desconexion_cpu(cpuRemovido->id);
 	sem_wait(&sem_C);
 
-	desconexion_cpu(cpuRemovido->id);
+
 }
 
 
