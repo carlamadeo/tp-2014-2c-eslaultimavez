@@ -113,8 +113,6 @@ void cpuTerminarQuantum(t_CPU *self){
 	if (socket_sendPaquete(self->socketPlanificador->socket, TERMINAR_QUANTUM, sizeof(t_TCB_CPU), self->tcb) <= 0)
 		log_error(self->loggerCPU, "CPU: Falló envio Terminar Quantum");
 
-	else
-		log_info(self->loggerCPU, "CPU: Envia Terminar Quantum al Kernel");
 }
 
 
