@@ -188,10 +188,15 @@ int SETM_ESO(t_CPU *self){
 
 				imprimirDosRegistrosUnNumero(registroA, registroB, numero, "SETM");
 
-				char* byte_a_escribir = malloc(sizeof(int32_t));
-				memset(byte_a_escribir, 0, sizeof(int32_t));
+				//char* byte_a_escribir = malloc(sizeof(int32_t));
+				//memset(byte_a_escribir, '\0', sizeof(int32_t));
+
+				int8_t* byte_a_escribir=malloc(sizeof(int8_t));
+				printf("TEST: el tamanio es: %d\n", sizeof(int8_t));
+				memset(byte_a_escribir,'\0',1);
 				if(regB <= 5){
-					memcpy(byte_a_escribir, &(self->tcb->registro_de_programacion[regB]),numero);
+					memcpy(byte_a_escribir, &(self->tcb->registro_de_programacion[regB]),sizeof(int8_t));
+
 				}else{
 					switch(regB){
 					case 6:memcpy(byte_a_escribir, &(self->tcb->base_segmento_codigo),numero);break;
@@ -202,7 +207,7 @@ int SETM_ESO(t_CPU *self){
 				}
 
 				if(regA <= 5)
-					estado_bloque = cpuEscribirMemoria(self, (uint32_t)self->tcb->registro_de_programacion[regA], byte_a_escribir, numero);
+					estado_bloque = cpuEscribirMemoria(self, (uint32_t)self->tcb->registro_de_programacion[regA], byte_a_escribir, sizeof(int8_t));
 
 				else{
 					switch(regA){
