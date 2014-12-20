@@ -98,7 +98,7 @@ void destruirSegmentoCPU(t_socket_paquete *paquete, t_socket* socketClienteCPU){
 	//o ERROR_POR_SEGMENTO_DESCONOCIDO si el segmento indicado es incorrecto
 	datosACPU->recibido = mspDestruirSegmento(datosDeCPU->pid, datosDeCPU->direccionBase);
 
-	if (socket_sendPaquete(socketClienteCPU, CREAR_SEGMENTO, sizeof(t_datos_aCPUSegmento), datosACPU) > 0)
+	if (socket_sendPaquete(socketClienteCPU, DESTRUIR_SEGMENTO, sizeof(t_datos_aCPUSegmento), datosACPU) > 0)
 		log_info(self->logMSP, "MSP: Los datos de destruccion de Segmento se han enviado al CPU correctamente");
 
 	free(datosACPU);
@@ -129,10 +129,6 @@ void escribirMemoriaCPU(t_socket_paquete *paquete, t_socket* socketClienteCPU){
 
 void leerMemoriaCPU(t_socket_paquete *paquete, t_socket* socketClienteCPU){
 
-	//TODO ver si es necesario hacer un malloc a datosACPU->lectura!!!
-	//jorge Para mi si es muy importante!
-	//es mas tiene que estar inicialisada con un valor
-	//porque la pasas como parametro en la funcion mspLeerMemoria y fijate que esta vacia
 	t_datos_aCPULectura* datosACPU = malloc(sizeof(t_datos_aCPULectura));
 	t_datos_deCPULectura* datosDeCPU = (t_datos_deCPULectura*) (paquete->data);
 

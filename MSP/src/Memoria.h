@@ -128,7 +128,7 @@ t_list *crearListaPaginasAPasarAMemoria(int cantidadPaginas, t_pagina *pagina, t
 * @NAME: buscarPaginasYEscribirMemoria
 * @DESC: Escribe la memoria con buffer en los distintos marcos, recorriendo la lista de paginas
 */
-void buscarPaginasYEscribirMemoria(int pid, t_direccion direccionReal, t_list *paginasAMemoria, int tamanio, char *buffer);
+int buscarPaginasYEscribirMemoria(int pid, t_direccion direccionReal, t_list *paginasAMemoria, int tamanio, char *buffer);
 
 /**
 * @NAME: leerMemoria
@@ -141,7 +141,7 @@ int mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido)
 * @NAME: buscarPaginasYLeerMemoria
 * @DESC: Lee la memoria de los distintos marcos, recorriendo la lista de paginas y lo guarda en leido
 */
-void buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *paginasAMemoria, int tamanio, char *leido);
+int buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *paginasAMemoria, int tamanio, char *leido);
 
 /**
 * @NAME: traerPaginaDeDiscoAMemoria

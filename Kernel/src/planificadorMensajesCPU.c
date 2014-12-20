@@ -492,37 +492,41 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete, t_cpu *cp
 
 		hiloNuevo->base_stack = kernelCrearSegmento(self, hiloNuevo->pid, self->tamanioStack);
 		hiloNuevo->cursor_stack = hiloNuevo->base_stack + (cursorStackPadre - baseStackPadre);
-		kernelEscribirMemoria(self, hiloNuevo->pid, hiloNuevo->base_stack, lecturaEscrituraMSP, self->tamanioStack);
+		int estadoEscribir = kernelEscribirMemoria(self, hiloNuevo->pid, hiloNuevo->base_stack, lecturaEscrituraMSP, self->tamanioStack);
 
-		bool contarTID(t_programaEnKernel *unPrograma){
-			return (unPrograma->programaTCB->pid == hiloNuevo->pid);
+		if(estadoEscribir == SIN_ERRORES){
+
+			bool contarTID(t_programaEnKernel *unPrograma){
+				return (unPrograma->programaTCB->pid == hiloNuevo->pid);
+			}
+
+			hiloNuevo->tid = list_count_satisfying(listaDeProgramasDisponibles, contarTID);
+
+			t_crearHiloKernel *crearHilo = malloc(sizeof(t_crearHiloKernel));
+
+			crearHilo->tidCreado = hiloNuevo->tid;
+
+			socket_sendPaquete(cpu->socketCPU, 1, sizeof(t_crearHiloKernel), crearHilo);
+
+			free(crearHilo);
+
+			t_programaEnKernel* programaNuevoHilo = malloc(sizeof(t_programaEnKernel));
+
+			programaNuevoHilo->programaTCB = hiloNuevo;
+			programaNuevoHilo->socketProgramaConsola = programaHiloRecibido->socketProgramaConsola;
+
+			list_add(listaDeProgramasDisponibles, programaNuevoHilo);
+
+			pthread_mutex_lock(&readyMutex);
+			list_add(cola_ready, programaNuevoHilo);
+			pthread_mutex_unlock(&readyMutex);
+
+			sem_post(&sem_B);
+
+			log_info(logg, "El hilo { PID: %d, TID: %d } ejecutó la instrucción: Crear Hilo", datosRecibidos->pid, datosRecibidos->tid);
 		}
 
-		hiloNuevo->tid = list_count_satisfying(listaDeProgramasDisponibles, contarTID);
-
-		t_crearHiloKernel *crearHilo = malloc(sizeof(t_crearHiloKernel));
-
-		crearHilo->tidCreado = hiloNuevo->tid;
-
-		socket_sendPaquete(cpu->socketCPU, 1, sizeof(t_crearHiloKernel), crearHilo);
-
-		free(crearHilo);
-
-		t_programaEnKernel* programaNuevoHilo = malloc(sizeof(t_programaEnKernel));
-
-		programaNuevoHilo->programaTCB = hiloNuevo;
-		programaNuevoHilo->socketProgramaConsola = programaHiloRecibido->socketProgramaConsola;
-
-		list_add(listaDeProgramasDisponibles, programaNuevoHilo);
-
-		pthread_mutex_lock(&readyMutex);
-		list_add(cola_ready, programaNuevoHilo);
-		pthread_mutex_unlock(&readyMutex);
-
-		sem_post(&sem_B);
 	}
-
-	log_info(logg, "El hilo { PID: %d, TID: %d } ejecutó la instrucción: Crear Hilo", datosRecibidos->pid, datosRecibidos->tid);
 
 	free(lecturaEscrituraMSP);
 

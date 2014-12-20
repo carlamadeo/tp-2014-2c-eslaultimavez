@@ -229,7 +229,7 @@ void borrarPaginaDeMemoria(t_pagina *pagina){
 	pthread_rwlock_wrlock(&rw_memoria);
 	memset(self->memoria + marco->inicio, 0, TAMANIO_PAGINA);
 	pthread_rwlock_unlock(&rw_memoria);
-	*/
+	 */
 }
 
 
@@ -297,19 +297,19 @@ int mspEscribirMemoria(int pid, uint32_t direccionVirtual, char* buffer, int tam
 	paginasAMemoria = crearListaPaginasAPasarAMemoria(cantidadPaginas, pagina, segmento->tablaPaginas);
 
 	pthread_rwlock_wrlock(&rw_memoria);
-	buscarPaginasYEscribirMemoria(pid, direccionReal, paginasAMemoria, tamanio, buffer);
+	int estadoBuscarYEscribir = buscarPaginasYEscribirMemoria(pid, direccionReal, paginasAMemoria, tamanio, buffer);
 	pthread_rwlock_unlock(&rw_memoria);
 
-	//TODO eliminarlo para la entrega!!
-	//Esto es para imprimir en el log lo que se escribio en memoria
-	memset(mostrarBuffer, 0, tamanio + 1);
-	memcpy(mostrarBuffer, buffer, tamanio);
-	log_info(self->logMSP, "MSP: Se ha escrito correctamente en memoria: %s", mostrarBuffer);
-	
+	if(estadoBuscarYEscribir == SIN_ERRORES){
+		memset(mostrarBuffer, 0, tamanio + 1);
+		memcpy(mostrarBuffer, buffer, tamanio);
+		log_info(self->logMSP, "MSP: Se ha escrito correctamente en memoria: %s", mostrarBuffer);
+	}
+
 	list_destroy(paginasAMemoria);
 	free(mostrarBuffer);
 
-	return SIN_ERRORES;
+	return estadoBuscarYEscribir;
 }
 
 bool isSegmentationFault(int tamanioSegmento, t_direccion direccionReal, int tamanioSolicitado){
@@ -362,7 +362,7 @@ t_list *crearListaPaginasAPasarAMemoria(int cantidadPaginas, t_pagina *pagina, t
 }
 
 
-void buscarPaginasYEscribirMemoria(int pid, t_direccion direccionReal, t_list *paginasAMemoria, int tamanio, char *buffer){
+int buscarPaginasYEscribirMemoria(int pid, t_direccion direccionReal, t_list *paginasAMemoria, int tamanio, char *buffer){
 
 	t_marco *marco;
 	int numeroMarco;
@@ -371,6 +371,7 @@ void buscarPaginasYEscribirMemoria(int pid, t_direccion direccionReal, t_list *p
 	int tamanioParaPrimeraPagina = TAMANIO_PAGINA - direccionReal.desplazamiento;
 	int cantidadPaginas = list_size(paginasAMemoria);
 	int faltaEscribir = tamanio;
+	int estado = SIN_ERRORES;
 
 	void iterarPaginasParaEscribir(t_pagina *pagina){
 
@@ -394,7 +395,7 @@ void buscarPaginasYEscribirMemoria(int pid, t_direccion direccionReal, t_list *p
 
 			seReferencioElMarco(marco);
 			seModificoElMarco(marco);
-			
+
 			//Si debo escribir mas de una pagina debo saber en que posicion se encuentra esa pagina, para ver cuanto escribir
 			if(cantidadPaginas != 1){
 
@@ -424,9 +425,14 @@ void buscarPaginasYEscribirMemoria(int pid, t_direccion direccionReal, t_list *p
 			contador++;
 		}
 
+		else
+			estado = ERROR_POR_MEMORIA_LLENA;
+
 	}
 
 	list_iterate(paginasAMemoria, iterarPaginasParaEscribir);
+
+	return estado;
 }
 
 
@@ -473,25 +479,27 @@ int mspLeerMemoria(int pid, uint32_t direccionVirtual, int tamanio, char *leido)
 	paginasAMemoria = crearListaPaginasAPasarAMemoria(cantidadPaginas, pagina, segmento->tablaPaginas);
 
 	pthread_rwlock_rdlock(&rw_memoria);
-	buscarPaginasYLeerMemoria(pid, direccionReal, paginasAMemoria, tamanio, leido);
+	int estadoBuscarYLeer = buscarPaginasYLeerMemoria(pid, direccionReal, paginasAMemoria, tamanio, leido);
 	pthread_rwlock_unlock(&rw_memoria);
-	
-	log_info(self->logMSP, "MSP: Se ha leido de memoria: %s", leido);
-	
+
+	if(estadoBuscarYLeer == SIN_ERRORES)
+		log_info(self->logMSP, "MSP: Se ha leido de memoria: %s", leido);
+
 	list_destroy(paginasAMemoria);
 
-	return SIN_ERRORES;
+	return estadoBuscarYLeer;
 
 }
 
 
-void buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *paginasAMemoria, int tamanio, char *leido){
+int buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *paginasAMemoria, int tamanio, char *leido){
 
 	int numeroMarco, posicionDondeLeer;
 	int tamanioParaPrimerMarco = TAMANIO_PAGINA - direccionReal.desplazamiento;
 	int cantidadPaginas = list_size(paginasAMemoria);
 	int contador = 1;
 	int faltaLeer = tamanio;
+	int estado = SIN_ERRORES;
 
 	memset(leido, 0, tamanio + 1);
 
@@ -549,9 +557,14 @@ void buscarPaginasYLeerMemoria(int pid, t_direccion direccionReal, t_list *pagin
 
 			contador++;
 		}
+
+		else
+			estado = ERROR_POR_MEMORIA_LLENA;
 	}
 
 	list_iterate(paginasAMemoria, iterarPaginasParaLeer);
+
+	return estado;
 }
 
 

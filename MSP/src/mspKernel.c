@@ -98,7 +98,7 @@ void destruirSegmentoKernel(t_socket* socketsKernel,t_socket_paquete *paquete){
 	//o ERROR_POR_SEGMENTO_DESCONOCIDO si el segmento indicado es incorrecto
 	datosAKernel->recibido = mspDestruirSegmento(datosDeKernel->pid, datosDeKernel->direccionBase);
 
-	if (socket_sendPaquete(socketsKernel, CREAR_SEGMENTO, sizeof(t_datos_aKernelSegmento), datosAKernel) > 0)
+	if (socket_sendPaquete(socketsKernel, DESTRUIR_SEGMENTO, sizeof(t_datos_aKernelSegmento), datosAKernel) > 0)
 		log_info(self->logMSP, "MSP: Los datos de destruccion de Segmento se han enviado al Kernel correctamente");
 
 	free(datosAKernel);
@@ -129,7 +129,6 @@ void escribirMemoriaKernel(t_socket* socketsKernel, t_socket_paquete *paquete){
 
 void leerMemoriaKernel(t_socket* socketsKernel, t_socket_paquete *paquete){
 
-	//TODO ver si es necesario hacer un malloc a datosAKernel->lectura!!!
 	t_datos_aKernelLectura* datosAKernel = malloc(sizeof(t_datos_aKernelLectura));
 	t_datos_deKernelLectura* datosDeKernel = (t_datos_deKernelLectura*) (paquete->data);
 
@@ -145,4 +144,5 @@ void leerMemoriaKernel(t_socket* socketsKernel, t_socket_paquete *paquete){
 		log_info(self->logMSP, "MSP: Los datos de lectura de memoria se han enviado al Kernel correctamente");
 
 	free(datosDeKernel);
+	free(datosAKernel);
 }
