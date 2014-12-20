@@ -40,7 +40,6 @@ int cpuProcesarTCB(t_CPU *self){
 	//log_info(self->loggerCPU, "CPU: Comienzo a procesar el TCB de pid: %d y direccion: %0.8p", self->tcb->pid, self->tcb->puntero_instruccion);
 
 	while(!salida && ((self->quantum > 0) || (self->tcb->km == 1))){
-		printTCBCPU(self->tcb);
 		encontrado = 0;
 		indice = 0;
 
@@ -304,8 +303,8 @@ int ejecutar_instruccion(t_CPU *self, int linea, int *esJoin){
 
 
 	default:
-		log_error(self->loggerCPU, "CPU: Error en el switch-case, instruccion no encontrada:\n %d", self->tcb->pid);
-		printf("CPU: Error en el switch-case, instruccion no encontrada:\n %d", self->tcb->pid);
+		log_error(self->loggerCPU, "CPU: Error en el switch-case, instruccion no encontrada: %d", self->tcb->pid);
+		log_error(self->loggerCPU, "CPU: Error en el switch-case, instruccion no encontrada: %d", self->tcb->pid);
 		//free(lectura_en_msp);
 		//free(cpu_leer_memoria);
 		estado = ERROR_POR_CODIGO_INESPERADO;

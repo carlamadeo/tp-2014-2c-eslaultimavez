@@ -28,12 +28,12 @@ void cpuRealizarHandshakeConMSP(t_CPU *self) {
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
 	if (socket_sendPaquete(self->socketMSP->socket, HANDSHAKE_CPU, 0, NULL) > 0)
-		log_info(self->loggerCPU, "CPU Se presenta a la MSP!");
+		log_info(self->loggerCPU, "CPU: Se presenta a la MSP");
 
 
 	if (socket_recvPaquete(self->socketMSP->socket, paquete) >= 0) {
 		if(paquete->header.type == HANDSHAKE_MSP)
-			log_info(self->loggerCPU, "CPU: Se realizaron los Handshake con la MSP correctamente");
+			log_info(self->loggerCPU, "CPU: Handshake con la MSP!");
 		else
 			log_error(self->loggerCPU, "CPU: Error al recibir los datos de la MSP!");
 	}

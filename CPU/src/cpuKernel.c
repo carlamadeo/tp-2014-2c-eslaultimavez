@@ -5,7 +5,7 @@
 
 void cpuConectarConKernel(t_CPU *self){
 
-	log_info(self->loggerCPU, "CPU: Conectando con el Planificador...");
+	log_info(self->loggerCPU, "CPU: Se presenta al Kernel");
 
 	self->socketPlanificador = socket_createClient();
 
@@ -25,18 +25,17 @@ void cpuRealizarHandshakeConKernel(t_CPU *self){
 
 	t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
 
-	log_info(self->loggerCPU, "La CPU solicita HANDSHAKE con KERNEL.");
-
 	if (socket_sendPaquete(self->socketPlanificador->socket, HANDSHAKE_CPU, 0, NULL) > 0)
-		log_info(self->loggerCPU, "CPU le envia HANDSHAKE al KERNEL!");
 
-	if (socket_recvPaquete(self->socketPlanificador->socket, paquete) >= 0) {
+	{
+		if (socket_recvPaquete(self->socketPlanificador->socket, paquete) >= 0) {
 
-		if(paquete->header.type == HANDSHAKE_PLANIFICADOR)
-			log_info(self->loggerCPU, "CPU: Recibe del Planificador HANDSHAKE_PLANIFICADOR con descriptor %d", self->socketPlanificador->socket->descriptor);
+			if(paquete->header.type == HANDSHAKE_PLANIFICADOR)
+				log_info(self->loggerCPU, "CPU: Handshake con el Kernel!");
 
-		else
-			log_error(self->loggerCPU, "CPU: Error al recibir HANDSHAKE_PLANIFICADOR del Planificador");
+			else
+				log_error(self->loggerCPU, "CPU: Error al realizar Handshake Kernel");
+		}
 	}
 
 	else
@@ -62,7 +61,7 @@ int cpuRecibirTCB(t_CPU *self){
 		}
 
 		else{
-			log_error(self->loggerCPU, "CPU: Error al recibir de planificador TCB_NUEVO");
+			log_error(self->loggerCPU, "CPU: Error al recibir de planificador un TCB Nuevo");
 			return 0;
 		}
 	}
@@ -92,7 +91,7 @@ int cpuRecibirQuantum(t_CPU *self){
 		}
 
 		else{
-			log_error(self->loggerCPU, "CPU: Error al recibir un quantum");
+			log_error(self->loggerCPU, "CPU: Error al recibir un Quantum");
 			return 0;
 		}
 	}
@@ -112,10 +111,10 @@ void cpuTerminarQuantum(t_CPU *self){
 	//antes de hacer el send, deberia actualizarce el STACK
 	//el stack sufre modificaciones cuando se ejecutan las instrucciones ESO, no se actualiza, lo que se actualiza es el TCB.
 	if (socket_sendPaquete(self->socketPlanificador->socket, TERMINAR_QUANTUM, sizeof(t_TCB_CPU), self->tcb) <= 0)
-		log_error(self->loggerCPU, "CPU: Falló envio TERMINAR_QUANTUM");
+		log_error(self->loggerCPU, "CPU: Falló envio Terminar Quantum");
 
 	else
-		log_info(self->loggerCPU, "CPU: Envia al Planificador: TERMINAR_QUANTUM");
+		log_info(self->loggerCPU, "CPU: Envia Terminar Quantum al Kernel");
 }
 
 
