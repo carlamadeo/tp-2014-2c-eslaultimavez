@@ -202,6 +202,22 @@ void borrarPaginasDeMemoriaSecundariaYPrimaria(int pid, t_segmento *segmento){
 	//Busco las paginas del segmento que se encuentren en disco (las que tengan en numeroMarco = -2)
 	paginasEnDisco = list_filter(segmento->tablaPaginas, matchPaginaEnDisco);
 
+	void borrarPaginaDeDisco(t_pagina *pagina){
+
+		char *absolute_path;
+
+		absolute_path = armarPathArchivo(pid, segmento->numero, pagina->numero);
+
+		if(remove(absolute_path) == -1)
+			log_error(self->logMSP, "MSP: Ha ocurrido un error al intentar borrar el archivo %s", absolute_path);
+
+		else{
+			self->cantidadMemoriaSecundaria += TAMANIO_PAGINA;
+			log_info(self->logMSP, "MSP: El archivo de swapping %s se ha eliminado correctamente", absolute_path);
+		}
+
+	}
+
 	list_iterate(paginasEnMemoria, borrarPaginaDeMemoria);
 	list_iterate(paginasEnDisco, borrarPaginaDeDisco);
 
