@@ -683,43 +683,87 @@ t_marco *sustituirPaginaPorCLOCK_MODIFICADO(){
 	int pid;
 	int numeroSegmento;
 	int numeroPagina;
+	int encontrado =0;
 	t_marco *marco;
+	t_marco *marco_aux;
 
 	log_info(self->logMSP, "Comienzo de sustitucion de pagina por CLOCK MODIFICADO...");
 
 	bool marcoNoRefNoMod(t_marco *unMarco){
 		return unMarco->categoriaClockModificado == NOREFERENCIADA_NOMODIFICADA;
 	}
-
-	marco = list_find(self->marcosOcupados, marcoNoRefNoMod);
-
-	if(marco == NULL){
-		bool marcoNoRefMod(t_marco *unMarco){
-			return unMarco->categoriaClockModificado == NOREFERENCIADA_MODIFICADA;
-		}
-
-		marco = list_find(self->marcosOcupados, marcoNoRefMod);
-
-		if(marco == NULL){
-			bool marcoRefNoMod(t_marco *unMarco){
-				return unMarco->categoriaClockModificado == REFERENCIADA_NOMODIFICADA;
-			}
-
-			marco = list_find(self->marcosOcupados, marcoRefNoMod);
-
-			if(marco == NULL){
-				bool marcoRefMod(t_marco *unMarco){
-					return unMarco->categoriaClockModificado == REFERENCIADA_MODIFICADA;
-				}
-
-				marco = list_find(self->marcosOcupados, marcoRefMod);
-			}
-		}
+	bool marcoNoRefMod(t_marco *unMarco){
+		return unMarco->categoriaClockModificado == NOREFERENCIADA_MODIFICADA;
 	}
 
 	bool matchMarco(t_marco *unMarco){
 		return unMarco->numero == marco->numero;
 	}
+	bool marcoRefNoMod(t_marco *unMarco){
+		return unMarco->categoriaClockModificado == REFERENCIADA_NOMODIFICADA;
+	}
+	bool marcoRefMod(t_marco *unMarco){
+		return unMarco->categoriaClockModificado == REFERENCIADA_MODIFICADA;
+	}
+
+
+	while(encontrado!=1)
+	{
+		marco = list_find(self->marcosOcupados, marcoNoRefNoMod); //Busco por 0,0
+
+		if(marco == NULL){ //Si no hay (0,0), busco por (0,1) y mientras avanzo pongo el bit de referencia en 0. (0,x)
+
+			marco = list_find(self->marcosOcupados, marcoNoRefMod); //busco por (0,1)
+
+			if(marco == NULL){ //Debo comenzar nuevamente, pero antes actualizo todos los bit de referencia en 0.
+				int i=0;
+				marco_aux = list_get(self->marcosOcupados,i);
+				while (marco_aux!=NULL)
+				{
+
+					switch (marco_aux->categoriaClockModificado){
+					case REFERENCIADA_MODIFICADA:
+						marco_aux->categoriaClockModificado=NOREFERENCIADA_MODIFICADA;
+						break;
+					case REFERENCIADA_NOMODIFICADA:
+						marco_aux->categoriaClockModificado=NOREFERENCIADA_NOMODIFICADA;
+						break;
+					}
+					i++;
+					marco_aux = list_get(self->marcosOcupados,i);
+				}
+
+			}
+			else //encontre, pongo el bit de referencia en 0 de todos los anteriores al encontrado.
+			{
+				int i=0;
+				t_marco *marco_aux = list_get(self->marcosOcupados,i);
+				while (marco_aux->numero != marco->numero && marco_aux!=NULL) //avanzo hasta el marco encontrado
+				{
+
+					switch (marco_aux->categoriaClockModificado){
+					case REFERENCIADA_MODIFICADA:
+						marco_aux->categoriaClockModificado=NOREFERENCIADA_MODIFICADA;
+						break;
+					case REFERENCIADA_NOMODIFICADA:
+						marco_aux->categoriaClockModificado=NOREFERENCIADA_NOMODIFICADA;
+						break;
+					}
+					i++;
+					marco_aux = list_get(self->marcosOcupados,i);
+				}
+				encontrado=1; //Encontre un 0,1 y se elige para reemplazo.
+
+			}
+		}
+		else //encontre (0,0)
+		{
+			encontrado=1;
+		}
+
+	}
+
+
 
 	//Busco la pagina que corresponde al marco para poder eliminarla del disco (necesito pid, numeroSegmento, numeroPagina)
 	corresponderMarcoAPagina(marco, &pid, &numeroSegmento, &numeroPagina);
