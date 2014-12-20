@@ -31,7 +31,7 @@ int LOAD_ESO(t_CPU *self){
 		cpuInicializarRegistrosCPU(self, registros_cpu);
 		cambio_registros(registros_cpu);
 
-		log_info(self->loggerCPU,"CPU: Recibiendo parametros de instruccion LOAD");
+		//log_info(self->loggerCPU,"CPU: Recibiendo parametros de instruccion LOAD");
 
 		memcpy(&(registro), lecturaDeMSP, sizeof(char));
 		memcpy(&(numero), lecturaDeMSP + sizeof(char), sizeof(int));
@@ -262,7 +262,7 @@ int MOVR_ESO(t_CPU *self){
 
 		if((regA != -1) && (regB != -1)){
 
-			imprimirDosRegistros(registroB, registroA, "MOVR");
+			imprimirDosRegistros(registroA, registroB, "MOVR");
 
 			if(regA <= 5){
 				if(regB <= 5)
@@ -391,47 +391,47 @@ int ADDR_ESO(t_CPU *self){
 				case 6:
 					if(regB<=5)suma = self->tcb->base_segmento_codigo + self->tcb->registro_de_programacion[regB];
 					else{
-					switch(regB){
-					case 6:suma = self->tcb->base_segmento_codigo + self->tcb->base_segmento_codigo;break;
-					case 7:suma = self->tcb->puntero_instruccion + self->tcb->base_segmento_codigo ;break;
-					case 8:suma = self->tcb->base_stack + self->tcb->base_segmento_codigo ;break;
-					case 9:suma = self->tcb->cursor_stack + self->tcb->base_segmento_codigo ;break;
+						switch(regB){
+						case 6:suma = self->tcb->base_segmento_codigo + self->tcb->base_segmento_codigo;break;
+						case 7:suma = self->tcb->puntero_instruccion + self->tcb->base_segmento_codigo ;break;
+						case 8:suma = self->tcb->base_stack + self->tcb->base_segmento_codigo ;break;
+						case 9:suma = self->tcb->cursor_stack + self->tcb->base_segmento_codigo ;break;
+						}
 					}
-					}
-				break;
+					break;
 				case 7:
 					if(regB<=5) suma = self->tcb->puntero_instruccion + self->tcb->registro_de_programacion[regB];
 					else{
-					switch(regB){
-					case 6:suma = self->tcb->base_segmento_codigo + self->tcb->puntero_instruccion;break;
-					case 7:suma = self->tcb->puntero_instruccion + self->tcb->puntero_instruccion; break;
-					case 8:suma = self->tcb->base_stack + self->tcb->puntero_instruccion ;break;
-					case 9:suma = self->tcb->cursor_stack + self->tcb->puntero_instruccion;break;
+						switch(regB){
+						case 6:suma = self->tcb->base_segmento_codigo + self->tcb->puntero_instruccion;break;
+						case 7:suma = self->tcb->puntero_instruccion + self->tcb->puntero_instruccion; break;
+						case 8:suma = self->tcb->base_stack + self->tcb->puntero_instruccion ;break;
+						case 9:suma = self->tcb->cursor_stack + self->tcb->puntero_instruccion;break;
+						}
 					}
-					}
-				break;
+					break;
 				case 8:
 					if(regB<=5) suma = self->tcb->base_stack + self->tcb->registro_de_programacion[regB];
 					else{
-					switch(regB){
-					case 6:suma = self->tcb->base_segmento_codigo + self->tcb->base_stack;break;
-					case 7:suma = self->tcb->puntero_instruccion + self->tcb->base_stack;break;
-					case 8:suma = self->tcb->base_stack + self->tcb->base_stack;break;
-					case 9:suma = self->tcb->cursor_stack + self->tcb->base_stack;break;
+						switch(regB){
+						case 6:suma = self->tcb->base_segmento_codigo + self->tcb->base_stack;break;
+						case 7:suma = self->tcb->puntero_instruccion + self->tcb->base_stack;break;
+						case 8:suma = self->tcb->base_stack + self->tcb->base_stack;break;
+						case 9:suma = self->tcb->cursor_stack + self->tcb->base_stack;break;
+						}
 					}
-					}
-				break;
+					break;
 				case 9:
 					if(regB<=5) suma = self->tcb->cursor_stack+ self->tcb->registro_de_programacion[regB];
 					else{
-					switch(regB){
-					case 6:suma = self->tcb->base_segmento_codigo + self->tcb->cursor_stack;break;
-					case 7:suma = self->tcb->puntero_instruccion + self->tcb->cursor_stack;break;
-					case 8:suma = self->tcb->base_stack + self->tcb->cursor_stack;break;
-					case 9:suma = self->tcb->cursor_stack + self->tcb->cursor_stack;break;
+						switch(regB){
+						case 6:suma = self->tcb->base_segmento_codigo + self->tcb->cursor_stack;break;
+						case 7:suma = self->tcb->puntero_instruccion + self->tcb->cursor_stack;break;
+						case 8:suma = self->tcb->base_stack + self->tcb->cursor_stack;break;
+						case 9:suma = self->tcb->cursor_stack + self->tcb->cursor_stack;break;
+						}
 					}
-					}
-				break;
+					break;
 
 				}
 
@@ -503,49 +503,49 @@ int SUBR_ESO(t_CPU *self){
 			else{
 				switch(regA){
 				case 6:
-				if(regB<=5) resta = self->tcb->base_segmento_codigo - self->tcb->registro_de_programacion[regB];
-				else{
-				switch(regB){
-				case 6:resta = self->tcb->base_segmento_codigo - self->tcb->base_segmento_codigo;break;
-				case 7:resta = self->tcb->base_segmento_codigo - self->tcb->puntero_instruccion;break;
-				case 8:resta = self->tcb->base_segmento_codigo - self->tcb->base_stack;break;
-				case 9:resta = self->tcb->base_segmento_codigo - self->tcb->cursor_stack;break;
-				}
-				}
-				break;
+					if(regB<=5) resta = self->tcb->base_segmento_codigo - self->tcb->registro_de_programacion[regB];
+					else{
+						switch(regB){
+						case 6:resta = self->tcb->base_segmento_codigo - self->tcb->base_segmento_codigo;break;
+						case 7:resta = self->tcb->base_segmento_codigo - self->tcb->puntero_instruccion;break;
+						case 8:resta = self->tcb->base_segmento_codigo - self->tcb->base_stack;break;
+						case 9:resta = self->tcb->base_segmento_codigo - self->tcb->cursor_stack;break;
+						}
+					}
+					break;
 				case 7:
-				if(regB<=5) resta = self->tcb->puntero_instruccion - self->tcb->registro_de_programacion[regB];
-				else{
-				switch(regB){
-				case 6:resta = self->tcb->puntero_instruccion - self->tcb->base_segmento_codigo;break;
-				case 7:resta = self->tcb->puntero_instruccion - self->tcb->puntero_instruccion; break;
-				case 8:resta = self->tcb->puntero_instruccion - self->tcb->base_stack ;break;
-				case 9:resta = self->tcb->puntero_instruccion - self->tcb->cursor_stack;break;
-				}
-				}
-				break;
+					if(regB<=5) resta = self->tcb->puntero_instruccion - self->tcb->registro_de_programacion[regB];
+					else{
+						switch(regB){
+						case 6:resta = self->tcb->puntero_instruccion - self->tcb->base_segmento_codigo;break;
+						case 7:resta = self->tcb->puntero_instruccion - self->tcb->puntero_instruccion; break;
+						case 8:resta = self->tcb->puntero_instruccion - self->tcb->base_stack ;break;
+						case 9:resta = self->tcb->puntero_instruccion - self->tcb->cursor_stack;break;
+						}
+					}
+					break;
 				case 8:
-				if(regB<=5) resta = self->tcb->base_stack - self->tcb->registro_de_programacion[regB];
-				else{
-				switch(regB){
-				case 6:resta = self->tcb->base_stack - self->tcb->base_segmento_codigo ;break;
-				case 7:resta = self->tcb->base_stack - self->tcb->puntero_instruccion ;break;
-				case 8:resta = self->tcb->base_stack - self->tcb->base_stack ;break;
-				case 9:resta = self->tcb->base_stack - self->tcb->cursor_stack ;break;
-				}
-				}
-				break;
+					if(regB<=5) resta = self->tcb->base_stack - self->tcb->registro_de_programacion[regB];
+					else{
+						switch(regB){
+						case 6:resta = self->tcb->base_stack - self->tcb->base_segmento_codigo ;break;
+						case 7:resta = self->tcb->base_stack - self->tcb->puntero_instruccion ;break;
+						case 8:resta = self->tcb->base_stack - self->tcb->base_stack ;break;
+						case 9:resta = self->tcb->base_stack - self->tcb->cursor_stack ;break;
+						}
+					}
+					break;
 				case 9:
-				if(regB<=5) resta = self->tcb->cursor_stack - self->tcb->registro_de_programacion[regB];
-				else{
-				switch(regB){
-				case 6:resta = self->tcb->cursor_stack - self->tcb->base_segmento_codigo ;break;
-				case 7:resta = self->tcb->cursor_stack - self->tcb->puntero_instruccion ;break;
-				case 8:resta = self->tcb->cursor_stack - self->tcb->base_stack ;break;
-				case 9:resta = self->tcb->cursor_stack - self->tcb->cursor_stack ;break;
-				}
-				}
-				break;
+					if(regB<=5) resta = self->tcb->cursor_stack - self->tcb->registro_de_programacion[regB];
+					else{
+						switch(regB){
+						case 6:resta = self->tcb->cursor_stack - self->tcb->base_segmento_codigo ;break;
+						case 7:resta = self->tcb->cursor_stack - self->tcb->puntero_instruccion ;break;
+						case 8:resta = self->tcb->cursor_stack - self->tcb->base_stack ;break;
+						case 9:resta = self->tcb->cursor_stack - self->tcb->cursor_stack ;break;
+						}
+					}
+					break;
 
 				}
 
@@ -620,47 +620,47 @@ int MULR_ESO(t_CPU *self){
 				case 6:
 					if(regB<=5) mult = self->tcb->registro_de_programacion[regB] * self->tcb->base_segmento_codigo;
 					else{
-					switch(regB){
-					case 6:mult = self->tcb->base_segmento_codigo * self->tcb->base_segmento_codigo;break;
-					case 7:mult = self->tcb->puntero_instruccion * self->tcb->base_segmento_codigo ;break;
-					case 8:mult = self->tcb->base_stack * self->tcb->base_segmento_codigo ;break;
-					case 9:mult = self->tcb->cursor_stack * self->tcb->base_segmento_codigo ;break;
-					}
+						switch(regB){
+						case 6:mult = self->tcb->base_segmento_codigo * self->tcb->base_segmento_codigo;break;
+						case 7:mult = self->tcb->puntero_instruccion * self->tcb->base_segmento_codigo ;break;
+						case 8:mult = self->tcb->base_stack * self->tcb->base_segmento_codigo ;break;
+						case 9:mult = self->tcb->cursor_stack * self->tcb->base_segmento_codigo ;break;
+						}
 					}
 					break;
-					case 7:
-						if(regB<=5) mult = self->tcb->registro_de_programacion[regB] * self->tcb->puntero_instruccion;
-						else{
+				case 7:
+					if(regB<=5) mult = self->tcb->registro_de_programacion[regB] * self->tcb->puntero_instruccion;
+					else{
 						switch(regB){
 						case 6:mult = self->tcb->base_segmento_codigo * self->tcb->puntero_instruccion;break;
 						case 7:mult = self->tcb->puntero_instruccion * self->tcb->puntero_instruccion; break;
 						case 8:mult = self->tcb->base_stack * self->tcb->puntero_instruccion ;break;
 						case 9:mult = self->tcb->cursor_stack * self->tcb->puntero_instruccion;break;
 						}
+					}
+					break;
+				case 8:
+					if(regB<=5) mult = self->tcb->registro_de_programacion[regB] * self->tcb->base_stack;
+					else{
+						switch(regB){
+						case 6:mult = self->tcb->base_segmento_codigo * self->tcb->base_stack;break;
+						case 7:mult = self->tcb->puntero_instruccion * self->tcb->base_stack;break;
+						case 8:mult = self->tcb->base_stack * self->tcb->base_stack;break;
+						case 9:mult = self->tcb->cursor_stack * self->tcb->base_stack;break;
 						}
-						break;
-						case 8:
-							if(regB<=5) mult = self->tcb->registro_de_programacion[regB] * self->tcb->base_stack;
-							else{
-							switch(regB){
-							case 6:mult = self->tcb->base_segmento_codigo * self->tcb->base_stack;break;
-							case 7:mult = self->tcb->puntero_instruccion * self->tcb->base_stack;break;
-							case 8:mult = self->tcb->base_stack * self->tcb->base_stack;break;
-							case 9:mult = self->tcb->cursor_stack * self->tcb->base_stack;break;
-							}
-							}
-							break;
-							case 9:
-								if(regB<=5) mult = self->tcb->registro_de_programacion[regB] * self->tcb->cursor_stack;
-								else{
-								switch(regB){
-								case 6:mult = self->tcb->base_segmento_codigo * self->tcb->cursor_stack;break;
-								case 7:mult = self->tcb->puntero_instruccion * self->tcb->cursor_stack;break;
-								case 8:mult = self->tcb->base_stack * self->tcb->cursor_stack;break;
-								case 9:mult = self->tcb->cursor_stack * self->tcb->cursor_stack;break;
-								}
-								}
-								break;
+					}
+					break;
+				case 9:
+					if(regB<=5) mult = self->tcb->registro_de_programacion[regB] * self->tcb->cursor_stack;
+					else{
+						switch(regB){
+						case 6:mult = self->tcb->base_segmento_codigo * self->tcb->cursor_stack;break;
+						case 7:mult = self->tcb->puntero_instruccion * self->tcb->cursor_stack;break;
+						case 8:mult = self->tcb->base_stack * self->tcb->cursor_stack;break;
+						case 9:mult = self->tcb->cursor_stack * self->tcb->cursor_stack;break;
+						}
+					}
+					break;
 
 				}
 
@@ -735,47 +735,47 @@ int MODR_ESO(t_CPU *self){
 				case 6:
 					if(regB<=5) modulo = self->tcb->base_segmento_codigo % self->tcb->registro_de_programacion[regB];
 					else{
-					switch(regA){
-					case 6:modulo = self->tcb->base_segmento_codigo % self->tcb->base_segmento_codigo;break;
-					case 7:modulo = self->tcb->base_segmento_codigo % self->tcb->puntero_instruccion ;break;
-					case 8:modulo = self->tcb->base_segmento_codigo % self->tcb->base_stack  ;break;
-					case 9:modulo = self->tcb->base_segmento_codigo % self->tcb->cursor_stack;break;
-					}
+						switch(regA){
+						case 6:modulo = self->tcb->base_segmento_codigo % self->tcb->base_segmento_codigo;break;
+						case 7:modulo = self->tcb->base_segmento_codigo % self->tcb->puntero_instruccion ;break;
+						case 8:modulo = self->tcb->base_segmento_codigo % self->tcb->base_stack  ;break;
+						case 9:modulo = self->tcb->base_segmento_codigo % self->tcb->cursor_stack;break;
+						}
 					}
 					break;
-					case 7:
-						if(regB<=5) modulo = self->tcb->puntero_instruccion % self->tcb->registro_de_programacion[regB];
-						else{
+				case 7:
+					if(regB<=5) modulo = self->tcb->puntero_instruccion % self->tcb->registro_de_programacion[regB];
+					else{
 						switch(regA){
 						case 6:modulo = self->tcb->puntero_instruccion % self->tcb->base_segmento_codigo;break;
 						case 7:modulo = self->tcb->puntero_instruccion % self->tcb->puntero_instruccion; break;
 						case 8:modulo = self->tcb->puntero_instruccion % self->tcb->base_stack ;break;
 						case 9:modulo = self->tcb->puntero_instruccion % self->tcb->cursor_stack;break;
 						}
+					}
+					break;
+				case 8:
+					if(regB<=5) modulo = self->tcb->base_stack % self->tcb->registro_de_programacion[regB];
+					else{
+						switch(regA){
+						case 6:modulo = self->tcb->base_stack % self->tcb->base_segmento_codigo;break;
+						case 7:modulo = self->tcb->base_stack % self->tcb->puntero_instruccion;break;
+						case 8:modulo = self->tcb->base_stack % self->tcb->base_stack;break;
+						case 9:modulo = self->tcb->base_stack % self->tcb->cursor_stack;break;
 						}
-						break;
-						case 8:
-							if(regB<=5) modulo = self->tcb->base_stack % self->tcb->registro_de_programacion[regB];
-							else{
-							switch(regA){
-							case 6:modulo = self->tcb->base_stack % self->tcb->base_segmento_codigo;break;
-							case 7:modulo = self->tcb->base_stack % self->tcb->puntero_instruccion;break;
-							case 8:modulo = self->tcb->base_stack % self->tcb->base_stack;break;
-							case 9:modulo = self->tcb->base_stack % self->tcb->cursor_stack;break;
-							}
-							}
-							break;
-							case 9:
-								if(regB<=5) modulo = self->tcb->cursor_stack % self->tcb->registro_de_programacion[regB];
-								else{
-								switch(regA){
-								case 6:modulo = self->tcb->cursor_stack % self->tcb->base_segmento_codigo;break;
-								case 7:modulo = self->tcb->cursor_stack % self->tcb->puntero_instruccion;break;
-								case 8:modulo = self->tcb->cursor_stack % self->tcb->base_stack;break;
-								case 9:modulo = self->tcb->cursor_stack % self->tcb->cursor_stack;break;
-								}
-								}
-								break;
+					}
+					break;
+				case 9:
+					if(regB<=5) modulo = self->tcb->cursor_stack % self->tcb->registro_de_programacion[regB];
+					else{
+						switch(regA){
+						case 6:modulo = self->tcb->cursor_stack % self->tcb->base_segmento_codigo;break;
+						case 7:modulo = self->tcb->cursor_stack % self->tcb->puntero_instruccion;break;
+						case 8:modulo = self->tcb->cursor_stack % self->tcb->base_stack;break;
+						case 9:modulo = self->tcb->cursor_stack % self->tcb->cursor_stack;break;
+						}
+					}
+					break;
 
 				}
 
@@ -1340,41 +1340,41 @@ int CGEQ_ESO(t_CPU *self){
 						else
 							self->tcb->registro_de_programacion[0] = 0;
 					}else{
-					switch(regB){
-					case 6:
-						if (self->tcb->base_segmento_codigo>= self->tcb->base_segmento_codigo)
-							self->tcb->registro_de_programacion[0] = 1;
-						else
-							self->tcb->registro_de_programacion[0] = 0;
-						break;
-					case 7:
-						if (self->tcb->puntero_instruccion>= self->tcb->base_segmento_codigo)
-							self->tcb->registro_de_programacion[0] = 1;
-						else
-							self->tcb->registro_de_programacion[0] = 0;
-						break;
-					case 8:
-						if (self->tcb->base_stack >=  self->tcb->base_segmento_codigo)
-							self->tcb->registro_de_programacion[0] = 1;
-						else
-							self->tcb->registro_de_programacion[0] = 0;
-						break;
-					case 9:
-						if (self->tcb->cursor_stack >=  self->tcb->base_segmento_codigo)
-							self->tcb->registro_de_programacion[0] = 1;
-						else
-							self->tcb->registro_de_programacion[0] = 0;
-						break;
-					}
-					}
-					break;
-					case 7:
-					if(regB<=5){
-							if (self->tcb->puntero_instruccion>= self->tcb->registro_de_programacion[regB])
+						switch(regB){
+						case 6:
+							if (self->tcb->base_segmento_codigo>= self->tcb->base_segmento_codigo)
 								self->tcb->registro_de_programacion[0] = 1;
 							else
 								self->tcb->registro_de_programacion[0] = 0;
-						}else{
+							break;
+						case 7:
+							if (self->tcb->puntero_instruccion>= self->tcb->base_segmento_codigo)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						case 8:
+							if (self->tcb->base_stack >=  self->tcb->base_segmento_codigo)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						case 9:
+							if (self->tcb->cursor_stack >=  self->tcb->base_segmento_codigo)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						}
+					}
+					break;
+				case 7:
+					if(regB<=5){
+						if (self->tcb->puntero_instruccion>= self->tcb->registro_de_programacion[regB])
+							self->tcb->registro_de_programacion[0] = 1;
+						else
+							self->tcb->registro_de_programacion[0] = 0;
+					}else{
 						switch(regB){
 						case 6:
 							if (self->tcb->puntero_instruccion>= self->tcb->base_segmento_codigo)
@@ -1401,78 +1401,78 @@ int CGEQ_ESO(t_CPU *self){
 								self->tcb->registro_de_programacion[0] = 0;
 							break;
 						}
-						}
-						break;
-						case 8:
-							if(regB<=5){
-									if (self->tcb->base_stack>= self->tcb->registro_de_programacion[regB])
-										self->tcb->registro_de_programacion[0] = 1;
-									else
-										self->tcb->registro_de_programacion[0] = 0;
-								}else{
-							switch(regB){
-							case 6:
-								if (self->tcb->base_stack>= self->tcb->base_segmento_codigo)
-									self->tcb->registro_de_programacion[0] = 1;
-								else
-									self->tcb->registro_de_programacion[0] = 0;
-								break;
-							case 7:
-								if (self->tcb->base_stack >= self->tcb->puntero_instruccion)
-									self->tcb->registro_de_programacion[0] = 1;
-								else
-									self->tcb->registro_de_programacion[0] = 0;
-								break;
-							case 8:
-								if (self->tcb->base_stack >= self->tcb->base_stack)
-									self->tcb->registro_de_programacion[0] = 1;
-								else
-									self->tcb->registro_de_programacion[0] = 0;
-								break;
-							case 9:
-								if (self->tcb->base_stack >= self->tcb->cursor_stack)
-									self->tcb->registro_de_programacion[0] = 1;
-								else
-									self->tcb->registro_de_programacion[0] = 0;
-								break;
-							}
-							}
+					}
+					break;
+				case 8:
+					if(regB<=5){
+						if (self->tcb->base_stack>= self->tcb->registro_de_programacion[regB])
+							self->tcb->registro_de_programacion[0] = 1;
+						else
+							self->tcb->registro_de_programacion[0] = 0;
+					}else{
+						switch(regB){
+						case 6:
+							if (self->tcb->base_stack>= self->tcb->base_segmento_codigo)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
 							break;
-							case 9:
-								if(regB<=5){
-										if ( self->tcb->cursor_stack>= self->tcb->registro_de_programacion[regB])
-											self->tcb->registro_de_programacion[0] = 1;
-										else
-											self->tcb->registro_de_programacion[0] = 0;
-								}else{
-								switch(regB){
-								case 6:
-									if ( self->tcb->cursor_stack>=self->tcb->base_segmento_codigo)
-										self->tcb->registro_de_programacion[0] = 1;
-									else
-										self->tcb->registro_de_programacion[0] = 0;
-									break;
-								case 7:
-									if ( self->tcb->cursor_stack>=self->tcb->puntero_instruccion)
-										self->tcb->registro_de_programacion[0] = 1;
-									else
-										self->tcb->registro_de_programacion[0] = 0;
-									break;
-								case 8:
-									if ( self->tcb->cursor_stack>=self->tcb->base_stack)
-										self->tcb->registro_de_programacion[0] = 1;
-									else
-										self->tcb->registro_de_programacion[0] = 0;
-									break;
-								case 9:
-									if ( self->tcb->cursor_stack>=self->tcb->cursor_stack)
-										self->tcb->registro_de_programacion[0] = 1;
-									else
-										self->tcb->registro_de_programacion[0] = 0;
-									break;
-								}
-								}
-								break;
+						case 7:
+							if (self->tcb->base_stack >= self->tcb->puntero_instruccion)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						case 8:
+							if (self->tcb->base_stack >= self->tcb->base_stack)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						case 9:
+							if (self->tcb->base_stack >= self->tcb->cursor_stack)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						}
+					}
+					break;
+				case 9:
+					if(regB<=5){
+						if ( self->tcb->cursor_stack>= self->tcb->registro_de_programacion[regB])
+							self->tcb->registro_de_programacion[0] = 1;
+						else
+							self->tcb->registro_de_programacion[0] = 0;
+					}else{
+						switch(regB){
+						case 6:
+							if ( self->tcb->cursor_stack>=self->tcb->base_segmento_codigo)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						case 7:
+							if ( self->tcb->cursor_stack>=self->tcb->puntero_instruccion)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						case 8:
+							if ( self->tcb->cursor_stack>=self->tcb->base_stack)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						case 9:
+							if ( self->tcb->cursor_stack>=self->tcb->cursor_stack)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						}
+					}
+					break;
 
 				}
 
@@ -1572,41 +1572,41 @@ int CLEQ_ESO(t_CPU *self){
 						else
 							self->tcb->registro_de_programacion[0] = 0;
 					}else{
-					switch(regB){
-					case 6:
-						if (self->tcb->base_segmento_codigo<= self->tcb->base_segmento_codigo)
-							self->tcb->registro_de_programacion[0] = 1;
-						else
-							self->tcb->registro_de_programacion[0] = 0;
-						break;
-					case 7:
-						if (self->tcb->puntero_instruccion<=  self->tcb->base_segmento_codigo)
-							self->tcb->registro_de_programacion[0] = 1;
-						else
-							self->tcb->registro_de_programacion[0] = 0;
-						break;
-					case 8:
-						if (self->tcb->base_stack <=   self->tcb->base_segmento_codigo)
-							self->tcb->registro_de_programacion[0] = 1;
-						else
-							self->tcb->registro_de_programacion[0] = 0;
-						break;
-					case 9:
-						if (self->tcb->cursor_stack <=   self->tcb->base_segmento_codigo)
-							self->tcb->registro_de_programacion[0] = 1;
-						else
-							self->tcb->registro_de_programacion[0] = 0;
-						break;
-					}
-					}
-					break;
-					case 7:
-					if(regB<=5){
-							if (self->tcb->puntero_instruccion<= self->tcb->registro_de_programacion[regB])
+						switch(regB){
+						case 6:
+							if (self->tcb->base_segmento_codigo<= self->tcb->base_segmento_codigo)
 								self->tcb->registro_de_programacion[0] = 1;
 							else
 								self->tcb->registro_de_programacion[0] = 0;
-						}else{
+							break;
+						case 7:
+							if (self->tcb->puntero_instruccion<=  self->tcb->base_segmento_codigo)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						case 8:
+							if (self->tcb->base_stack <=   self->tcb->base_segmento_codigo)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						case 9:
+							if (self->tcb->cursor_stack <=   self->tcb->base_segmento_codigo)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						}
+					}
+					break;
+				case 7:
+					if(regB<=5){
+						if (self->tcb->puntero_instruccion<= self->tcb->registro_de_programacion[regB])
+							self->tcb->registro_de_programacion[0] = 1;
+						else
+							self->tcb->registro_de_programacion[0] = 0;
+					}else{
 						switch(regB){
 						case 6:
 							if (self->tcb->puntero_instruccion<=  self->tcb->base_segmento_codigo)
@@ -1633,78 +1633,78 @@ int CLEQ_ESO(t_CPU *self){
 								self->tcb->registro_de_programacion[0] = 0;
 							break;
 						}
-						}
-						break;
-						case 8:
-							if(regB<=5){
-									if (self->tcb->base_stack<=  self->tcb->registro_de_programacion[regB])
-										self->tcb->registro_de_programacion[0] = 1;
-									else
-										self->tcb->registro_de_programacion[0] = 0;
-								}else{
-							switch(regB){
-							case 6:
-								if (self->tcb->base_stack<=  self->tcb->base_segmento_codigo)
-									self->tcb->registro_de_programacion[0] = 1;
-								else
-									self->tcb->registro_de_programacion[0] = 0;
-								break;
-							case 7:
-								if (self->tcb->base_stack <=  self->tcb->puntero_instruccion)
-									self->tcb->registro_de_programacion[0] = 1;
-								else
-									self->tcb->registro_de_programacion[0] = 0;
-								break;
-							case 8:
-								if (self->tcb->base_stack<=  self->tcb->base_stack)
-									self->tcb->registro_de_programacion[0] = 1;
-								else
-									self->tcb->registro_de_programacion[0] = 0;
-								break;
-							case 9:
-								if (self->tcb->base_stack <=  self->tcb->cursor_stack)
-									self->tcb->registro_de_programacion[0] = 1;
-								else
-									self->tcb->registro_de_programacion[0] = 0;
-								break;
-							}
-							}
+					}
+					break;
+				case 8:
+					if(regB<=5){
+						if (self->tcb->base_stack<=  self->tcb->registro_de_programacion[regB])
+							self->tcb->registro_de_programacion[0] = 1;
+						else
+							self->tcb->registro_de_programacion[0] = 0;
+					}else{
+						switch(regB){
+						case 6:
+							if (self->tcb->base_stack<=  self->tcb->base_segmento_codigo)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
 							break;
-							case 9:
-								if(regB<=5){
-										if ( self->tcb->cursor_stack<=  self->tcb->registro_de_programacion[regB])
-											self->tcb->registro_de_programacion[0] = 1;
-										else
-											self->tcb->registro_de_programacion[0] = 0;
-								}else{
-								switch(regB){
-								case 6:
-									if ( self->tcb->cursor_stack<= self->tcb->base_segmento_codigo)
-										self->tcb->registro_de_programacion[0] = 1;
-									else
-										self->tcb->registro_de_programacion[0] = 0;
-									break;
-								case 7:
-									if ( self->tcb->cursor_stack<= self->tcb->puntero_instruccion)
-										self->tcb->registro_de_programacion[0] = 1;
-									else
-										self->tcb->registro_de_programacion[0] = 0;
-									break;
-								case 8:
-									if ( self->tcb->cursor_stack<= self->tcb->base_stack)
-										self->tcb->registro_de_programacion[0] = 1;
-									else
-										self->tcb->registro_de_programacion[0] = 0;
-									break;
-								case 9:
-									if ( self->tcb->cursor_stack<= self->tcb->cursor_stack)
-										self->tcb->registro_de_programacion[0] = 1;
-									else
-										self->tcb->registro_de_programacion[0] = 0;
-									break;
-								}
-								}
-								break;
+						case 7:
+							if (self->tcb->base_stack <=  self->tcb->puntero_instruccion)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						case 8:
+							if (self->tcb->base_stack<=  self->tcb->base_stack)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						case 9:
+							if (self->tcb->base_stack <=  self->tcb->cursor_stack)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						}
+					}
+					break;
+				case 9:
+					if(regB<=5){
+						if ( self->tcb->cursor_stack<=  self->tcb->registro_de_programacion[regB])
+							self->tcb->registro_de_programacion[0] = 1;
+						else
+							self->tcb->registro_de_programacion[0] = 0;
+					}else{
+						switch(regB){
+						case 6:
+							if ( self->tcb->cursor_stack<= self->tcb->base_segmento_codigo)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						case 7:
+							if ( self->tcb->cursor_stack<= self->tcb->puntero_instruccion)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						case 8:
+							if ( self->tcb->cursor_stack<= self->tcb->base_stack)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						case 9:
+							if ( self->tcb->cursor_stack<= self->tcb->cursor_stack)
+								self->tcb->registro_de_programacion[0] = 1;
+							else
+								self->tcb->registro_de_programacion[0] = 0;
+							break;
+						}
+					}
+					break;
 
 				}
 
@@ -1971,7 +1971,7 @@ int SHIF_ESO(t_CPU *self){
 				if(numero > 0)
 					self->tcb->registro_de_programacion[reg]>>=numero;
 				else
-				self->tcb->registro_de_programacion[reg]<<=numero;
+					self->tcb->registro_de_programacion[reg]<<=numero;
 			}else{
 				switch(reg){
 				case 6:
@@ -2018,7 +2018,11 @@ int SHIF_ESO(t_CPU *self){
 
 
 int NOPP_ESO(t_CPU *self){
+	parametros = list_create();
+	char *parametro_nulo = "\0";
+	list_add(parametros, parametro_nulo);
 	ejecucion_instruccion("NOPP", parametros);
+	list_destroy(parametros);
 	log_info(self->loggerCPU, "CPU: NOPP ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 	return SIN_ERRORES;
 }
@@ -2169,11 +2173,11 @@ int TAKE_ESO(t_CPU *self){
 
 
 int XXXX_ESO(t_CPU *self){
-
-
-
+	parametros = list_create();
+	char *parametro_nulo = "\0";
+	list_add(parametros, parametro_nulo);
 	ejecucion_instruccion("XXXX", parametros);
-
+	list_destroy(parametros);
 	fin_ejecucion();
 
 	log_info(self->loggerCPU, "CPU: XXXX ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
@@ -2380,6 +2384,7 @@ int OUTN_ESO(t_CPU *self){
 		char *parametro_nulo="\0";
 		list_add(parametros, parametro_nulo);
 		ejecucion_instruccion("OUTN", parametros);
+		list_destroy(parametros);
 		//log_info(self->loggerCPU, "CPU: Ejecutando instruccion OUTN");
 		sprintf(enviarAKernelChar, "%d", self->tcb->registro_de_programacion[0]);
 
@@ -2455,15 +2460,28 @@ int CREA_ESO(t_CPU *self){ 	// CREA un hilo hijo de TCB
 		crear_hilo->pid = self->tcb->pid;
 		crear_hilo->tid = self->tcb->tid;
 		self->tcb->registro_de_programacion[0] = crear_hilo->tid + 1;
-
+		printf("TEST: estoy mandando a que se CREE el HILO: %d\n", self->tcb->registro_de_programacion[0]);
 		if (socket_sendPaquete(self->socketPlanificador->socket, CREAR_HILO, sizeof(t_crea_hilo), crear_hilo) <= 0){
 			log_info(self->loggerCPU, "CPU: CREA ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			estado_crea = MENSAJE_DE_ERROR;
 		}
 
+		//ACA hago el recv para recibir el TID real
+//		t_socket_paquete * paqueteNuevoTid =(t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+//
+//		if ((socket_recvPaquete(self->socketPlanificador->socket,paqueteNuevoTid)) <= 0){
+//			log_info(self->loggerCPU, "CPU: error al recibir nuevo TID en CREATE HILO!!!!!!");
+//			estado_crea = MENSAJE_DE_ERROR;
+//		}else{
+//
+//			t_quantumCPU* nuevoTid = (t_quantumCPU*)paqueteNuevoTid->data;
+//			self->tcb->registro_de_programacion[0]= (int32_t) nuevoTid->quantumCPU;
+//			log_info(self->loggerCPU, "CPU: se recibe TID: %d del kernel!!!!!!",self->tcb->registro_de_programacion[0]);
+//		}
+
 		log_info(self->loggerCPU, "CPU: CREA ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
-
+//		free(paqueteNuevoTid);
 		free(crear_hilo);
 	}
 
