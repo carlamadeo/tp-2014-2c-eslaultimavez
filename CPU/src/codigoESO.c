@@ -2459,30 +2459,28 @@ int CREA_ESO(t_CPU *self){ 	// CREA un hilo hijo de TCB
 		t_crea_hilo* crear_hilo = malloc(sizeof(t_crea_hilo));
 		crear_hilo->pid = self->tcb->pid;
 		crear_hilo->tid = self->tcb->tid;
-		self->tcb->registro_de_programacion[0] = crear_hilo->tid + 1;
-		printf("TEST: estoy mandando a que se CREE el HILO: %d\n", self->tcb->registro_de_programacion[0]);
+
 		if (socket_sendPaquete(self->socketPlanificador->socket, CREAR_HILO, sizeof(t_crea_hilo), crear_hilo) <= 0){
 			log_info(self->loggerCPU, "CPU: CREA ejecutado con error para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 			estado_crea = MENSAJE_DE_ERROR;
 		}
 
-		//ACA hago el recv para recibir el TID real
-//		t_socket_paquete * paqueteNuevoTid =(t_socket_paquete *) malloc(sizeof(t_socket_paquete));
-//
-//		if ((socket_recvPaquete(self->socketPlanificador->socket,paqueteNuevoTid)) <= 0){
-//			log_info(self->loggerCPU, "CPU: error al recibir nuevo TID en CREATE HILO!!!!!!");
-//			estado_crea = MENSAJE_DE_ERROR;
-//		}else{
-//
-//			t_quantumCPU* nuevoTid = (t_quantumCPU*)paqueteNuevoTid->data;
-//			self->tcb->registro_de_programacion[0]= (int32_t) nuevoTid->quantumCPU;
-//			log_info(self->loggerCPU, "CPU: se recibe TID: %d del kernel!!!!!!",self->tcb->registro_de_programacion[0]);
-//		}
+		t_socket_paquete *paquete = (t_socket_paquete *) malloc(sizeof(t_socket_paquete));
+
+		if ((socket_recvPaquete(self->socketPlanificador->socket, paquete)) >= 0) {
+			t_crearHilo *tidRecibido = (t_crearHilo*) paquete->data;
+			self->tcb->registro_de_programacion[0] = tidRecibido->tidCreado;
+		}
+
+		else{
+			log_error(self->loggerCPU, "CPU: Ha ocurrido un error al recibir el nuevo TID del Kernel");
+			estado_crea = MENSAJE_DE_ERROR;
+		}
 
 		log_info(self->loggerCPU, "CPU: CREA ejecutado con exito para PID: %d TID: %d", self->tcb->pid, self->tcb->tid);
 
-//		free(paqueteNuevoTid);
 		free(crear_hilo);
+		free(paquete);
 	}
 
 	else

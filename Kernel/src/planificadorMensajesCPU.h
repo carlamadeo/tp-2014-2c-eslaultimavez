@@ -92,6 +92,12 @@ typedef struct {
 	int identificadorError;
 } t_errorKernel;
 
+//----------------------------//
+
+typedef struct {
+	int tidCreado;
+} t_crearHiloKernel;
+
 void agregarEnListaDeCPU(t_kernel* self, int id, t_socket* socketCPU);
 
 void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket_paquete *paqueteTCB);
@@ -115,7 +121,7 @@ void volverTCBAModoNoKernel(t_TCB_Kernel * TCBKernel, t_TCB_Kernel *unTCB);
 
 void ejecutar_UNA_ENTRADA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete* paquete);
 void ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete* paquete);
-void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete);
+void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete, t_cpu *cpu);
 void ejecutar_UN_JOIN_HILO(t_kernel* self, t_socket_paquete* paquete);
 void ejecutar_UN_BLOCK_HILO(t_kernel* self, t_socket_paquete* paquete);
 void ejecutar_UN_WAKE_HILO(t_kernel* self, t_socket_paquete* paquete);

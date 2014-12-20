@@ -332,7 +332,7 @@ void atenderCPU(t_kernel* self, t_cpu *cpu, fd_set* master){
 			break;
 
 		case CREAR_HILO:
-			ejecutar_UN_CREAR_HILO(self, paqueteCPUAtendido);
+			ejecutar_UN_CREAR_HILO(self, paqueteCPUAtendido, cpu);
 			break;
 
 		case JOIN_HILO:

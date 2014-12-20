@@ -469,7 +469,7 @@ ejecutar_UNA_SALIDA_ESTANDAR(t_kernel* self, t_cpu *cpu, t_socket_paquete* paque
 \***************************************************************************************************/
 
 //TODO Ver si lo tengo que mandar a la cola NEW y que pase por el loader en vez de mandarlo directo a la cola READY
-void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
+void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete, t_cpu *cpu){
 
 	char *lecturaEscrituraMSP = malloc(sizeof(char)*self->tamanioStack + 1);
 	t_TCB_Kernel* hiloNuevo = malloc(sizeof(t_TCB_Kernel));
@@ -499,6 +499,14 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
 		}
 
 		hiloNuevo->tid = list_count_satisfying(listaDeProgramasDisponibles, contarTID);
+
+		t_crearHiloKernel *crearHilo = malloc(sizeof(t_crearHiloKernel));
+
+		crearHilo->tidCreado = hiloNuevo->tid;
+
+		socket_sendPaquete(cpu->socketCPU, 1, sizeof(t_crearHiloKernel), crearHilo);
+
+		free(crearHilo);
 
 		t_programaEnKernel* programaNuevoHilo = malloc(sizeof(t_programaEnKernel));
 

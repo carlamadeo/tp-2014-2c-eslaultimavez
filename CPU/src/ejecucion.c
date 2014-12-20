@@ -53,7 +53,7 @@ int cpuProcesarTCB(t_CPU *self){
 		estado = cpuLeerMemoria(self, self->tcb->puntero_instruccion, datosDeMSP, tamanio);
 
 		if ((estado < 0) && (estado != SIN_ERRORES)){
-			log_error(self->loggerCPU, "CPU: error al intentar cpuLeerMemoria, con N°: %d", estado);
+			log_error(self->loggerCPU, "CPU: Error al intentar cpuLeerMemoria, con N°: %d", estado);
 			estado_ejecucion_instruccion = ERROR_DE_LECTURA_DE_MEMORIA;
 		}
 
@@ -79,27 +79,25 @@ int cpuProcesarTCB(t_CPU *self){
 
 		case FINALIZAR_PROGRAMA_EXITO:
 
-			//TODO Sacar todos los printf
 			if(self->tcb->km == 0 && self->tcb->tid == 0){
-				printf("CPU: ENVIA FINALIZAR PROGRAMA EXITO\n");
+				log_info(self->loggerCPU, "CPU: Envia Finalizar Programa Exito al Kernel");
 				num = cpuFinalizarProgramaExitoso(self);
 				salida = 1;
 			}
 
 			else if(self->tcb->km == 0 && self->tcb->tid != 0){
-				printf("CPU: ENVIA FINALIZAR HILO EXITO\n");
 				num = cpuFinalizarHiloExitoso(self);
 				salida = 1;
 			}
 
 			else{
 				if(esJoin){
-					printf("CPU: ENVIA FINALIZAR INTERRUPCION PARA JOIN\n");
+					log_info(self->loggerCPU, "CPU: Envia Finalizar Interrupcion al Kernel");
 					cpuFinalizarInterrupcion(self, 1);
 					esJoin = 0;
 				}
 				else{
-					printf("CPU: ENVIA FINALIZAR INTERRUPCION\n");
+					log_info(self->loggerCPU, "CPU: Envia Finalizar Interrupcion al Kernel");
 					cpuFinalizarInterrupcion(self, 0);
 
 				}
@@ -108,7 +106,7 @@ int cpuProcesarTCB(t_CPU *self){
 			break;
 
 		case TERMINAR_QUANTUM:
-			printf("CPU: ENVIA TERMINAR QUANTUM\n");
+			log_info(self->loggerCPU, "CPU: Envia Finalizar Quantum al Kernel");
 			salida = 1;
 			cpuTerminarQuantum(self);
 			break;
@@ -128,6 +126,7 @@ int cpuProcesarTCB(t_CPU *self){
 			break;
 		}
 	}
+
 	free(hilo_log);
 	free(datosDeMSP);
 	return error;
@@ -305,8 +304,8 @@ int ejecutar_instruccion(t_CPU *self, int linea, int *esJoin){
 
 
 	default:
-		log_error(self->loggerCPU, "CPU: error en el switch-case, instruccion no encontrada:\n %d", self->tcb->pid);
-		printf("CPU: error en el switch-case, instruccion no encontrada:\n %d", self->tcb->pid);
+		log_error(self->loggerCPU, "CPU: Error en el switch-case, instruccion no encontrada:\n %d", self->tcb->pid);
+		printf("CPU: Error en el switch-case, instruccion no encontrada:\n %d", self->tcb->pid);
 		//free(lectura_en_msp);
 		//free(cpu_leer_memoria);
 		estado = ERROR_POR_CODIGO_INESPERADO;

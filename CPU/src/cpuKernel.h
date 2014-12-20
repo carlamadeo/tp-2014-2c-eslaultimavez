@@ -134,6 +134,9 @@ typedef struct {
 	int tid;
 } t_crea_hilo;
 
+typedef struct {
+	int tidCreado;
+} t_crearHilo;
 
 typedef struct {
 	t_TCB_CPU_nuevo* tcbNuevo;
