@@ -27,12 +27,12 @@ void realizarHandshakeConLoader(t_programaBESO* self){
 
 	t_socket_paquete *paquete = (t_socket_paquete*) malloc(sizeof(t_socket_paquete));
 
-	if (socket_sendPaquete(self->socketKernel->socket, HANDSHAKE_PROGRAMA, 0, NULL) > 0)
-		log_info(self->loggerProgramaBESO, "Consola: Envia al Kernel: HANDSHAKE_PROGRAMA");
+	if (socket_sendPaquete(self->socketKernel->socket, HANDSHAKE_PROGRAMA, 0, NULL) > 0){
 
-	if (socket_recvPaquete(self->socketKernel->socket, paquete) >= 0) {
-		if(paquete->header.type == HANDSHAKE_LOADER)
-			log_info(self->loggerProgramaBESO, "Consola: Recibe del Kernel: HANDSHAKE_LOADER");
+		if (socket_recvPaquete(self->socketKernel->socket, paquete) >= 0) {
+			if(paquete->header.type == HANDSHAKE_LOADER)
+				log_info(self->loggerProgramaBESO, "Consola: Handshake con el Kernel!");
+		}
 	}
 	else
 		log_error(self->loggerProgramaBESO, "Consola: Error al recibir los datos del Kernel.");
@@ -159,7 +159,7 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 
 				break;
 
-			//TODO Esto no se desde donde se manda
+				//TODO Esto no se desde donde se manda
 			case ERROR_POR_DESCONEXION_DE_CPU:
 				log_error(self->loggerProgramaBESO,"Consola: Se ha recibido un error del tipo ERROR_POR_DESCONEXION_DE_CPU");
 				fin = 1;

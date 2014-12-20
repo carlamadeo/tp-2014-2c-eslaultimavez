@@ -275,7 +275,7 @@ void imprimirMarcos() {
 						return unMarco->numero == unaPagina->numeroMarco;
 			}
 			t_marco *marco = list_find(self->marcosOcupados, matchMarco);
-			log_info(self->logMSP, "Marco#: %d | PID: %d | Numero de Segmento: %d | Numero de Pagina: %d | valor clock:%d", unaPagina->numeroMarco, pid, numeroSegmento, unaPagina->numero, marco->categoriaClockModificado);
+			log_info(self->logMSP, "Marco#: %d | PID: %d | Numero de Segmento: %d | Numero de Pagina: %d | Valor Clock: %d", unaPagina->numeroMarco, pid, numeroSegmento, unaPagina->numero, marco->categoriaClockModificado);
 			cantidadMarcosOcupados+=1;
 		}
 	}
