@@ -28,34 +28,37 @@ void kernel_comenzar_Planificador(t_kernel* self){
 
 void pasarTCB_Ready_A_Exec(t_kernel* self){
 
+	int ejecutandoHiloKernel;
+
 	while(1){
 
 		sem_wait(&sem_B);
 		sem_wait(&sem_C);
 
-		//Busco si hay algun programa con Prioridad (KM 1)
-		bool matchProgramaKM(t_programaEnKernel *programa){
-			return (programa->programaTCB->km == 1);
+		bool matchTCBKernel(t_programaEnKernel *unPrograma){
+			return (unPrograma->programaTCB->km == 1);
 		}
 
-		t_programaEnKernel* programaParaExecKM = list_remove_by_condition(cola_ready, matchProgramaKM);
+		ejecutandoHiloKernel = list_count_satisfying(cola_exec, (void *) matchTCBKernel);
 
-		if(programaParaExecKM != NULL){
+		if((list_size(listaSystemCall) > 0) && (ejecutandoHiloKernel != 1)){
 
-			pthread_mutex_lock(&execMutex);
-			list_add(cola_exec, programaParaExecKM); // se agrega el programa en cola EXEC
-			pthread_mutex_unlock(&execMutex);
+			t_TCBSystemCalls *TCBSystemCall = list_remove(listaSystemCall, 0);
 
-			mostrarHilosEjecutando();
+			//Modifico el TCB Kernel con los valores del TCB de la lista system calls
+			modificarTCBKM(self->tcbKernel, TCBSystemCall);
+
+			//Paso el TCB Kernel a Exec
+			pasarHiloKernelAExec();
+
 			t_cpu* cpuLibre = list_get(listaDeCPULibres, 0);
-			cargarTCBconOtroTCB_VOID(cpuLibre->TCB, programaParaExecKM->programaTCB);
+			cargarTCBconOtroTCB_VOID(cpuLibre->TCB, self->tcbKernel);
 			cpuLibreAOcupada(cpuLibre);
 
 			mandarEjecutarPrograma(self, cpuLibre);
 		}
 
-
-		else if(programaParaExecKM == NULL){
+		else{
 
 			pthread_mutex_lock(&readyMutex);
 			t_programaEnKernel* programaParaExec = list_remove(cola_ready, 0); //se remueve el primer elemento de la cola READY
@@ -79,6 +82,24 @@ void pasarTCB_Ready_A_Exec(t_kernel* self){
 		}
 	}
 
+}
+
+
+void pasarHiloKernelAExec(){
+
+	bool matchPrograma(t_programaEnKernel *unPrograma){
+		return (unPrograma->programaTCB->km == 1);
+	}
+
+	pthread_mutex_lock(&blockMutex);
+	t_programaEnKernel *programaBuscado = list_remove_by_condition(cola_block, matchPrograma);
+	pthread_mutex_unlock(&blockMutex);
+
+	pthread_mutex_lock(&execMutex);
+	list_add(cola_exec, programaBuscado);
+	pthread_mutex_unlock(&execMutex);
+
+	mostrarHilosEjecutando();
 }
 
 
@@ -373,9 +394,9 @@ void ejecutar_DESCONECTAR_CPU(t_kernel* self, t_cpu* cpu, fd_set* master){
 
 		//se le avisa al programa Beso que se desconecto la CPU
 		if (socket_sendPaquete(programaRemovido->socketProgramaConsola, ERROR_POR_DESCONEXION_DE_CPU, 0, NULL) >= 0)
-			log_error(self->loggerPlanificador, "Planificador: Envia \"Error por desconexion\" a la Consola");
+			log_error(self->loggerPlanificador, "Planificador: Envia \"Error por desconexion de CPU\" a la Consola");
 		else
-			log_error(self->loggerPlanificador, "Planificador: Envia \"Error por desconexion\" a la Consola");
+			log_error(self->loggerPlanificador, "Planificador: Envia \"Error por desconexion de CPU\" a la Consola");
 
 	}
 
@@ -416,7 +437,7 @@ t_programaEnKernel* obtenerTCBdeReady(t_kernel* self){
 
 	//sem_wait(&mutex_BloqueoPlanificador);   //desbloquea al planificador!!! ERROR
 
-	if (list_size(cola_new)>0){
+	if (list_size(cola_new) > 0){
 		sem_wait(&mutex_new);
 		t_programaEnKernel* programa = list_remove(cola_new, 0); //SE REMUEVE EL PRIMER PROGRAMA DE NEW
 		sem_post(&mutex_new);
@@ -426,7 +447,6 @@ t_programaEnKernel* obtenerTCBdeReady(t_kernel* self){
 		sem_post(&mutex_ready);
 
 		mostrarHilosEjecutando();
-
 		return programa;
 	}
 

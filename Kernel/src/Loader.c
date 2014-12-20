@@ -119,7 +119,7 @@ void pasarProgramaNewAReady(t_kernel* self){
 			list_add(cola_ready, programaParaReady); // se agrega el programa buscado a la cola READY
 			pthread_mutex_unlock(&readyMutex);
 
-			mostrarHilosEjecutando();
+			////mostrarHilosEjecutando();
 
 			sem_post(&sem_B);
 
@@ -155,7 +155,7 @@ void atenderProgramaConsola(t_kernel* self, t_programaEnKernel* programa, fd_set
 
 		eliminarPrograma(self, programa);
 
-		mostrarHilosEjecutando();
+		//mostrarHilosEjecutando();
 
 	}
 
@@ -362,7 +362,7 @@ void atenderNuevaConexionPrograma(t_kernel* self, t_socket* socketNuevoCliente, 
 			list_add(cola_new, unPrograma);
 			pthread_mutex_unlock(&newMutex);
 
-			mostrarHilosEjecutando();
+			//mostrarHilosEjecutando();
 
 			list_add(listaDeProgramasDisponibles, unPrograma);
 

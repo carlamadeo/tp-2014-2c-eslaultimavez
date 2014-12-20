@@ -30,7 +30,7 @@ void ejecutar_FINALIZAR_PROGRAMA_EXITO(t_kernel* self, t_socket_paquete *paquete
 
 		if(unTcbProcesado != NULL){
 			socket_sendPaquete(unTcbProcesado->socketProgramaConsola, FINALIZAR_PROGRAMA_EXITO, 0, NULL);
-			log_info(self->loggerPlanificador, "Planificador: Envia a COnsola \"Finalizacion de Hilo exitoso\"");
+			log_info(self->loggerPlanificador, "Planificador: Envia a Consola \"Finalizacion de Hilo exitoso\"");
 			desbloquearHilosBloqueadosPorElQueFinalizo(self, unTcbProcesado);
 		}
 	}
@@ -65,7 +65,7 @@ void desbloquearHilosBloqueadosPorElQueFinalizo(t_kernel *self, t_programaEnKern
 			t_programaEnKernel *programaADesbloquear = list_find(listaDeProgramasDisponibles, _tcbParaReady);
 
 			if(programaADesbloquear != NULL){
-				pasarProgramaDeBlockAReady(programaADesbloquear->programaTCB, 0);
+				pasarProgramaDeBlockAReady(programaADesbloquear->programaTCB);
 				log_info(self->loggerPlanificador,"Planificador: Se ha desbloqueado al TCB con PID %d, TID %d", programaADesbloquear->programaTCB->pid, programaADesbloquear->programaTCB->tid);
 			}
 
@@ -95,11 +95,11 @@ void ejecutar_FINALIZAR_HILO_EXITO(t_kernel* self, t_socket_paquete *paqueteTCB)
 		list_add(cola_exit, unTcbProcesado);
 		pthread_mutex_unlock(&exitMutex);
 
-		mostrarHilosEjecutando();
-
 		if(unTcbProcesado != NULL){
 			desbloquearHilosBloqueadosPorElQueFinalizo(self, unTcbProcesado);
 		}
+
+		mostrarHilosEjecutando();
 
 	}
 
@@ -178,7 +178,6 @@ void pasarProgramaDeExecAReady(t_TCB_Kernel *TCB){
 
 void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 
-	pthread_mutex_lock(&sem_interrupcion);
 	t_interrupcionKernel* interrupcion = (t_interrupcionKernel*) (paquete->data);
 
 	t_TCB_Kernel *TCBInterrupcion = malloc(sizeof(t_TCB_Kernel));
@@ -190,25 +189,18 @@ void ejecutar_UNA_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 	if(programaBesoExiste(self, TCBInterrupcion) != ERROR_POR_DESCONEXION_DE_CONSOLA){
 
 		//Paso el TCB que llamo la interrupcion a la cola de Block
-		t_socket *socketConsola = pasarProgramaDeExecABlock(TCBInterrupcion);
+		pasarProgramaDeExecABlock(TCBInterrupcion);
 
 		//Paso el TCB que llamo la interrupcion a la cola de bloqueados por System Calls
 		agregarTCBAColaSystemCalls(TCBInterrupcion, interrupcion->direccionKM);
 
-		//Tomo al primer TCB que se encuentre en la lista de bloqueados por System Calls
-		t_TCBSystemCalls *TCBSystemCall = list_get(listaSystemCall, 0);
-
-		//Modifico el TCB Kernel con los valores del TCB que llamo la interrupcion
-		modificarTCBKM(self->tcbKernel, TCBSystemCall);
-
-		//Paso el TCB Kernel a Ready
-		pasarProgramaDeBlockAReady(self->tcbKernel, socketConsola);
-
-		free(interrupcion);
+		sem_post(&sem_B);
 	}
 
 	else
 		log_error(self->loggerPlanificador, "Planificador: El Programa ha cerrado la conexion");
+
+	free(interrupcion);
 
 
 }
@@ -230,22 +222,15 @@ void ejecutar_FIN_DE_INTERRUPCION(t_kernel* self, t_socket_paquete* paquete){
 		//Vuelvo a bloquear al TCB Kernel
 		pasarProgramaDeExecABlock(self->tcbKernel);
 
-		//Busco al TCB que llego en la cola de bloqueados por System Calls y lo elimino
-		bool matchTCB(t_TCBSystemCalls *TCB){
-			return (TCB->programa->programaTCB->pid == TCBFinInterrupcion->pid) && (TCB->programa->programaTCB->tid == TCBFinInterrupcion->tid);
-		}
-
-		t_TCBSystemCalls *TCBFinDeInterrupcionSystemCall = list_remove_by_condition(listaSystemCall, matchTCB);
-
 		if(informacionFinInterrupcion->esJoin != 1 || seBloqueo != 1){
 			//Copio los valores de los registros del TCB que se ejecuto y pongo el km en 0
-			volverTCBAModoNoKernel(self->tcbKernel, TCBFinDeInterrupcionSystemCall->programa->programaTCB);
+			TCBFinInterrupcion->km = 0;
 			//Saco al TCB de la cola de bloqueados y lo paso a Ready
-			pasarProgramaDeBlockAReady(TCBFinDeInterrupcionSystemCall->programa->programaTCB, 0);
+			pasarProgramaDeBlockAReady(TCBFinInterrupcion);
 			seBloqueo = 0;
+			sem_post(&sem_B);
 		}
 
-		pthread_mutex_unlock(&sem_interrupcion);
 	}
 
 	else
@@ -274,7 +259,7 @@ void copiarValoresFinInterrupcionATCB(t_finInterrupcionKernel* informacionFinInt
 }
 
 
-t_socket *pasarProgramaDeExecABlock(t_TCB_Kernel *TCB){
+void pasarProgramaDeExecABlock(t_TCB_Kernel *TCB){
 
 	bool matchPrograma(t_programaEnKernel *unPrograma){
 		return (unPrograma->programaTCB->pid == TCB->pid) && (unPrograma->programaTCB->tid == TCB->tid);
@@ -292,7 +277,6 @@ t_socket *pasarProgramaDeExecABlock(t_TCB_Kernel *TCB){
 
 	mostrarHilosEjecutando();
 
-	return programaBuscado->socketProgramaConsola;
 }
 
 
@@ -331,13 +315,14 @@ void modificarTCBKM(t_TCB_Kernel *TCBKernel, t_TCBSystemCalls *TCBSystemCall){
 }
 
 
-void pasarProgramaDeBlockAReady(t_TCB_Kernel *TCB, t_socket *socketConsola){
+void pasarProgramaDeBlockAReady(t_TCB_Kernel *TCB){
 
 	int encontrado = 0;
 	t_list *hilosEjecutando;
 
+	//Me fijo si el programa que mandan a desbloquear esta bloqueado por algun recurso
 	bool matchPrograma(t_programaEnKernel *unPrograma){
-		return (unPrograma->programaTCB->pid == TCB->pid) && (unPrograma->programaTCB->tid == TCB->tid);
+		return (unPrograma->programaTCB->pid == TCB->pid) && (unPrograma->programaTCB->tid == TCB->tid) && (unPrograma->programaTCB->km == 0);
 	}
 
 	bool esProgramaBloqueadoPorRecurso(t_programaEnKernel *unProgramaBloqueado){
@@ -352,20 +337,18 @@ void pasarProgramaDeBlockAReady(t_TCB_Kernel *TCB, t_socket *socketConsola){
 
 	list_iterate(listaDeRecursos, busquedaPorLista);
 
+	//Si no lo encontre en la lista de TCBs bloqueados por algun recurso lo paso de block a ready
 	if(!encontrado){
-		pthread_mutex_lock(&execMutex);
-		t_programaEnKernel *programaBuscado = list_remove_by_condition(cola_block, matchPrograma);
-		pthread_mutex_unlock(&execMutex);
-
-		if(TCB->km == 1){
-			programaBuscado->socketProgramaConsola = socketConsola;
-		}
-
-		programaBuscado->programaTCB = TCB;
 
 		pthread_mutex_lock(&blockMutex);
-		list_add(cola_ready, programaBuscado);
+		t_programaEnKernel *programaBuscado = list_remove_by_condition(cola_block, matchPrograma);
 		pthread_mutex_unlock(&blockMutex);
+
+		copiarRegistrosProgramacion(programaBuscado->programaTCB, TCB);
+
+		pthread_mutex_lock(&readyMutex);
+		list_add(cola_ready, programaBuscado);
+		pthread_mutex_unlock(&readyMutex);
 
 		sem_post(&sem_B);
 	}
@@ -374,6 +357,15 @@ void pasarProgramaDeBlockAReady(t_TCB_Kernel *TCB, t_socket *socketConsola){
 
 }
 
+void copiarRegistrosProgramacion(t_TCB_Kernel *tcbHasta, t_TCB_Kernel *tcbDesde){
+
+	tcbHasta->registro_de_programacion[0] = tcbDesde->registro_de_programacion[0];
+	tcbHasta->registro_de_programacion[1] = tcbDesde->registro_de_programacion[1];
+	tcbHasta->registro_de_programacion[2] = tcbDesde->registro_de_programacion[2];
+	tcbHasta->registro_de_programacion[3] = tcbDesde->registro_de_programacion[3];
+	tcbHasta->registro_de_programacion[4] = tcbDesde->registro_de_programacion[4];
+
+}
 
 void convertirLaInterrupcionEnTCB(t_interrupcionKernel *interrupcion, t_TCB_Kernel *TCBInterrupcion){
 
@@ -489,8 +481,6 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
 
 	t_programaEnKernel* programaHiloRecibido = list_find(cola_block, matchProgramaEnBlock);
 
-	log_info(logg, "El hilo { PID: %d, TID: %d } ejecutó la instrucción: Crear Hilo", datosRecibidos->pid, datosRecibidos->tid);
-
 	if(programaHiloRecibido != NULL){
 		copiarValoresDosTCBs(hiloNuevo, programaHiloRecibido->programaTCB);
 
@@ -521,10 +511,10 @@ void ejecutar_UN_CREAR_HILO(t_kernel* self, t_socket_paquete* paquete){
 		list_add(cola_ready, programaNuevoHilo);
 		pthread_mutex_unlock(&readyMutex);
 
-		mostrarHilosEjecutando();
-
 		sem_post(&sem_B);
 	}
+
+	log_info(logg, "El hilo { PID: %d, TID: %d } ejecutó la instrucción: Crear Hilo", datosRecibidos->pid, datosRecibidos->tid);
 
 	free(lecturaEscrituraMSP);
 
@@ -569,6 +559,8 @@ void ejecutar_UN_JOIN_HILO(t_kernel* self, t_socket_paquete* paquete){
 	if(programaFinalizado == NULL){
 
 		seBloqueo = 1;
+
+		log_info(self->loggerKernel, "El hilo { PID: %d, TID: %d } ha bloqueado al hilo { PID: %d, TID: %d }", joinHilos->pid, joinHilos->tid_esperar, joinHilos->pid, joinHilos->tid_llamador);
 
 		bool matchHilo(t_BloqueadoPorOtro *hiloBloqueador){
 			return ((hiloBloqueador->pid == joinHilos->pid) && (hiloBloqueador->TIDbloqueador == joinHilos->tid_esperar));
@@ -787,6 +779,8 @@ void printTCBKernel(t_TCB_Kernel* unTCB){
 
 
 void mostrarHilosEjecutando(){
+
+	log_info(logg, "#################### HILOS EN EJECUCION ####################");
 
 	void mostrarPrograma(t_programaEnKernel *unPrograma){
 		log_info(logg, "Hilo { PID: %d, TID: %d } Registros: { A: %d, B: %d, C: %d, D: %d, E: %d, M: %d, P: %d, S: %d, K: %d }",

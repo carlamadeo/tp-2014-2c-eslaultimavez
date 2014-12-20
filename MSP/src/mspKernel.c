@@ -16,7 +16,7 @@ void *mspLanzarHiloKernel(t_socket* socketsKernel){
 	t_socket_paquete *paquete;
 	int i = 1;
 
-	log_info(self->logMSP,"Hilo Kernel creado correctamente.");
+	log_info(self->logMSP, "MSP: Hilo Kernel creado correctamente.");
 
 	if (socket_sendPaquete(socketsKernel, HANDSHAKE_MSP, 0, NULL) > 0)
 		log_info(self->logMSP, "MSP: Handshake con Kernel!");

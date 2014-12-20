@@ -36,26 +36,25 @@ int main(int argc, char *argv[]){
 
 	self->logMSP = log_create("logMSP.log", "MSP", 1, LOG_LEVEL_TRACE);
 
-	log_info(self->logMSP, "Iniciando consola de la MSP...");
+	log_info(self->logMSP, "MSP: Iniciando consola de la MSP...");
 
 	if(!cargarConfiguracionMSP(argv[1])){
 		printf("Archivo de configuracion invalido\n");
 		return EXIT_SUCCESS;
 	}
 
-	//IMPORTANTE CONSOLAAAAAAAAA!!!!
-	//	int mspConsolathreadNum = pthread_create(&mspConsolaHilo, NULL, &mspLanzarhiloConsola, NULL);
-	//	if(mspConsolathreadNum) {
-	//		log_error(self->logMSP, "Error - pthread_create() return code: %d\n", mspConsolathreadNum);
-	//		exit(EXIT_FAILURE);
-	//	}
+	int mspConsolathreadNum = pthread_create(&mspConsolaHilo, NULL, &mspLanzarhiloConsola, NULL);
+	if(mspConsolathreadNum) {
+		log_error(self->logMSP, "Error - pthread_create() return code: %d\n", mspConsolathreadNum);
+		exit(EXIT_FAILURE);
+	}
 
 	crearHilosConexiones();
 
 	pthread_rwlock_init(&rw_memoria, NULL);
 
-	//pthread_join(mspConsolathreadNum, NULL);
-	log_info(self->logMSP, "Finalizando la MSP...");
+	pthread_join(mspConsolathreadNum, NULL);
+	log_info(self->logMSP, "MSP: Finalizando la MSP...");
 
 	destruirConfiguracionMSP();
 
@@ -68,7 +67,7 @@ int main(int argc, char *argv[]){
 
 void crearHilosConexiones(){
 
-	log_info(self->logMSP, "Creando un hilo escucha...");
+	log_info(self->logMSP, "MSP: Creando un hilo escucha...");
 	socketsKernel = malloc(sizeof(t_sockets));
 
 	socketsKernel->socketMSP = socket_createServer(self->puerto);
@@ -102,7 +101,6 @@ void crearHilosConexiones(){
 				log_error(self->logMSP, "Error - pthread_create() return code: %d\n", mspHiloCPUInt);
 
 			}
-			log_debug(self->logMSP, "MSP: cantidad de CPUs conectadas: %d", contadorCpu);
 
 		}else{
 			if(paqueteCliente->header.type == HANDSHAKE_KERNEL){

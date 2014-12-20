@@ -33,7 +33,7 @@ bool cargarConfiguracionMSP(char *config) {
 	else
 		self->modoSustitucionPaginas = CLOCK_MODIFICADO;
 
-	log_info(self->logMSP, "Reservando %g KiloBytes de memoria principal... ", self->cantidadMemoriaPrincipal);
+	log_info(self->logMSP, "MSP: Reservando %g KiloBytes de memoria principal... ", self->cantidadMemoriaPrincipal);
 
 	self->cantidadMemoriaPrincipal *= KILOBYTES_A_BYTES; //Los paso a Bytes
 
@@ -47,8 +47,8 @@ bool cargarConfiguracionMSP(char *config) {
 		return false;
 	}
 
-	log_info(self->logMSP, "Memoria reservada correctamente");
-	log_info(self->logMSP, "Se reservo %g MegaBytes para el archivo de paginacion.", self->cantidadMemoriaSecundaria);
+	log_info(self->logMSP, "MSP: Memoria reservada correctamente");
+	log_info(self->logMSP, "MSP: Se reservo %g MegaBytes para el archivo de paginacion.", self->cantidadMemoriaSecundaria);
 
 	self->cantidadMemoriaSecundaria *= MEGABYTES_A_BYTES; //Los paso a Bytes
 

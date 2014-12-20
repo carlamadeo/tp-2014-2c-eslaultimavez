@@ -102,7 +102,7 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 
 				numeroEnChar = malloc(sizeof(int));
 				memset(numeroEnChar, 0, sizeof(int));
-				printf("Ingrese ENTER para entrar al modo Entrada Estandar");
+				printf("Ingrese ENTER para entrar al modo Entrada Estandar\n");
 				while(getchar() != '\n');
 				printf("Ingrese el numero que desea enviar al Kernel: ");
 				fgets(numeroEnChar, sizeof(int), stdin);
@@ -130,7 +130,7 @@ void consolaComunicacionLoader(t_programaBESO* self, char *parametro){
 				texto = malloc(sizeof(char)*recibidoDelKernel->tamanio + 1);
 				memset(texto, 0, recibidoDelKernel->tamanio + 1);
 				memset(unTexto->texto, 0, 10);
-				printf("Ingrese ENTER para entrar al modo Entrada Estandar");
+				printf("Ingrese ENTER para entrar al modo Entrada Estandar\n");
 				while(getchar() != '\n');
 				printf("Ingrese el texto que desea enviar al Kernel: ");
 				fgets(texto, recibidoDelKernel->tamanio + 1, stdin);

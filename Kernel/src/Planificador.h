@@ -22,6 +22,7 @@ extern pthread_mutex_t cpuOcupada;
 
 
 void cargarTCBconOtroTCB_VOID(t_TCB_Kernel* destino, t_TCB_Kernel* origen);
+void pasarHiloKernelAExec();
 t_TCB_Kernel* inicializarUnTCB();
 void mandarEjecutarPrograma(t_kernel* self,t_cpu* cpuLibre);
 void pasarTCB_Ready_A_Exec(t_kernel* self);

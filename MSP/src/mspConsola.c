@@ -29,7 +29,7 @@ void *mspLanzarhiloConsola() {
 		printf("5 - Ver Tabla de Segmentos\n");
 		printf("6 - Ver Tabla de Paginas\n");
 		printf("7 - Listar Marcos\n");
-		printf("\nIngrese su opcion: ");
+		printf("\nIngrese su opcion\n");
 
 		scanf("%d", &opcion);
 
